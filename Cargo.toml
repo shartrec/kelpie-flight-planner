@@ -1,0 +1,18 @@
+[package]
+name = "kelpie_rust_planner"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.26"
+gtk = { version = "0.6.6", package = "gtk4", features = ["v4_10"] }
+igrf = "0.2.0"
+lazy_static = "1.4.0"
+log = "0.4"
+preferences = "^1.1.0"
+simplelog = "^0.12.1"
+
+[build-dependencies]
+glib-build-tools = "0.17.10"
