@@ -1,5 +1,5 @@
-use crate::earth::coordinate::Coordinate;
 use super::location::Location;
+use crate::earth::coordinate::Coordinate;
 
 #[derive(Debug, Clone)]
 pub struct Fix {
@@ -8,16 +8,12 @@ pub struct Fix {
 }
 
 impl Fix {
-    pub fn new(
-        id: String,
-        latitude: f64,
-        longitude: f64,
-    ) -> Self {
+    pub fn new(id: String, latitude: f64, longitude: f64) -> Self {
         Self {
             id,
             coordinate: Coordinate::new(latitude, longitude),
         }
-	}
+    }
 }
 
 impl Location for Fix {
@@ -48,8 +44,8 @@ impl Location for Fix {
     fn get_loc(&self) -> Coordinate {
         self.coordinate.clone()
     }
-    
+
     fn get_name(&self) -> String {
-    	"".to_string()
+        "".to_string()
     }
 }

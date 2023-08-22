@@ -90,10 +90,10 @@ impl Runway {
     }
 
     pub fn get_opposite_number(&self) -> String {
-    	Self::get_opp_num(&self.number)
+        Self::get_opp_num(&self.number)
     }
 
-    fn get_opp_num(_number : &str) -> String {
+    fn get_opp_num(_number: &str) -> String {
         match _number {
             "N" => "S".to_string(),
             "S" => "N".to_string(),
@@ -156,6 +156,5 @@ mod tests {
         assert_eq!(Runway::get_opp_num("09L"), "27R");
         assert_eq!(Runway::get_opp_num("18L"), "36R");
         assert_eq!(Runway::get_opp_num("36L"), "18R");
-        
     }
 }

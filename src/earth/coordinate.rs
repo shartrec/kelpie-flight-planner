@@ -1,5 +1,5 @@
-use std::f64::consts::PI;
 use crate::util::lat_long_format::LatLongFormat;
+use std::f64::consts::PI;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Coordinate {
@@ -11,7 +11,10 @@ impl Coordinate {
     const EARTH_RADIUS: f64 = 3441.85;
 
     pub fn new(latitude: f64, longitude: f64) -> Self {
-        Self { latitude, longitude }
+        Self {
+            latitude,
+            longitude,
+        }
     }
 
     pub fn bearing_to(&self, l: &Coordinate) -> f64 {
@@ -19,7 +22,7 @@ impl Coordinate {
         let lat2 = l.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
         let lon2 = l.longitude.to_radians();
-        
+
         let dlon = lon1 - lon2;
         let dlat = lat1 - lat2;
 
@@ -47,7 +50,7 @@ impl Coordinate {
         let tc = heading.to_radians();
         let lat = (lat1.sin() * d.cos() + lat1.cos() * d.sin() * tc.cos()).asin();
         let dlon = (tc.sin() * d.sin() * lat1.cos()).atan2(d.cos() - lat1.sin() * lat.sin());
-  
+
         let lon = (lon1 + dlon + PI) % (2.0 * PI) - PI;
 
         Coordinate::new(lat.to_degrees(), lon.to_degrees())
@@ -96,7 +99,7 @@ mod tests {
         assert_eq!(result.get_latitude(), -34.0);
         assert_eq!(result.get_longitude(), 151.0);
     }
-    
+
     #[test]
     fn test_disance_to() {
         let c1 = Coordinate::new(-34.0, 151.0);
@@ -118,7 +121,7 @@ mod tests {
         let c2 = Coordinate::new(0.0, 0.0);
         assert_eq!(c1.distance_to(&c2).round(), 8198.0);
     }
-   
+
     #[test]
     fn test_bearing_to_deg() {
         let c1 = Coordinate::new(-34.0, 151.0);
@@ -130,8 +133,8 @@ mod tests {
         let c1 = Coordinate::new(34.0, 151.0);
         let c2 = Coordinate::new(34.0, 152.0);
         assert_eq!(c1.bearing_to_deg(&c2).round(), 90.0);
-	}
-   
+    }
+
     #[test]
     fn test_coordinate_at() {
         let c1 = Coordinate::new(0.0, 151.0);
@@ -148,13 +151,13 @@ mod tests {
         let c2 = c1.coordinate_at(100000.0, 120.0);
         assert!(is_between(c2.latitude, 43.0, 44.0));
         assert!(is_between(c2.longitude, 28.0, 29.0));
- 	}
- 	
- 	fn is_between(variable: f64, bottom: f64, top: f64) -> bool {
- 		let result = variable >= bottom && variable <= top;
- 		if !result {
- 			println!("Variable {} not between {} and {}", variable, bottom, top);
- 		}
- 		result
- 	}
+    }
+
+    fn is_between(variable: f64, bottom: f64, top: f64) -> bool {
+        let result = variable >= bottom && variable <= top;
+        if !result {
+            println!("Variable {} not between {} and {}", variable, bottom, top);
+        }
+        result
+    }
 }

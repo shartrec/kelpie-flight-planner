@@ -13,6 +13,6 @@ glib::wrapper! {
 impl Window {
     pub fn new(app: &Application) -> Self {
         // Create new window
-		Object::builder().property("application", app).build()
+        Object::builder().property("application", app).build()
     }
-}	
+}

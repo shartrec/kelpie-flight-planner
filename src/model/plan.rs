@@ -39,7 +39,10 @@ impl Plan {
 
     pub fn add_sector_at(&mut self, pos: i32, start: Option<&Airport>, end: Option<&Airport>) {
         let mut sector = Sector::new(start, end);
-        self.sectors.write().unwrap().insert(pos as usize, Box::new(sector));
+        self.sectors
+            .write()
+            .unwrap()
+            .insert(pos as usize, Box::new(sector));
         self.update();
     }
 
@@ -76,7 +79,12 @@ impl Plan {
     }
 
     pub fn get_duration(&self) -> f64 {
-        self.sectors.read().unwrap().iter().map(|s| s.get_duration()).sum()
+        self.sectors
+            .read()
+            .unwrap()
+            .iter()
+            .map(|s| s.get_duration())
+            .sum()
     }
 
     //
@@ -89,12 +97,14 @@ impl Plan {
 
     fn get_name(&self) -> String {
         if self.path.is_none() {
-        	let sectors_lock = self.sectors.read().unwrap();
+            let sectors_lock = self.sectors.read().unwrap();
             if sectors_lock.len() > 0 {
                 let airport_start = sectors_lock[0].get_start().map(|w| w.get_airport());
                 let start = airport_start.map(|a| a.get_id()).unwrap_or(String::new());
 
-                let airport_end = self.sectors.read().unwrap()[0].get_end().map(|w| w.get_airport());
+                let airport_end = self.sectors.read().unwrap()[0]
+                    .get_end()
+                    .map(|w| w.get_airport());
                 let end = airport_end.map(|a| a.get_id()).unwrap_or(String::new());
 
                 if !start.is_empty() || !end.is_empty() {
@@ -114,7 +124,7 @@ impl Plan {
     //	 @return previous location
 
     pub fn get_previous_location(&self, wp: Box<dyn Waypoint>) -> Option<Box<dyn Waypoint>> {
-       	let sectors_lock = self.sectors.read().unwrap();
+        let sectors_lock = self.sectors.read().unwrap();
         for s in sectors_lock.as_slice() {
             let wp_comp = wp.copy();
             let start_wp = s.get_start();

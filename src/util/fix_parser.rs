@@ -42,7 +42,7 @@ impl FixParserFG {
                 }
             }
             let is_empty = &buf.trim().is_empty();
-            
+
             if !is_empty && !buf.starts_with("//") && !buf.starts_with("99") {
                 let mut tokenizer = buf.split_whitespace();
                 let latitude = tokenizer
@@ -57,11 +57,7 @@ impl FixParserFG {
                     .unwrap_or(0.0);
                 let id = tokenizer.next().unwrap_or("");
 
-                let fix = Fix::new(
-                    id.to_string(),
-                    latitude,
-                    longitude,
-                );
+                let fix = Fix::new(id.to_string(), latitude, longitude);
                 fixes.push(fix);
             }
         }
@@ -70,9 +66,9 @@ impl FixParserFG {
 
 #[cfg(test)]
 mod tests {
+    use crate::model::fix::Fix;
     use crate::model::location::Location;
     use std::{fs, io::BufReader, path::PathBuf};
-	use crate::model::fix::Fix;
 
     use super::FixParserFG;
 

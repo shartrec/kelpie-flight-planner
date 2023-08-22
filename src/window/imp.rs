@@ -68,11 +68,32 @@ fn subscribe(event: Event, listener: Subscriber) {
 }
 
 fn do_airports_loaded() {
-	println!("We now have {} airports", crate::earth::get_earth_model().get_airports().read().unwrap().len());
+    println!(
+        "We now have {} airports",
+        crate::earth::get_earth_model()
+            .get_airports()
+            .read()
+            .unwrap()
+            .len()
+    );
 }
 fn do_navaids_loaded() {
-	println!("We now have {} navaids", crate::earth::get_earth_model().get_navaids().read().unwrap().len());
+    println!(
+        "We now have {} navaids",
+        crate::earth::get_earth_model()
+            .get_navaids()
+            .read()
+            .unwrap()
+            .len()
+    );
 }
 fn do_fixes_loaded() {
-	println!("We now have {} fixes", crate::earth::get_earth_model().get_fixes().read().unwrap().len());
+    println!(
+        "We now have {} fixes",
+        crate::earth::get_earth_model()
+            .get_fixes()
+            .read()
+            .unwrap()
+            .len()
+    );
 }

@@ -39,37 +39,37 @@ impl Sector {
 
     fn add_waypoint_after(&self, at: Box<dyn Waypoint>, waypoint_: Box<dyn Waypoint>) {
         let found_at = {
-	        let wps = self.waypoints.read().unwrap();
-        	wps.iter().position(|w| waypoint::eq(w, &at))
-		}; // Lock gets dropped here
+            let wps = self.waypoints.read().unwrap();
+            wps.iter().position(|w| waypoint::eq(w, &at))
+        }; // Lock gets dropped here
         match found_at {
-        	Some(i) => self.add_waypoint(i + 1, waypoint_),
-        	None => self.add_waypoint(self.waypoints.read().unwrap().len(), waypoint_),
+            Some(i) => self.add_waypoint(i + 1, waypoint_),
+            None => self.add_waypoint(self.waypoints.read().unwrap().len(), waypoint_),
         }
     }
 
     fn add_waypoint_before(&mut self, at: Box<dyn Waypoint>, waypoint_: Box<dyn Waypoint>) {
         let found_at = {
-	        let wps = self.waypoints.read().unwrap();
-        	wps.iter().position(|w| waypoint::eq(w, &at))
-		}; // Lock gets dropped here
+            let wps = self.waypoints.read().unwrap();
+            wps.iter().position(|w| waypoint::eq(w, &at))
+        }; // Lock gets dropped here
         match found_at {
-   	    	Some(i) => self.add_waypoint(i, waypoint_),
-        	None => self.add_waypoint(self.waypoints.read().unwrap().len(), waypoint_),
+            Some(i) => self.add_waypoint(i, waypoint_),
+            None => self.add_waypoint(self.waypoints.read().unwrap().len(), waypoint_),
         }
     }
 
     fn remove_waypoint(&mut self, waypoint: Box<dyn Waypoint>) {
         let found_at = {
-	        let wps = self.waypoints.read().unwrap();
-        	wps.iter().position(|w| waypoint::eq(w, &waypoint))
-		}; // Lock gets dropped here
-		match found_at {
-   	    	Some(i) => {
-   	    		self.waypoints.write().unwrap().remove(i);
-   	    		()
-   	    		},
-   	    	None => (),
+            let wps = self.waypoints.read().unwrap();
+            wps.iter().position(|w| waypoint::eq(w, &waypoint))
+        }; // Lock gets dropped here
+        match found_at {
+            Some(i) => {
+                self.waypoints.write().unwrap().remove(i);
+                ()
+            }
+            None => (),
         }
     }
 

@@ -107,9 +107,9 @@ impl Waypoint for SimpleWaypoint {
     fn is_locked(&self) -> bool {
         self.lock
     }
-    
+
     fn copy(&self) -> Box<dyn Waypoint> {
-    	Box::new(self.clone())
+        Box::new(self.clone())
     }
 }
 
@@ -162,7 +162,7 @@ impl Waypoint for FixWaypoint {
         self.locked
     }
     fn copy(&self) -> Box<dyn Waypoint> {
-    	Box::new(self.clone())
+        Box::new(self.clone())
     }
 }
 
@@ -215,7 +215,7 @@ impl Waypoint for NavaidWaypoint {
         self.locked
     }
     fn copy(&self) -> Box<dyn Waypoint> {
-    	Box::new(self.clone())
+        Box::new(self.clone())
     }
 }
 
@@ -234,9 +234,9 @@ impl AirportWaypoint {
             locked,
         }
     }
-    
+
     pub fn get_airport(&self) -> Airport {
-    	self.airport.clone()
+        self.airport.clone()
     }
 }
 
@@ -272,15 +272,15 @@ impl Waypoint for AirportWaypoint {
         self.locked
     }
     fn copy(&self) -> Box<dyn Waypoint> {
-    	Box::new(self.clone())
+        Box::new(self.clone())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::earth::coordinate::Coordinate;
-    use crate::model::waypoint::{self, AirportWaypoint, SimpleWaypoint, Waypoint};
     use crate::model::test_utils::make_airport;
+    use crate::model::waypoint::{self, AirportWaypoint, SimpleWaypoint, Waypoint};
 
     #[test]
     fn test_equality() {
@@ -316,8 +316,7 @@ mod tests {
         let w1 =
             SimpleWaypoint::new_gps_waypoint("".to_string(), 10.0, Coordinate::new(13.0, 111.0));
         let ap = make_airport("YSSY");
-        let w2 =
-            AirportWaypoint::new(ap, 20.0, false);
+        let w2 = AirportWaypoint::new(ap, 20.0, false);
         let a = Box::new(w1.clone());
         let b = Box::new(w2.clone());
         assert!(!do_test(a, b));

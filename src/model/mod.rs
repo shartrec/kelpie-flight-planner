@@ -8,5 +8,4 @@ pub mod runway;
 pub mod sector;
 pub mod waypoint;
 
-
 mod test_utils;

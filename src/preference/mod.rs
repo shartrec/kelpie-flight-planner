@@ -17,9 +17,9 @@ lazy_static! {
             match PreferencesMap::<String>::load(&APP_INFO, PREFS_PATH) {
                 Ok(map) => Arc::new(RwLock::new(map)),
                 Err(e) => {
-                	println!("Error openning preferences {}", e);
-	                Arc::new(RwLock::new(PreferencesMap::new()))
-                },
+                    println!("Error openning preferences {}", e);
+                    Arc::new(RwLock::new(PreferencesMap::new()))
+                }
             }
         },
         path: PREFS_PATH,

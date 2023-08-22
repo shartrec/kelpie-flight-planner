@@ -36,21 +36,21 @@ impl Navaid {
             mag_variation,
         }
     }
-    
+
     pub fn get_type(&self) -> NavaidType {
-    	self.type_.clone()
+        self.type_.clone()
     }
-    
+
     pub fn get_freq(&self) -> f64 {
-    	self.freq
+        self.freq
     }
-    
+
     pub fn get_range(&self) -> f64 {
-    	self.range
+        self.range
     }
-    
+
     pub fn get_mag_variation(&self) -> String {
-    	self.mag_variation.clone()
+        self.mag_variation.clone()
     }
 }
 
@@ -87,7 +87,6 @@ impl Location for Navaid {
         self.name.clone()
     }
 }
-
 
 #[derive(Clone, PartialEq)]
 pub enum NavaidType {

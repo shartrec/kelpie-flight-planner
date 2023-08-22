@@ -14,23 +14,23 @@ impl NavaidParserFG {
     ) -> Result<(), String> {
         let mut buf = String::new();
 
-		// ignore first two lins
+        // ignore first two lins
         for _i in 0..3 {
             buf.clear();
             match reader.read_line(&mut buf) {
-                Ok(0) => return Ok(()),  // EOF
-                Ok(_bytes) => (),  // EOF
+                Ok(0) => return Ok(()), // EOF
+                Ok(_bytes) => (),       // EOF
                 Err(msg) => {
-                	match msg.kind() {
-                		std::io::ErrorKind::InvalidData => (),
-                		_ => {
-                				let err_msg = format!("{}", msg).to_string();
-							    return Err(err_msg); 
-							}
-                	}
-                	println!("{}", msg.kind());
-                	() // We ignore the error on the first two rows - NOT UTF-8
-                },
+                    match msg.kind() {
+                        std::io::ErrorKind::InvalidData => (),
+                        _ => {
+                            let err_msg = format!("{}", msg).to_string();
+                            return Err(err_msg);
+                        }
+                    }
+                    println!("{}", msg.kind());
+                    () // We ignore the error on the first two rows - NOT UTF-8
+                }
             }
         }
         loop {
@@ -121,7 +121,7 @@ mod tests {
 
         match file {
             Ok(f) => {
-                let mut parser = NavaidParserFG{};
+                let mut parser = NavaidParserFG {};
                 let mut reader = BufReader::new(f);
                 match parser.load_navaids(&mut navaids, &mut reader) {
                     Ok(()) => (),
@@ -135,8 +135,8 @@ mod tests {
         assert_eq!(navaids[0].get_id(), "APH");
         assert_eq!(navaids[21].get_id(), "AB");
         match navaids[21].get_type() {
-        	NavaidType::NDB => (),
-        	_ => panic!("navaid type is not NDB"),
-        	}
+            NavaidType::NDB => (),
+            _ => panic!("navaid type is not NDB"),
+        }
     }
 }

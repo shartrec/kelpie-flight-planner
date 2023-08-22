@@ -3,13 +3,13 @@ pub mod coordinate;
 use gtk::glib::clone::Downgrade;
 use gtk::glib::translate::HashTable;
 use lazy_static::lazy_static;
+use log::{info, trace, warn};
 use std::cmp::Ord;
 use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock, Weak};
-use log::{info, trace, warn};
 
 use crate::preference::PreferenceManager;
 
@@ -109,24 +109,23 @@ pub fn get_earth_model() -> &'static Earth {
 }
 
 pub fn initialise() {
-	
-	let timer = std::time::Instant::now();
-	let pref = crate::preference::manager();
-	match pref.get::<String>("Airports.Path") {
-		Some(p) => load_airports(&p),
-		None => (),
-	}
-	info!("Airports loaded in {:?}", timer.elapsed());
-	match pref.get::<String>("Navaids.Path") {
-		Some(p) => load_navaids(&p),
-		None => (),
-	}
-	info!("Navaids loaded in {:?}", timer.elapsed());
-	match pref.get::<String>("Fixes.Path") {
-		Some(p) => load_fixes(&p),
-		None => (),
-	}
-	info!("Fixes loaded in {:?}", timer.elapsed());
+    let timer = std::time::Instant::now();
+    let pref = crate::preference::manager();
+    match pref.get::<String>("Airports.Path") {
+        Some(p) => load_airports(&p),
+        None => (),
+    }
+    info!("Airports loaded in {:?}", timer.elapsed());
+    match pref.get::<String>("Navaids.Path") {
+        Some(p) => load_navaids(&p),
+        None => (),
+    }
+    info!("Navaids loaded in {:?}", timer.elapsed());
+    match pref.get::<String>("Fixes.Path") {
+        Some(p) => load_fixes(&p),
+        None => (),
+    }
+    info!("Fixes loaded in {:?}", timer.elapsed());
 }
 
 fn load_airports(path: &str) {

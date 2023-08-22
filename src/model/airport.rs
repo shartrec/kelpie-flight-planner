@@ -1,6 +1,6 @@
+use super::location::Location;
 use crate::earth::coordinate::Coordinate;
 use crate::earth::FEET_PER_DEGREE;
-use super::location::Location;
 
 #[derive(Clone)]
 pub struct Airport {

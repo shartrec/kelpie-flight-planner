@@ -50,7 +50,8 @@ fn init_logger() {
             Config::default(),
             std::fs::File::create("kelpie-planner.log").unwrap(),
         ),
-    ]).expect("Unable to initiate logger.");
+    ])
+    .expect("Unable to initiate logger.");
 }
 
 fn build_ui(app: &Application) {

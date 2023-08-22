@@ -1,18 +1,26 @@
 use std::str::FromStr;
 
 pub struct LatLongFormat {
-	pos_token: char,
-	neg_token: char,
-	max_degree: f64,
+    pos_token: char,
+    neg_token: char,
+    max_degree: f64,
 }
 
 impl LatLongFormat {
     pub fn lat_format() -> Self {
-        LatLongFormat{pos_token : 'N', neg_token:'S', max_degree:90.0}
+        LatLongFormat {
+            pos_token: 'N',
+            neg_token: 'S',
+            max_degree: 90.0,
+        }
     }
 
     pub fn long_format() -> Self {
-        LatLongFormat{pos_token : 'E', neg_token:'W', max_degree:180.0}
+        LatLongFormat {
+            pos_token: 'E',
+            neg_token: 'W',
+            max_degree: 180.0,
+        }
     }
 
     fn dec_to_degree(&self, buff: &mut String, d: f64, bearing: &str) {
@@ -31,7 +39,10 @@ impl LatLongFormat {
             deg += 1.0;
         }
 
-        buff.push_str(&format!("{:02}\u{00b0}{:02}\"{:02}\'{}", deg, min, sec, bearing));
+        buff.push_str(&format!(
+            "{:02}\u{00b0}{:02}\"{:02}\'{}",
+            deg, min, sec, bearing
+        ));
     }
 
     fn format_absolute(&self, number: f64, bearing: char) -> String {
@@ -41,7 +52,14 @@ impl LatLongFormat {
     }
 
     pub fn format(&self, number: f64) -> String {
-    	self.format_absolute(number, if number > 0.0 {self.pos_token} else {self.pos_token})
+        self.format_absolute(
+            number,
+            if number > 0.0 {
+                self.pos_token
+            } else {
+                self.pos_token
+            },
+        )
     }
 
     pub fn parse(&self, source: &str) -> Result<f64, &str> {
@@ -54,9 +72,9 @@ impl LatLongFormat {
         let last_char = work.chars().last().unwrap_or(' ');
 
         if last_char == self.pos_token {
-                sign = 1.0;
+            sign = 1.0;
         } else if last_char == self.neg_token {
-                sign = -1.0;
+            sign = -1.0;
         }
 
         let tokenizer = work
@@ -101,7 +119,6 @@ impl LatLongFormat {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::LatLongFormat;
@@ -132,8 +149,8 @@ mod tests {
     fn test_parse_error() -> Result<(), String> {
         let formatter = LatLongFormat::lat_format();
         match formatter.parse("234\u{00b0}30\"00\'E") {
-        	Ok(_) => Err(String::from("Invalid format should not parse")),
-        	Err(_) => Ok(()),
+            Ok(_) => Err(String::from("Invalid format should not parse")),
+            Err(_) => Ok(()),
         }
     }
 }
