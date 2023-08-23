@@ -23,10 +23,10 @@ impl Coordinate {
         let lon1 = self.longitude.to_radians();
         let lon2 = l.longitude.to_radians();
 
-        let dlon = lon1 - lon2;
-        let dlat = lat1 - lat2;
+        let d_lon = lon1 - lon2;
+        let d_lat = lat1 - lat2;
 
-        let a = (dlat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (dlon / 2.0).sin().powi(2);
+        let a = (d_lat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
         let d = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
         let x = (lat2.sin() - lat1.sin() * d.cos()) / (d.sin() * lat1.cos());
@@ -49,9 +49,9 @@ impl Coordinate {
         let lon1 = self.longitude.to_radians();
         let tc = heading.to_radians();
         let lat = (lat1.sin() * d.cos() + lat1.cos() * d.sin() * tc.cos()).asin();
-        let dlon = (tc.sin() * d.sin() * lat1.cos()).atan2(d.cos() - lat1.sin() * lat.sin());
+        let d_lon = (tc.sin() * d.sin() * lat1.cos()).atan2(d.cos() - lat1.sin() * lat.sin());
 
-        let lon = (lon1 + dlon + PI) % (2.0 * PI) - PI;
+        let lon = (lon1 + d_lon + PI) % (2.0 * PI) - PI;
 
         Coordinate::new(lat.to_degrees(), lon.to_degrees())
     }
@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn test_disance_to() {
+    fn test_distance_to() {
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = Coordinate::new(-34.0, 151.0);
         assert_eq!(c1.distance_to(&c2).round(), 0.0);
