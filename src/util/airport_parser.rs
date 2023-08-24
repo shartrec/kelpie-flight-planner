@@ -53,8 +53,7 @@ impl AirportParserFG850 {
         loop {
             let is_empty = &buf.trim().is_empty();
             if !is_empty {
-                let s = buf.clone();
-                let mut tokenizer = s.split_whitespace();
+                let mut tokenizer = buf.split_whitespace();
                 let r_type = tokenizer.next().unwrap_or("");
                 // Translate other conditions and logic accordingly
                 if r_type == "1" || r_type == "16" || r_type == "17" {
@@ -90,8 +89,11 @@ impl AirportParserFG850 {
                     let mut latitude = 0.0;
                     let mut longitude = 0.0;
 
-                    buf.clear();
-                    match reader.read_line(&mut buf) {
+                    // Now we start reading through the runways and taxiways untile we get to the next airport entry
+                    let mut buf2 = String::new();
+
+                    buf2.clear();
+                    match reader.read_line(&mut buf2) {
                         Ok(0) => return Ok(()), // EOF
                         Ok(_bytes) => offset = reader.stream_position().unwrap() as usize,
                         Err(msg) => {
@@ -100,12 +102,11 @@ impl AirportParserFG850 {
                         }
                     }
                     loop {
-                        if buf.len() > 0 {
+                        if buf2.len() > 0 {
                             //                            let s = buf.clone();
-                            let mut tokenizer = buf.split_whitespace();
+                            let mut tokenizer = buf2.split_whitespace();
                             let r_type = tokenizer.next().unwrap_or("");
                             if r_type == "1" || r_type == "16" || r_type == "17" {
-                                // We're upto the next airpot so just get out of here.
                                 break;
                             }
                             if r_type == "100" {
@@ -163,8 +164,8 @@ impl AirportParserFG850 {
                                     longitude = (r_long + r1_long) / 2.0;
                                 }
                             }
-                            buf.clear();
-                            match reader.read_line(&mut buf) {
+                            buf2.clear();
+                            match reader.read_line(&mut buf2) {
                                 Ok(0) => return Ok(()), // EOF
                                 Ok(_bytes) => offset = reader.stream_position().unwrap() as usize,
                                 Err(msg) => {
@@ -186,6 +187,8 @@ impl AirportParserFG850 {
                         max_length as i64,
                     );
                     airports.push(airport);
+                    buf.clear();
+                    buf.push_str(buf2.as_str());
                 } else {
                     buf.clear();
                     match reader.read_line(&mut buf) {
