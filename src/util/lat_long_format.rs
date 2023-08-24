@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2003-2023. Trevor Campbell and others.
+ */
+
 use std::str::FromStr;
 
 pub struct LatLongFormat {
