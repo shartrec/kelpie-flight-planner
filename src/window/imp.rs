@@ -1,9 +1,10 @@
 use glib::subclass::InitializingObject;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, Button, CompositeTemplate};
+use gtk::{glib, Button, CompositeTemplate, ColumnView, ListStore, SelectionModel, SelectionMode, TreeView};
 
 use crate::events::{Event, Subscriber};
+use crate::window::airport_view::AirportView;
 
 // Object holding the state
 #[derive(CompositeTemplate, Default)]
@@ -11,6 +12,8 @@ use crate::events::{Event, Subscriber};
 pub struct Window {
     #[template_child]
     pub button: TemplateChild<Button>,
+    #[template_child]
+    pub airport_view: TemplateChild<AirportView>,
 }
 
 // The central trait for subclassing a GObject
@@ -46,6 +49,7 @@ impl ObjectImpl for Window {
         subscribe(Event::NavaidsLoaded, do_navaids_loaded);
         subscribe(Event::FixesLoaded, do_fixes_loaded);
     }
+
 }
 
 // Trait to allow us to add menubas

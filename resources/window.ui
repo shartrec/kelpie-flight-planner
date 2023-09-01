@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.40.0 -->
 <interface>
-  <requires lib="gtk+" version="4.0" />
-   <menu id="main-menu">
+  <requires lib="gtk+" version="4.0"/>
+  <menu id="main-menu">
     <submenu>
       <attribute name="label">File</attribute>
       <section>
@@ -41,35 +41,35 @@
         </item>
       </section>
     </submenu>
-     <item>
-       <attribute name="label" translatable="yes">_Close window</attribute>
-       <attribute name="action">window.close</attribute>
-     </item>
-     <item>
-       <attribute name="label" translatable="yes">_Toggle button frame</attribute>
-       <attribute name="action">win.button-frame</attribute>
-     </item>
-     <section>
-       <attribute name="label" translatable="yes">Orientation</attribute>
-       <item>
-         <attribute name="label" translatable="yes">_Horizontal</attribute>
-         <attribute name="action">win.orientation</attribute>
-         <attribute name="target">Horizontal</attribute>
-       </item>
-       <item>
-         <attribute name="label" translatable="yes">_Vertical</attribute>
-         <attribute name="action">win.orientation</attribute>
-         <attribute name="target">Vertical</attribute>
-       </item>
-     </section>
-   </menu>
+    <item>
+      <attribute name="label" translatable="yes">_Close window</attribute>
+      <attribute name="action">window.close</attribute>
+    </item>
+    <item>
+      <attribute name="label" translatable="yes">_Toggle button frame</attribute>
+      <attribute name="action">win.button-frame</attribute>
+    </item>
+    <section>
+      <attribute name="label" translatable="yes">Orientation</attribute>
+      <item>
+        <attribute name="label" translatable="yes">_Horizontal</attribute>
+        <attribute name="action">win.orientation</attribute>
+        <attribute name="target">Horizontal</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Vertical</attribute>
+        <attribute name="action">win.orientation</attribute>
+        <attribute name="target">Vertical</attribute>
+      </item>
+    </section>
+  </menu>
   <template class="KelpiePlannerWindow" parent="GtkApplicationWindow">
     <property name="title">Kelpie Flight Planner for FlightGear</property>
     <property name="default-height">500</property>
-    <property name="default-width">650</property>
-      <child type="titlebar">
+    <property name="default-width">800</property>
+    <child type="titlebar">
       <object class="GtkHeaderBar">
-        <child type ="end">
+        <child type="end">
           <object class="GtkMenuButton">
             <property name="icon-name">open-menu-symbolic</property>
             <property name="menu-model">main-menu</property>
@@ -85,7 +85,7 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="orientation">horizontal</property>
-            <property name="position">500</property>
+            <!--            <property name="position">500</property>-->
             <property name="height-request">480</property>
             <child>
               <object class="GtkPaned" id="Pane1H">
@@ -93,25 +93,76 @@
                 <property name="can-focus">True</property>
                 <property name="orientation">vertical</property>
                 <property name="position">300</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkButton" id="button">
-                    <property name="label">Press me!</property>
-                    <property name="margin-top">12</property>
-                    <property name="margin-bottom">12</property>
-                    <property name="margin-start">12</property>
-                    <property name="margin-end">12</property>
+                  <object class="GtkBox">
+                    <property name="width-request">400</property>
+                    <property name="vexpand">true</property>
+                    <property name="hexpand">true</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkButton" id="button">
+                        <property name="label">Press me!</property>
+                        <property name="margin-top">12</property>
+                        <property name="margin-bottom">12</property>
+                        <property name="margin-start">12</property>
+                        <property name="margin-end">12</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>
-                  <object class="GtkLabel">
-                    <property name="label" translatable="yes">Search area</property>
+                  <object class="GtkBox">
+                    <property name="vexpand">true</property>
+                    <property name="hexpand">true</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <object class="GtkNotebook">
+                        <property name="vexpand">true</property>
+                        <property name="hexpand">true</property>
+                        <child>
+                          <object class="AirportView" id="airport_view">
+                          </object>
+                        </child>
+                        <child type="tab">
+                          <object class="GtkLabel" id="tab-airports">
+                            <property name="label" translatable="yes">Airports</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkPaned">
+                          </object>
+                        </child>
+                        <child type="tab">
+                          <object class="GtkLabel" id="tab-navaids">
+                            <property name="label" translatable="yes">Navaids</property>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkPaned">
+                          </object>
+                        </child>
+                        <child type="tab">
+                          <object class="GtkLabel" id="tab-fixes">
+                            <property name="label" translatable="yes">Fixes</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
             </child>
             <child>
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">Maps &amp; Stuff</property>
+              <object class="GtkBox">
+                <property name="width-request">300</property>
+                <property name="vexpand">True</property>
+                <property name="hexpand">True</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Maps &amp; Stuff</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

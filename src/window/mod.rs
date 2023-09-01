@@ -1,4 +1,5 @@
 mod imp;
+mod airport_view;
 
 use glib::Object;
 use gtk::{gio, glib, Application};

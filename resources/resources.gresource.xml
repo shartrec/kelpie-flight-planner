@@ -2,5 +2,6 @@
 <gresources>
   <gresource prefix="/com/shartrec/kelpie_planner/">
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">airport_view.ui</file>
   </gresource>
 </gresources>

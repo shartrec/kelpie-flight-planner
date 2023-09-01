@@ -124,7 +124,7 @@ impl Airport {
     }
 
     pub fn calc_airport_extent(&self) -> [f64; 4] {
-        // ... Calculate airport extent
+        // ... Calculate airport_pane extent
         // Return values as an array
         [0.0, 0.0, 0.0, 0.0]
     }
