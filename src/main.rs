@@ -1,18 +1,19 @@
+use gtk::{Application, gio, glib};
+use gtk::prelude::*;
+use simplelog::*;
+
+use window::Window;
+
 mod earth;
-mod events;
+mod event;
 mod model;
 mod preference;
+mod planner;
 mod util;
 mod window;
 
-use simplelog::*;
-use std::thread;
-
-use gtk::prelude::*;
-use gtk::{gio, glib, Application};
-use window::Window;
-
 const APP_ID: &str = "com.shartrec.KelpiePlanner";
+
 
 fn main() -> glib::ExitCode {
     init_logger();
@@ -26,12 +27,6 @@ fn main() -> glib::ExitCode {
 
     // Connect to "activate" signal of `app`
     app.connect_activate(build_ui);
-
-    app.connect_startup(|_app| {
-        thread::spawn(|| {
-            crate::earth::initialise();
-        });
-    });
 
     // Run the application
     app.run()
@@ -50,8 +45,7 @@ fn init_logger() {
             Config::default(),
             std::fs::File::create("kelpie-planner.log").unwrap(),
         ),
-    ])
-    .expect("Unable to initiate logger.");
+    ]).expect("Unable to initiate logger.");
 }
 
 fn build_ui(app: &Application) {

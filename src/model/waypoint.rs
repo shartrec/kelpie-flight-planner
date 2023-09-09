@@ -113,7 +113,7 @@ impl Waypoint for SimpleWaypoint {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FixWaypoint {
     fix: Fix,
     elevation: f64,

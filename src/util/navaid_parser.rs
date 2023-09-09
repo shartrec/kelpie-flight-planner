@@ -9,7 +9,7 @@ pub struct NavaidParserFG {}
 impl NavaidParserFG {
     pub fn load_navaids(
         &mut self,
-        navaids: &mut Vec<Navaid>,
+        navaids: &mut Vec<Box<Navaid>>,
         reader: &mut BufReader<File>,
     ) -> Result<(), String> {
         let mut buf = String::new();
@@ -96,7 +96,7 @@ impl NavaidParserFG {
                         mag_var.to_string(),
                         name.to_string(),
                     );
-                    navaids.push(navaid);
+                    navaids.push(Box::new(navaid));
                 }
             }
         }
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut navaids: Vec<Navaid> = Vec::new();
+        let mut navaids: Vec<Box<Navaid>> = Vec::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test/navaids.dat");

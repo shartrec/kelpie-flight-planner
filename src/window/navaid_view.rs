@@ -3,12 +3,12 @@
  */
 use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use regex::RegexBuilder;
 
 mod imp {
     use glib::subclass::InitializingObject;
     use gtk::{Button, Entry};
     use gtk::glib::clone;
-    use regex::RegexBuilder;
 
     use crate::earth;
     use crate::model::location::Location;
@@ -16,25 +16,25 @@ mod imp {
     use super::*;
 
     #[derive(Default, CompositeTemplate)]
-    #[template(resource = "/com/shartrec/kelpie_planner/airport_view.ui")]
-    pub struct AirportView {
+    #[template(resource = "/com/shartrec/kelpie_planner/navaid_view.ui")]
+    pub struct NavaidView {
         #[template_child]
-        pub airport_list: TemplateChild<TreeView>,
+        pub navaid_list: TemplateChild<TreeView>,
         #[template_child]
-        pub airport_search_name: TemplateChild<Entry>,
+        pub navaid_search_name: TemplateChild<Entry>,
         #[template_child]
-        pub airport_search: TemplateChild<Button>,
+        pub navaid_search: TemplateChild<Button>,
     }
 
-    impl AirportView {
+    impl NavaidView {
         pub fn initialise(&self) -> () {}
 
-        pub fn airports_loaded(&self) {
-            self.airport_search.set_sensitive(true);
+        pub fn navaids_loaded(&self) {
+            self.navaid_search.set_sensitive(true);
         }
 
         pub fn search(&self) {
-            let term = self.airport_search_name.text();
+            let term = self.navaid_search_name.text();
             let sterm = term.as_str();
             let regex = RegexBuilder::new(sterm)
                 .case_insensitive(true)
@@ -42,22 +42,22 @@ mod imp {
 
             match regex {
                 Ok(r) => {
-                    let airports = earth::get_earth_model().get_airports().read().unwrap();
-                    let searh_result = airports.iter().filter(move |a| {
+                    let navaids = earth::get_earth_model().get_navaids().read().unwrap();
+                    let searh_result = navaids.iter().filter(move |a| {
                         a.get_id().eq_ignore_ascii_case(sterm) || r.is_match(a.get_name().as_str())
                     });
                     let store = ListStore::new(&[String::static_type(), String::static_type(), f64::static_type(), f64::static_type(), f64::static_type()]);
-                    for airport in searh_result {
+                    for navaid in searh_result {
                         store.insert_with_values(
                             None, &[
-                                (0, &airport.get_id()),
-                                (1, &airport.get_name()),
-                                (2, &airport.get_lat()),
-                                (3, &airport.get_long()),
-                                (4, &airport.get_elevation(),
+                                (0, &navaid.get_id()),
+                                (1, &navaid.get_name()),
+                                (2, &navaid.get_lat()),
+                                (3, &navaid.get_long()),
+                                (4, &navaid.get_elevation(),
                                 )]);
                     }
-                    self.airport_list.set_model(Some(&store));
+                    self.navaid_list.set_model(Some(&store));
                 }
                 Err(_) => (),
             }
@@ -66,9 +66,9 @@ mod imp {
 
 
     #[glib::object_subclass]
-    impl ObjectSubclass for AirportView {
-        const NAME: &'static str = "AirportView";
-        type Type = super::AirportView;
+    impl ObjectSubclass for NavaidView {
+        const NAME: &'static str = "NavaidView";
+        type Type = super::NavaidView;
         type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
@@ -81,36 +81,36 @@ mod imp {
         }
     }
 
-    impl ObjectImpl for AirportView {
+    impl ObjectImpl for NavaidView {
         fn constructed(&self) {
             self.parent_constructed();
             self.initialise();
 
-            self.airport_search.connect_clicked(
+            self.navaid_search.connect_clicked(
                 clone!(@weak self as window => move |search| {
                 window.search();
             }));
-            self.airport_search_name.connect_activate(
+            self.navaid_search_name.connect_activate(
                 clone!(@weak self as window => move |search| {
                 window.search();
             }));
         }
     }
 
-    impl WidgetImpl for AirportView {}
+    impl WidgetImpl for NavaidView {}
 }
 
 glib::wrapper! {
-    pub struct AirportView(ObjectSubclass<imp::AirportView>) @extends gtk::Widget;
+    pub struct NavaidView(ObjectSubclass<imp::NavaidView>) @extends gtk::Widget;
 }
 
-impl AirportView {
+impl NavaidView {
     pub fn new() -> Self {
-        glib::Object::new::<AirportView>()
+        glib::Object::new::<NavaidView>()
     }
 }
 
-impl Default for AirportView {
+impl Default for NavaidView {
     fn default() -> Self {
         Self::new()
     }

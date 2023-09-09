@@ -1,19 +1,25 @@
+use std::thread;
+
 use glib::subclass::InitializingObject;
+use gtk::{Button, CompositeTemplate, glib};
+use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, Button, CompositeTemplate, ColumnView, ListStore, SelectionModel, SelectionMode, TreeView};
 
-use crate::events::{Event, Subscriber};
+use crate::event::Event;
 use crate::window::airport_view::AirportView;
+use crate::window::navaid_view::NavaidView;
 
 // Object holding the state
 #[derive(CompositeTemplate, Default)]
 #[template(resource = "/com/shartrec/kelpie_planner/window.ui")]
 pub struct Window {
     #[template_child]
+    pub airport_view: TemplateChild<AirportView>,
+    #[template_child]
     pub button: TemplateChild<Button>,
     #[template_child]
-    pub airport_view: TemplateChild<AirportView>,
+    pub navaid_view: TemplateChild<NavaidView>,
 }
 
 // The central trait for subclassing a GObject
@@ -35,19 +41,36 @@ impl ObjectSubclass for Window {
 
 // Trait shared by all GObjects
 impl ObjectImpl for Window {
+
     fn constructed(&self) {
         // Call "constructed" on parent
         self.parent_constructed();
 
+
+        //todo Remove this
         // Connect to "clicked" signal of `button`
         self.button.connect_clicked(move |button| {
             // Set the label to "Hello World!" after the button has been clicked on
             button.set_label("Hello World!");
         });
 
-        subscribe(Event::AirportsLoaded, do_airports_loaded);
-        subscribe(Event::NavaidsLoaded, do_navaids_loaded);
-        subscribe(Event::FixesLoaded, do_fixes_loaded);
+        let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+        let transmitter = tx.clone();
+
+        thread::spawn(move || {
+            crate::earth::initialise(transmitter);
+        });
+
+        let airport_view = Box::new(self.airport_view.clone());
+        let navaid_view = Box::new(self.navaid_view.clone());
+        rx.attach(None, move |ev: Event| {
+            match ev {
+                Event::AirportsLoaded => airport_view.imp().airports_loaded(),
+                Event::NavaidsLoaded => navaid_view.imp().navaids_loaded(),
+                _ => (),
+            }
+            glib::source::Continue(true)
+        });
     }
 
 }
@@ -63,41 +86,3 @@ impl WindowImpl for Window {}
 
 // Trait shared by all application windows
 impl ApplicationWindowImpl for Window {}
-
-fn subscribe(event: Event, listener: Subscriber) {
-    match crate::events::get_publisher().write() {
-        Ok(p) => p.subscribe(event, listener),
-        Err(_) => (),
-    }
-}
-
-fn do_airports_loaded() {
-    println!(
-        "We now have {} airports",
-        crate::earth::get_earth_model()
-            .get_airports()
-            .read()
-            .unwrap()
-            .len()
-    );
-}
-fn do_navaids_loaded() {
-    println!(
-        "We now have {} navaids",
-        crate::earth::get_earth_model()
-            .get_navaids()
-            .read()
-            .unwrap()
-            .len()
-    );
-}
-fn do_fixes_loaded() {
-    println!(
-        "We now have {} fixes",
-        crate::earth::get_earth_model()
-            .get_fixes()
-            .read()
-            .unwrap()
-            .len()
-    );
-}

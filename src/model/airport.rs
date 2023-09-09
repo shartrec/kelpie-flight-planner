@@ -216,9 +216,7 @@ impl Location for Airport {
         self.coordinate.clone()
     }
 
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
+    fn get_name(&self) -> String {self.name.clone()}
 }
 
 #[derive(Clone)]

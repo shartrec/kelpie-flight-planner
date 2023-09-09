@@ -84,7 +84,7 @@ impl Coordinate {
     }
 
     pub fn get_longitude_as_string(&self) -> String {
-        let formatter = LatLongFormat::lat_format();
+        let formatter = LatLongFormat::long_format();
         formatter.format(self.longitude)
     }
 }

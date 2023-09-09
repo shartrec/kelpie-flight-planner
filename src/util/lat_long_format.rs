@@ -44,14 +44,14 @@ impl LatLongFormat {
         }
 
         buff.push_str(&format!(
-            "{:02}\u{00b0}{:02}\"{:02}\'{}",
+            "{:02}\u{00b0}{:02}\"{:02.0}\'{}",
             deg, min, sec, bearing
         ));
     }
 
     fn format_absolute(&self, number: f64, bearing: char) -> String {
         let mut buffer = String::new();
-        self.dec_to_degree(&mut buffer, number, String::from(bearing).as_str());
+        self.dec_to_degree(&mut buffer, number.abs(), String::from(bearing).as_str());
         buffer
     }
 
@@ -61,7 +61,7 @@ impl LatLongFormat {
             if number > 0.0 {
                 self.pos_token
             } else {
-                self.pos_token
+                self.neg_token
             },
         )
     }

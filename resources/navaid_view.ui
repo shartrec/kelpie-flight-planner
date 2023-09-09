@@ -4,7 +4,7 @@
 
 <interface>
 
-  <template class="AirportView" parent="GtkWidget">
+  <template class="NavaidView" parent="GtkWidget">
     <property name="layout-manager">
       <object class="GtkBoxLayout">
         <property name="orientation">vertical</property>
@@ -23,7 +23,7 @@
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
             <child>
-              <object class="GtkTreeView" id="airport_list">
+              <object class="GtkTreeView" id="navaid_list">
                 <property name="vexpand">true</property>
                 <property name="hexpand">true</property>
                 <child>
@@ -96,7 +96,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="airport_search_name">
+              <object class="GtkEntry" id="navaid_search_name">
                 <property name="max-length">20</property>
                 <property name="height-request">1</property>
                 <property name="vexpand">false</property>
@@ -104,7 +104,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkButton" id="airport_search">
+              <object class="GtkButton" id="navaid_search">
                 <property name="label">Search</property>
                 <property name="sensitive">false</property>
                 <property name="vexpand">false</property>

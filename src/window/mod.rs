@@ -1,8 +1,9 @@
-mod imp;
-mod airport_view;
-
 use glib::Object;
-use gtk::{gio, glib, Application};
+use gtk::{Application, gio, glib};
+
+pub mod imp;
+mod airport_view;
+mod navaid_view;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)

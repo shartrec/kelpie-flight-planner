@@ -130,7 +130,7 @@
                           </object>
                         </child>
                         <child>
-                          <object class="GtkPaned">
+                          <object class="NavaidView" id="navaid_view">
                           </object>
                         </child>
                         <child type="tab">

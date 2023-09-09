@@ -7,7 +7,7 @@ pub struct FixParserFG {}
 impl FixParserFG {
     pub fn load_fixes(
         &mut self,
-        fixes: &mut Vec<Fix>,
+        fixes: &mut Vec<Box<Fix>>,
         reader: &mut BufReader<File>,
     ) -> Result<(), String> {
         let mut buf = String::new();
@@ -41,7 +41,7 @@ impl FixParserFG {
                     return Err(err_msg);
                 }
             }
-            let is_empty = &buf.trim().is_empty();
+            let is_empty = buf.trim().is_empty();
 
             if !is_empty && !buf.starts_with("//") && !buf.starts_with("99") {
                 let mut tokenizer = buf.split_whitespace();
@@ -58,7 +58,7 @@ impl FixParserFG {
                 let id = tokenizer.next().unwrap_or("");
 
                 let fix = Fix::new(id.to_string(), latitude, longitude);
-                fixes.push(fix);
+                fixes.push(Box::new(fix));
             }
         }
     }
@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut fixs: Vec<Fix> = Vec::new();
+        let mut fixs: Vec<Box<Fix>> = Vec::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test/fixes.dat");

@@ -1,7 +1,7 @@
 use super::location::Location;
 use crate::earth::coordinate::Coordinate;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Fix {
     id: String,
     coordinate: Coordinate,

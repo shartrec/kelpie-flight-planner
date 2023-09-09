@@ -24,7 +24,7 @@ impl AirportParserFG850 {
 
     pub fn load_airports(
         &mut self,
-        airports: &mut Vec<Airport>,
+        airports: &mut Vec<Box<Airport>>,
         reader: &mut BufReader<File>,
     ) -> Result<(), String> {
         // Skip header rows
@@ -76,10 +76,11 @@ impl AirportParserFG850 {
                     let id = tokenizer.next().unwrap_or("????");
                     // Store the offset so we can load the runways later
                     let mut name = String::new();
-                    let _ = tokenizer.take_while(|s| {
-                        name.push_str(s);
-                        false
-                    });
+                    name.push_str(tokenizer.next().unwrap_or(""));
+                    for token in tokenizer.into_iter() {
+                        name.push_str(&" ");
+                        name.push_str(token);
+                    }
                     self.runway_offsets.insert(id.to_string(), offset);
 
                     // Now read runways to get a latitude and longitude
@@ -186,7 +187,7 @@ impl AirportParserFG850 {
                         name,
                         max_length as i64,
                     );
-                    airports.push(airport);
+                    airports.push(Box::new(airport));
                     buf.clear();
                     buf.push_str(buf2.as_str());
                 } else {
@@ -225,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut airports: Vec<Airport> = Vec::new();
+        let mut airports: Vec<Box<Airport>> = Vec::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test/airports.dat");
