@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use crate::earth::coordinate::Coordinate;
 use crate::model::airport::{Airport, AirportType};
 use crate::model::runway::Runway;
@@ -60,9 +61,9 @@ impl AirportParserFG850 {
                     let airport_type = AirportType::type_for(r_type);
                     let elevation = tokenizer
                         .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
+                        .unwrap_or("0")
+                        .parse::<i32>()
+                        .unwrap_or(0);
                     let tower = tokenizer
                         .next()
                         .unwrap_or("0.0")
@@ -85,7 +86,7 @@ impl AirportParserFG850 {
 
                     // Now read runways to get a latitude and longitude
                     // and find the longest
-                    let mut max_length = 0.0;
+                    let mut max_length = 0;
 
                     let mut latitude = 0.0;
                     let mut longitude = 0.0;
@@ -158,7 +159,7 @@ impl AirportParserFG850 {
 
                                 let c1 = Coordinate::new(r_lat, r_long);
                                 let c2 = Coordinate::new(r1_lat, r1_long);
-                                let r_length = c1.distance_to(&c2) * 6076.0;
+                                let r_length = c1.distance_to(&c2) * 6076;
                                 if r_length > max_length {
                                     max_length = r_length;
                                     latitude = (r_lat + r1_lat) / 2.0;

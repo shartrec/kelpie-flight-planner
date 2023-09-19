@@ -36,31 +36,46 @@ impl Aircraft {
         &self.name
     }
 
-    pub fn get_cruise_speed(&self) -> i32 {
-        self.cruise_speed
+    pub fn get_cruise_speed(&self) -> &i32 {
+        &self.cruise_speed
     }
 
-    pub fn get_cruise_altitude(&self) -> i32 {
-        self.cruise_altitude
+    pub fn get_cruise_altitude(&self) -> &i32 {
+        &self.cruise_altitude
     }
 
-    pub fn get_climb_speed(&self) -> i32 {
-        self.climb_speed
+    pub fn get_climb_speed(&self) -> &i32 {
+        &self.climb_speed
     }
 
-    pub fn get_climb_rate(&self) -> i32 {
-        self.climb_rate
+    pub fn get_climb_rate(&self) -> &i32 {
+        &self.climb_rate
     }
 
-    pub fn get_sink_speed(&self) -> i32 {
-        self.sink_speed
+    pub fn get_sink_speed(&self) -> &i32 {
+        &self.sink_speed
     }
 
-    pub fn get_sink_rate(&self) -> i32 {
-        self.sink_rate
+    pub fn get_sink_rate(&self) -> &i32 {
+        &self.sink_rate
     }
 
-    pub fn is_default(&self) -> bool {
-        self.is_default
+    pub fn is_default(&self) -> &bool {
+        &self.is_default
+    }
+}
+
+impl Default for Aircraft {
+    fn default() -> Self {
+        Self {
+            name: "".to_string(),
+            cruise_speed: 140,
+            cruise_altitude: 7000,
+            climb_speed: 120,
+            climb_rate: 500,
+            sink_speed: 100,
+            sink_rate: 500,
+            is_default: false
+        }
     }
 }

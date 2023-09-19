@@ -27,7 +27,7 @@ impl SpeedFormat {
         }
     }
 
-    pub fn format(&self, speed: f64) -> String {
+    pub fn format(&self, speed: &f64) -> String {
         let converted_speed = speed * self.conversion_factor;
 
         format!("{:.0}{}", converted_speed, self.speed_unit)
@@ -40,10 +40,10 @@ mod tests {
 
     #[test]
     fn test_fmt_speed() {
-        assert_eq!(SpeedFormat::new("Nm").format(34.5), "34Kts");
-        assert_eq!(SpeedFormat::new("Nm").format(34.0), "34Kts");
-        assert_eq!(SpeedFormat::new("Nm").format(34.9), "35Kts");
-        assert_eq!(SpeedFormat::new("Mi").format(34.5), "40Mph");
-        assert_eq!(SpeedFormat::new("Km").format(34.5), "64Kph");
+        assert_eq!(SpeedFormat::new("Nm").format(&34.5), "34Kts");
+        assert_eq!(SpeedFormat::new("Nm").format(&34.0), "34Kts");
+        assert_eq!(SpeedFormat::new("Nm").format(&34.9), "35Kts");
+        assert_eq!(SpeedFormat::new("Mi").format(&34.5), "40Mph");
+        assert_eq!(SpeedFormat::new("Km").format(&34.5), "64Kph");
     }
 }

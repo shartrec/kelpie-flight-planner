@@ -5,13 +5,18 @@ use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
+    use std::sync::{Arc, RwLock};
+    use std::ops::Deref;
     use glib::subclass::InitializingObject;
-    use gtk::{Button, Entry};
+    use gtk::{Button, Entry, TreeModel};
     use gtk::glib::clone;
     use regex::RegexBuilder;
 
     use crate::earth;
     use crate::model::location::Location;
+    use crate::model::plan::Plan;
+    use crate::window::plan_view::PlanView;
+    use crate::window::Window;
 
     use super::*;
 
@@ -25,6 +30,7 @@ mod imp {
         #[template_child]
         pub airport_search: TemplateChild<Button>,
     }
+
 
     impl AirportView {
         pub fn initialise(&self) -> () {}
@@ -46,16 +52,16 @@ mod imp {
                     let searh_result = airports.iter().filter(move |a| {
                         a.get_id().eq_ignore_ascii_case(sterm) || r.is_match(a.get_name().as_str())
                     });
-                    let store = ListStore::new(&[String::static_type(), String::static_type(), f64::static_type(), f64::static_type(), f64::static_type()]);
+                    let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type(), i32::static_type()]);
                     for airport in searh_result {
                         store.insert_with_values(
                             None, &[
                                 (0, &airport.get_id()),
                                 (1, &airport.get_name()),
-                                (2, &airport.get_lat()),
-                                (3, &airport.get_long()),
-                                (4, &airport.get_elevation(),
-                                )]);
+                                (2, &airport.get_lat_as_string()),
+                                (3, &airport.get_long_as_string()),
+                                (4, &(airport.get_elevation() as i32))
+                            ]);
                     }
                     self.airport_list.set_model(Some(&store));
                 }
@@ -85,6 +91,32 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
             self.initialise();
+
+            self.airport_list.connect_row_activated(clone!(@weak self as view => move |list_view, position, col| {
+                let model = list_view.model().expect("The model has to exist.");
+                if let iter = model.iter(position) {
+                    let name = model.get::<String>(&iter.unwrap(), 0);
+                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
+                        match view.obj().root() {
+                            Some(r) => {
+                                let our_window = r.downcast::<Window>().unwrap();
+                                match our_window.imp().plan_stack.visible_child().and_downcast::<PlanView>() {
+                                    Some(plan_view) => {
+                                        // get the plan
+                                        let plan: Arc<RwLock<Plan>> = plan_view.imp().get_plan();
+                                        plan.write().expect("Could not get plan lock").add_airport(*airport);
+                                        plan_view.imp().plan_updated();
+                                        ()
+                                    },
+                                    None => (),
+                                }
+                                ()
+                            }
+                            None => (),
+                        }
+                   }
+                }
+            }));
 
             self.airport_search.connect_clicked(
                 clone!(@weak self as window => move |search| {

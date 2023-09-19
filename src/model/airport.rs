@@ -6,7 +6,7 @@ use crate::earth::FEET_PER_DEGREE;
 pub struct Airport {
     id: String,
     coordinate: Coordinate,
-    elevation: f64,
+    elevation: i32,
     control_tower: bool,
     runways: Option<Vec<Runway>>,
     show_default_buildings: bool,
@@ -21,7 +21,7 @@ impl Airport {
         id: String,
         latitude: f64,
         longitude: f64,
-        elevation: f64,
+        elevation: i32,
         airport_type: Option<AirportType>,
         control_tower: bool,
         show_default_buildings: bool,
@@ -188,7 +188,7 @@ impl Airport {
 }
 
 impl Location for Airport {
-    fn get_elevation(&self) -> f64 {
+    fn get_elevation(&self) -> i32 {
         self.elevation
     }
 

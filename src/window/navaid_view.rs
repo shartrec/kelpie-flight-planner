@@ -46,16 +46,16 @@ mod imp {
                     let searh_result = navaids.iter().filter(move |a| {
                         a.get_id().eq_ignore_ascii_case(sterm) || r.is_match(a.get_name().as_str())
                     });
-                    let store = ListStore::new(&[String::static_type(), String::static_type(), f64::static_type(), f64::static_type(), f64::static_type()]);
+                    let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type(), i32::static_type()]);
                     for navaid in searh_result {
                         store.insert_with_values(
                             None, &[
                                 (0, &navaid.get_id()),
                                 (1, &navaid.get_name()),
-                                (2, &navaid.get_lat()),
-                                (3, &navaid.get_long()),
-                                (4, &navaid.get_elevation(),
-                                )]);
+                                (2, &navaid.get_lat_as_string()),
+                                (3, &navaid.get_long_as_string()),
+                                (4, &(navaid.get_elevation()as i32))
+                            ]);
                     }
                     self.navaid_list.set_model(Some(&store));
                 }

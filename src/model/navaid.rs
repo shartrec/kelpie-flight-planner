@@ -7,9 +7,9 @@ pub struct Navaid {
     type_: NavaidType,
     coordinate: Coordinate,
     name: String,
-    elevation: f64,
+    elevation: i32,
     freq: f64,
-    range: f64,
+    range: i32,
     mag_variation: String,
 }
 
@@ -19,9 +19,9 @@ impl Navaid {
         type_: NavaidType,
         latitude: f64,
         longitude: f64,
-        elevation: f64,
+        elevation: i32,
         freq: f64,
-        range: f64,
+        range: i32,
         mag_variation: String,
         name: String,
     ) -> Self {
@@ -45,7 +45,7 @@ impl Navaid {
         self.freq
     }
 
-    pub fn get_range(&self) -> f64 {
+    pub fn get_range(&self) -> i32 {
         self.range
     }
 
@@ -55,7 +55,7 @@ impl Navaid {
 }
 
 impl Location for Navaid {
-    fn get_elevation(&self) -> f64 {
+    fn get_elevation(&self) -> i32 {
         self.elevation
     }
 

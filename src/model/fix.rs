@@ -17,8 +17,8 @@ impl Fix {
 }
 
 impl Location for Fix {
-    fn get_elevation(&self) -> f64 {
-        0.0
+    fn get_elevation(&self) -> i32 {
+        0
     }
 
     fn get_id(&self) -> String {

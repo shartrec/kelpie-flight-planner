@@ -1,4 +1,13 @@
-use std::sync::{Arc, RwLock};
+use std::cell::{Cell, Ref, RefCell};
+use std::ops::Deref;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
+use gtk::glib::PropertySet;
+use crate::earth::coordinate::Coordinate;
+use crate::model::waypoint::WaypointType;
+use crate::preference::{USE_MAGNETIC_HEADINGS, UNITS};
+use crate::util::distance_format::DistanceFormat;
+use crate::util::hour_format::HourFormat;
+use crate::util::speed_format::SpeedFormat;
 
 use super::aircraft::Aircraft;
 use super::airport::Airport;
@@ -6,84 +15,91 @@ use super::location::Location;
 use super::sector::Sector;
 use super::waypoint::{self, AirportWaypoint, Waypoint};
 
-struct Plan {
-    dirty: bool,
-    listeners: Arc<RwLock<Vec<Box<dyn IPlanListener>>>>,
-    path: Option<String>,
-    sectors: Arc<RwLock<Vec<Box<Sector>>>>,
-    aircraft: Option<Aircraft>,
-    max_altitude: Option<i32>,
+#[derive(Default)]
+pub struct Plan {
+    dirty: RefCell<bool>,
+    path: RefCell<Option<String>>,
+    sectors: RefCell<Vec<RefCell<Sector>>>,
+    aircraft: RefCell<Option<Aircraft>>,
+    max_altitude: RefCell<i32>,
 }
 
 impl Plan {
     pub fn new() -> Self {
         Self {
-            dirty: false,
-            listeners: Arc::new(RwLock::new(Vec::new())),
-            path: None,
-            sectors: Arc::new(RwLock::new(Vec::with_capacity(2))),
-            aircraft: None,
-            max_altitude: None,
+            dirty: RefCell::new(false),
+            path: RefCell::new(None),
+            sectors: RefCell::new(Vec::with_capacity(2)),
+            aircraft: RefCell::new(None),
+            max_altitude: RefCell::new(0i32),
         }
     }
 
-    pub fn add_plan_listener(&mut self, l: Box<dyn IPlanListener>) {
-        self.listeners.write().unwrap().push(l);
-    }
-
     pub fn add_sector(&mut self, start: Option<&Airport>, end: Option<&Airport>) {
-        let mut sector = Sector::new(start, end);
-        self.sectors.write().unwrap().push(Box::new(sector));
-        self.update();
+        let mut sector = Sector::new();
+        match start {
+            Some(s) => sector.set_start(s),
+            None => ()
+        }
+        match end {
+            Some(e) => sector.set_start(e),
+            None => ()
+        }
+        self.sectors.borrow_mut().push(RefCell::new(sector));
     }
 
-    pub fn add_sector_at(&mut self, pos: i32, start: Option<&Airport>, end: Option<&Airport>) {
-        let mut sector = Sector::new(start, end);
-        self.sectors
-            .write()
-            .unwrap()
-            .insert(pos as usize, Box::new(sector));
-        self.update();
+    pub fn add_sector_at(&mut self, pos: usize, start: Option<&Airport>, end: Option<&Airport>) {
+        let mut sector = Sector::new();
+        match start {
+            Some(s) => sector.set_start(s),
+            None => ()
+        }
+        match end {
+            Some(e) => sector.set_start(e),
+            None => ()
+        }
+        self.sectors.borrow_mut().insert(pos as usize, RefCell::new(sector));
     }
 
-    pub fn remove_sector_at(&mut self, pos: i32) {
-        self.sectors.write().unwrap().remove(pos as usize);
-        self.update();
+    pub fn remove_sector_at(&mut self, pos: usize) {
+        self.sectors.borrow_mut().remove(pos);
     }
 
-    pub fn get_aircraft(&self) -> Option<Aircraft> {
-        self.aircraft.clone()
+    pub fn get_sectors(&self) -> Ref<Vec<RefCell<Sector>>> {
+        self.sectors.borrow()
     }
 
-    pub fn set_aircraft(&mut self, aircraft: Option<Aircraft>) {
-        self.aircraft = aircraft;
-        self.update();
+    pub fn get_aircraft(&self) -> Ref<Option<Aircraft>> {
+        self.aircraft.borrow()
     }
 
-    pub fn set_max_altitude(&mut self, max_altitude: Option<i32>) {
-        self.max_altitude = max_altitude;
+    pub fn set_aircraft(&mut self, aircraft: &Option<Aircraft>) {
+        self.aircraft.replace(aircraft.clone());
     }
 
-    pub fn get_max_altitude(&self) -> Option<i32> {
-        self.max_altitude
+    pub fn set_max_altitude(&mut self, max_altitude: i32) {
+        self.max_altitude.replace(max_altitude.clone());
+    }
+
+    pub fn get_max_altitude(&self) -> i32
+    {
+        self.max_altitude.borrow().clone()
     }
 
     pub fn get_plan_altitude(&self) -> i32 {
-        match self.max_altitude {
-            Some(a) => a,
-            None => match self.get_aircraft() {
-                Some(a) => a.get_cruise_altitude(),
+        match self.max_altitude.borrow().clone() {
+            0 => match self.aircraft.borrow().deref() {
+                Some(a) => a.get_cruise_altitude().clone(),
                 None => 0,
             },
+            max => max
         }
     }
 
     pub fn get_duration(&self) -> f64 {
-        self.sectors
-            .read()
-            .unwrap()
+        self.sectors.borrow()
             .iter()
-            .map(|s| s.get_duration())
+            .map(|s| s.borrow().get_duration())
             .sum()
     }
 
@@ -92,21 +108,21 @@ impl Plan {
     //	persistent storage.
     //	@return
     pub fn is_dirty(&self) -> bool {
-        self.dirty
+        self.dirty.borrow().clone()
     }
 
     fn get_name(&self) -> String {
-        if self.path.is_none() {
-            let sectors_lock = self.sectors.read().unwrap();
-            if sectors_lock.len() > 0 {
-                let airport_start = sectors_lock[0].get_start().map(|w| w.get_airport());
-                let start = airport_start.map(|a| a.get_id()).unwrap_or(String::new());
-
-                let airport_end = self.sectors.read().unwrap()[0]
-                    .get_end()
-                    .map(|w| w.get_airport());
-                let end = airport_end.map(|a| a.get_id()).unwrap_or(String::new());
-
+        if self.path.borrow().is_none() {
+            let mut start: String = "".to_string();
+            let mut end: String = "".to_string();
+            let sectors = self.sectors.borrow();
+            if sectors.len() > 0 {
+                if let Some(airport_start) = sectors[0].borrow().get_start() {
+                    start = airport_start.get_id();
+                }
+                if let Some(airport_end) = sectors[0].borrow().get_end() {
+                    end = airport_end.get_id();
+                }
                 if !start.is_empty() || !end.is_empty() {
                     return format!("{}-{}.fpl", start, end);
                 }
@@ -114,7 +130,7 @@ impl Plan {
             }
         }
 
-        let f = std::path::PathBuf::from(&self.path.as_ref().unwrap());
+        let f = std::path::PathBuf::from(&self.path.borrow().clone().unwrap_or("".to_string()));
         f.file_name().unwrap().to_string_lossy().to_string()
     }
 
@@ -123,49 +139,45 @@ impl Plan {
     //	 @param loc
     //	 @return previous location
 
-    pub fn get_previous_location(&self, wp: Box<dyn Waypoint>) -> Option<Box<dyn Waypoint>> {
-        let sectors_lock = self.sectors.read().unwrap();
-        for s in sectors_lock.as_slice() {
-            let wp_comp = wp.copy();
-            let start_wp = s.get_start();
-            match start_wp {
-                Some(awp) => {
-                    if compare_wp(Box::new(awp), wp_comp) {
-                        return None;
-                    }
+    pub fn get_previous_location(&self, wp: &dyn Waypoint) -> Option<Coordinate> {
+        for s in self.get_sectors().deref() {
+            let wp_comp = wp.clone();
+            let s_borrowed = s.borrow();
+            if let Some(start_wp) = s_borrowed.get_start() {
+                if compare_wp(&start_wp, wp_comp) {
+                    return None;
                 }
-                _ => (),
             }
-            let wp_comp = wp.copy();
-            let end_wp = s.get_end();
-            match end_wp {
-                Some(awp) => {
-                    if compare_wp(Box::new(awp), wp_comp) {
-                        if s.get_waypoint_count() == 0 {
-                            let start_wp = s.get_start();
-                            match start_wp {
-                                Some(awp) => return Some(Box::new(awp.clone())),
-                                _ => return None,
-                            }
-                        } else if s.get_waypoint_count() > 0 {
-                            return s.get_waypoint(s.get_waypoint_count() - 1);
-                        }
-                    }
-                }
-                _ => (),
-            }
-            for i in 0..s.get_waypoint_count() {
-                let awp = s.get_waypoint(i);
-                let wp_comp = wp.copy();
-                if compare_wp(awp.unwrap(), wp_comp) {
-                    if i == 0 {
-                        let start_wp = s.get_start();
-                        match start_wp {
-                            Some(awp) => return Some(Box::new(awp.clone())),
-                            _ => return None,
+            // let wp_comp = wp.clone();
+            if let Some(end_wp) = s_borrowed.get_end() {
+                if compare_wp(&end_wp, wp_comp) {
+                    if s_borrowed.get_waypoint_count() == 0 {
+                        if let Some(start_wp) = s_borrowed.get_start() {
+                            return Some(start_wp.get_loc().clone());
                         }
                     } else {
-                        return s.get_waypoint(i - 1);
+                        return s_borrowed.get_waypoint(s_borrowed.get_waypoint_count() - 1)
+                            .map(|wp| { wp.deref().get_loc().clone() });
+                    }
+                }
+            }
+
+            for i in 0..s_borrowed.get_waypoint_count() {
+                let wp_comp = wp.clone();
+                let awp = s_borrowed.get_waypoint(i);
+                match awp {
+                    None => (),
+                    Some(wpx) => {
+                        if compare_wp(wpx.deref(), wp_comp) {
+                            if i == 0 {
+                                if let Some(start_wp) = s_borrowed.get_start() {
+                                    return Some(start_wp.get_loc().clone());
+                                }
+                            } else {
+                                return s_borrowed.get_waypoint(i - 1)
+                                    .map(|wp| { wp.deref().get_loc().clone() });
+                            }
+                        }
                     }
                 }
             }
@@ -173,15 +185,158 @@ impl Plan {
         None
     }
 
-    fn update(&self) {}
+    pub fn add_airport(&self, airport: Airport) {
+        for mut s in self.sectors.borrow_mut().deref() {
+            if s.borrow().get_start().is_none() {
+                s.borrow_mut().set_start(&airport);
+                return;
+            }
+            if s.borrow().get_end().is_none() {
+                s.borrow_mut().set_end(&airport);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Get the heading from the previous waypoint to the specified.
+     * @param loc
+     * @return double Heading
+     */
+    pub fn get_leg_heading_to(&self, wp: &dyn Waypoint) -> f64 {
+        let pref = crate::preference::manager();
+
+        let mut heading = 0.0;
+
+        if let Some(prev) = self.get_previous_location(wp) {
+            heading = prev.bearing_to_deg(&wp.get_loc());
+            if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
+                todo!();
+                // convert to magnetic: This library returns POSITIVE for East variation, so we SUBTRACT it
+                // Geomagnetism
+                // magnetism = new
+                // Geomagnetism(loc.getLong(), loc.getLat(), loc.getElevation());
+                // heading -= magnetism.getDeclination();
+            }
+            if heading < 0.0 {
+                heading += 360.0;
+            }
+        }
+        heading
+    }
+
+    /**
+     * Get the distance from the previous waypoint to the specified one.
+     * @param loc
+     * @return double Distance
+     */
+    pub fn get_leg_distance_to(&self, wp: &dyn Waypoint) -> i32 {
+        match self.get_previous_location(wp) {
+            Some(prev) => prev.distance_to(&wp.get_loc()),
+            None => 0,
+        }
+    }
+
+    /**
+     * Get the distance from the previous waypoint to the specified one as a string.
+     * @param loc
+     * @return String Distance
+     */
+    pub fn get_leg_distance_to_as_string(&self, wp: &dyn Waypoint) -> String {
+        let pref = crate::preference::manager();
+        let units = pref.get::<String>(UNITS).unwrap_or("Nm".to_string());
+        let distance_format = DistanceFormat::new(&units);
+        let distance = &self.get_leg_distance_to(wp);
+        distance_format.format(distance)
+    }
+    fn get_time_to(&self, waypoint: &dyn Waypoint, climb: &i32, cruise: &i32, descend: &i32) -> f64 {
+        let speed = self.get_speed_to(waypoint, climb, cruise, descend);
+        if speed == 0 {
+            return 0.0;
+        }
+        let leg_distance = self.get_leg_distance_to(waypoint);
+        leg_distance as f64 / speed as f64
+    }
+
+    pub fn get_time_to_as_string(&self, waypoint: &dyn Waypoint, climb: &i32, cruise: &i32, descend: &i32) -> String {
+        let time_format = HourFormat::new();
+        let time = &self.get_time_to(waypoint, climb, cruise, descend);
+        time_format.format(time)
+    }
+
+    pub fn get_speed_to(&self, waypoint: &dyn Waypoint, climb: &i32, cruise: &i32, descend: &i32) -> i32 {
+        for s in self.get_sectors().deref() {
+            let mut speed = climb.clone();
+            let s_borrowed = s.borrow();
+            if let Some(start_wp) = s_borrowed.get_start() {
+                if compare_wp(&start_wp, waypoint) {
+                    return 0;
+                }
+            }
+            for wp in s_borrowed.deref().get_waypoints().read().expect("Can't get read lock on sectors").deref() {
+                if compare_wp(wp.deref(), waypoint) {
+                    return speed;
+                }
+                if wp.get_type() == WaypointType::TOC {
+                    speed = cruise.clone();
+                } else if wp.get_type() == WaypointType::BOD {
+                    speed = descend.clone();
+                }
+            }
+            if let Some(end_wp) = s_borrowed.get_end() {
+                if compare_wp(&end_wp, waypoint) {
+                    return descend.clone();
+                }
+            }
+        }
+        0
+    }
+    pub fn get_speed_to_as_string(&self, wp: &dyn Waypoint, climb: &i32, cruise: &i32, descend: &i32) -> String {
+        let pref = crate::preference::manager();
+        let units = pref.get::<String>(UNITS).unwrap_or("Nm".to_string());
+        let speed_format = SpeedFormat::new(&units);
+        let speed = self.get_speed_to(wp, climb, cruise, descend) as f64;
+        speed_format.format(&speed)
+    }
+
+    pub fn get_speed_at_waypoint(&self, waypoint: &dyn Waypoint) -> i32 {
+        for s in self.get_sectors().deref() {
+            let mut speed = match self.get_aircraft().deref() {
+                Some(a) => a.get_climb_speed().clone(),
+                None => 0,
+            };
+
+            let s_borrowed = s.borrow();
+            if let Some(start) = s.borrow().get_start() {
+                if compare_wp(&start, waypoint) {
+                    return 0;
+                }
+            } else {
+                for wp in s_borrowed.deref().get_waypoints().read().expect("Can't get read lock on sectors").deref() {
+                    if compare_wp(wp.deref(), waypoint) {
+                        return speed;
+                    }
+                    if wp.get_type() == WaypointType::TOC {
+                        speed = match self.get_aircraft().deref() {
+                            Some(a) => a.get_cruise_speed().clone(),
+                            None => 0,
+                        };
+                    } else if wp.get_type() == WaypointType::BOD {
+                        speed = match self.get_aircraft().deref() {
+                            Some(a) => a.get_sink_speed().clone(),
+                            None => 0,
+                        };
+                    }
+                }
+                return 0; // Should only be left with end airport
+            }
+        }
+        0
+    }
 }
 
-trait IPlanListener {
-    // Definition...
-}
-
-fn compare_wp(a: Box<dyn Waypoint>, b: Box<dyn Waypoint>) -> bool {
-    waypoint::eq(&a, &b)
+fn compare_wp(a: &dyn Waypoint, b: &dyn Waypoint) -> bool {
+    waypoint::eq(a.copy(), b.copy())
 }
 
 #[cfg(test)]

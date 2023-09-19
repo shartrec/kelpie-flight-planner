@@ -2,7 +2,10 @@
 <gresources>
   <gresource prefix="/com/shartrec/kelpie_planner/">
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">plan_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">airport_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">navaid_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">fix_view.ui</file>
+    <file compressed="true">style.css</file>
   </gresource>
 </gresources>

@@ -87,28 +87,29 @@
           </object>
         </child>
         <child>
-          <object class="GtkFlowBox">
+          <object class="GtkBox">
+            <property name="vexpand">false</property>
+            <property name="hexpand">true</property>
+            <property name="spacing">10</property>
+            <style>
+              <class name="search-box"/>
+            </style>
             <child>
               <object class="GtkLabel">
                 <property name="label" translatable="yes">Id or Name</property>
-                <property name="vexpand">false</property>
-                <property name="hexpand">false</property>
+                <property name="can-focus">false</property>
               </object>
             </child>
             <child>
               <object class="GtkEntry" id="airport_search_name">
                 <property name="max-length">20</property>
                 <property name="height-request">1</property>
-                <property name="vexpand">false</property>
-                <property name="hexpand">false</property>
               </object>
             </child>
             <child>
               <object class="GtkButton" id="airport_search">
                 <property name="label">Search</property>
                 <property name="sensitive">false</property>
-                <property name="vexpand">false</property>
-                <property name="hexpand">false</property>
               </object>
             </child>
           </object>

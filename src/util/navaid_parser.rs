@@ -64,26 +64,35 @@ impl NavaidParserFG {
 
                     let elevation = tokenizer
                         .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
+                        .unwrap_or("0")
+                        .parse::<i32>()
+                        .unwrap_or(0);
 
-                    let frequency = tokenizer
+                    let mut frequency = tokenizer
                         .next()
                         .unwrap_or("0.0")
                         .parse::<f64>()
                         .unwrap_or(0.0);
+
+                    if navaid_type.as_ref().unwrap_or(&NavaidType::NDB) == &NavaidType::VOR{
+                        frequency /= 100.;
+                    }
 
                     let range = tokenizer
                         .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
+                        .unwrap_or("0")
+                        .parse::<i32>()
+                        .unwrap_or(0);
 
                     let mag_var = tokenizer.next().unwrap_or("");
                     let id = tokenizer.next().unwrap_or("");
 
-                    let name = tokenizer.next().unwrap_or("");
+                    let mut name = String::new();
+                    name.push_str(tokenizer.next().unwrap_or(""));
+                    for token in tokenizer.into_iter() {
+                        name.push_str(&" ");
+                        name.push_str(token);
+                    }
 
                     let navaid = Navaid::new(
                         id.to_string(),

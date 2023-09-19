@@ -1,5 +1,9 @@
-use gtk::{Application, gio, glib};
+use gtk::{Application, CssProvider, gio, glib};
+use gtk::gdk::Display;
+use gtk::gio::{File, SimpleAction, SimpleActionGroup};
+use gtk::glib::{clone, closure_local, RustClosure, Variant};
 use gtk::prelude::*;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 use simplelog::*;
 
 use window::Window;
@@ -23,10 +27,19 @@ fn main() -> glib::ExitCode {
         .expect("Failed to register resources.");
 
     // Create a new application
-    let app = Application::builder().application_id(APP_ID).build();
+    let app = Application::builder()
+        .application_id(APP_ID)
+        .flags(gtk::gio::ApplicationFlags::HANDLES_OPEN)
+        .build();
+
+    app.connect_startup(|app| {
+        load_css();
+    });
 
     // Connect to "activate" signal of `app`
     app.connect_activate(build_ui);
+
+    app.connect_open(build_and_open);
 
     // Run the application
     app.run()
@@ -48,8 +61,59 @@ fn init_logger() {
     ]).expect("Unable to initiate logger.");
 }
 
+fn load_css() {
+    // Load the CSS file and add it to the provider
+    let provider = CssProvider::new();
+    provider.load_from_resource("/com/shartrec/kelpie_planner/style.css");
+
+    // Add the provider to the default screen
+    gtk::style_context_add_provider_for_display(
+        &Display::default().expect("Could not connect to a display."),
+        &provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+}
+
+fn connect_actions(app: &Application, window: &Window) {
+
+    let action = SimpleAction::new("new", None);
+    action.connect_activate(clone!(@weak window => move |action, parameter| {
+       let _ = &window.imp().new_plan();
+    }));
+    app.add_action(&action);
+
+    let action = SimpleAction::new("open", None);
+    action.connect_activate(move |action, parameter| {
+        println!("Open clicked");
+    });
+    app.add_action(&action);
+
+    let action = SimpleAction::new("save", None);
+    action.connect_activate(move |action, parameter| {
+        println!("Save clicked");
+    });
+    app.add_action(&action);
+
+    let action = SimpleAction::new("quit", None);
+    action.connect_activate(clone!(@weak app => move |action, parameter| {
+        app.quit()
+    }));
+    app.add_action(&action);
+}
+
 fn build_ui(app: &Application) {
     // Create new window and present it
     let window = Window::new(app);
+    connect_actions(app, &window);
+    window.imp().new_plan();
+    window.present();
+}
+
+fn build_and_open(app: &Application, files: &[File], name: &str) {
+    // Create new window and present it
+    // todo Load plan into window.
+    let window = Window::new(app);
+    connect_actions(app, &window);
+    window.imp().load_plan_from_files(files);
     window.present();
 }

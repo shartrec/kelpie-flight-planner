@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use super::{airport::Airport, fix::Fix, location::Location, navaid::Navaid};
 use crate::earth::coordinate::Coordinate;
 
@@ -5,21 +6,25 @@ pub trait Waypoint {
     fn get_id(&self) -> String;
     fn get_name(&self) -> String;
     fn get_type(&self) -> WaypointType;
-    fn get_elevation(&self) -> f64;
+    fn get_elevation(&self) -> i32;
     fn get_loc(&self) -> Coordinate;
     fn get_lat(&self) -> f64;
+    fn get_freq(&self) -> Option<f64> {
+        None
+    }
     fn get_lat_as_string(&self) -> String;
     fn get_long(&self) -> f64;
     fn get_long_as_string(&self) -> String;
     fn is_locked(&self) -> bool;
     fn copy(&self) -> Box<dyn Waypoint>;
+    fn set_elevation(&self, elevation: i32);
 }
 
-pub fn eq(a: &Box<dyn Waypoint>, b: &Box<dyn Waypoint>) -> bool {
+pub fn eq(a: Box<dyn Waypoint>, b: Box<dyn Waypoint>) -> bool {
     if a.get_type().ne(&b.get_type()) {
         return false;
     }
-
+    // We already know both a & b are the same type
     match a.get_type() {
         WaypointType::AIRPORT => a.get_id().eq(&b.get_id()),
         WaypointType::NAVAID => a.get_id().eq(&b.get_id()),
@@ -40,35 +45,35 @@ pub enum WaypointType {
 #[derive(Debug, Clone)]
 pub struct SimpleWaypoint {
     id: String,
-    elevation: f64,
+    elevation: Cell<i32>,
     loc: Coordinate,
     lock: bool,
     type_: WaypointType,
 }
 
 impl SimpleWaypoint {
-    pub fn new_gps_waypoint(id: String, elevation: f64, loc: Coordinate) -> Self {
+    pub fn new_gps_waypoint(id: String, elevation: i32, loc: Coordinate) -> Self {
         SimpleWaypoint {
             id,
-            elevation,
+            elevation : Cell::new(elevation),
             loc,
             lock: false,
             type_: WaypointType::GPS,
         }
     }
-    pub fn new_toc_waypoint(id: String, elevation: f64, loc: Coordinate) -> Self {
+    pub fn new_toc_waypoint(id: String, elevation: i32, loc: Coordinate) -> Self {
         SimpleWaypoint {
             id,
-            elevation,
+            elevation : Cell::new(elevation),
             loc,
             lock: false,
             type_: WaypointType::TOC,
         }
     }
-    pub fn new_bod_waypoint(id: String, elevation: f64, loc: Coordinate) -> Self {
+    pub fn new_bod_waypoint(id: String, elevation: i32, loc: Coordinate) -> Self {
         SimpleWaypoint {
             id,
-            elevation,
+            elevation : Cell::new(elevation),
             loc,
             lock: false,
             type_: WaypointType::BOD,
@@ -86,8 +91,8 @@ impl Waypoint for SimpleWaypoint {
     fn get_type(&self) -> WaypointType {
         self.type_.clone()
     }
-    fn get_elevation(&self) -> f64 {
-        self.elevation
+    fn get_elevation(&self) -> i32 {
+        self.elevation.get()
     }
     fn get_loc(&self) -> Coordinate {
         self.loc.clone()
@@ -111,20 +116,24 @@ impl Waypoint for SimpleWaypoint {
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
+
+    fn set_elevation(&self, elevation: i32) {
+        self.elevation.set(elevation);
+    }
 }
 
 #[derive(Clone)]
 pub struct FixWaypoint {
     fix: Fix,
-    elevation: f64,
+    elevation: Cell<i32>,
     locked: bool,
 }
 
 impl FixWaypoint {
-    pub fn new(fix: Fix, elevation: f64, locked: bool) -> Self {
+    pub fn new(fix: Fix, elevation: i32, locked: bool) -> Self {
         FixWaypoint {
             fix,
-            elevation,
+            elevation : Cell::new(elevation),
             locked,
         }
     }
@@ -140,8 +149,8 @@ impl Waypoint for FixWaypoint {
     fn get_type(&self) -> WaypointType {
         WaypointType::FIX
     }
-    fn get_elevation(&self) -> f64 {
-        self.elevation
+    fn get_elevation(&self) -> i32 {
+        self.elevation.get()
     }
     fn get_loc(&self) -> Coordinate {
         self.fix.get_loc()
@@ -164,20 +173,23 @@ impl Waypoint for FixWaypoint {
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
+    fn set_elevation(&self, elevation: i32) {
+        self.elevation.set(elevation);
+    }
 }
 
 #[derive(Clone)]
 pub struct NavaidWaypoint {
     navaid: Navaid,
-    elevation: f64,
+    elevation: Cell<i32>,
     locked: bool,
 }
 
 impl NavaidWaypoint {
-    pub fn new(navaid: Navaid, elevation: f64, locked: bool) -> Self {
+    pub fn new(navaid: Navaid, elevation: i32, locked: bool) -> Self {
         NavaidWaypoint {
             navaid,
-            elevation,
+            elevation : Cell::new(elevation),
             locked,
         }
     }
@@ -193,8 +205,8 @@ impl Waypoint for NavaidWaypoint {
     fn get_type(&self) -> WaypointType {
         WaypointType::NAVAID
     }
-    fn get_elevation(&self) -> f64 {
-        self.elevation
+    fn get_elevation(&self) -> i32 {
+        self.elevation.get()
     }
     fn get_loc(&self) -> Coordinate {
         self.navaid.get_loc()
@@ -214,23 +226,29 @@ impl Waypoint for NavaidWaypoint {
     fn is_locked(&self) -> bool {
         self.locked
     }
+    fn get_freq(&self) -> Option<f64> {
+        Some(self.navaid.get_freq().clone())
+    }
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
+    }
+    fn set_elevation(&self, elevation: i32) {
+        self.elevation.set(elevation);
     }
 }
 
 #[derive(Clone)]
 pub struct AirportWaypoint {
     airport: Airport,
-    elevation: f64,
+    elevation: Cell<i32>,
     locked: bool,
 }
 
 impl AirportWaypoint {
-    pub fn new(airport: Airport, elevation: f64, locked: bool) -> Self {
+    pub fn new(airport: Airport, elevation: i32, locked: bool) -> Self {
         AirportWaypoint {
             airport,
-            elevation,
+            elevation : Cell::new(elevation),
             locked,
         }
     }
@@ -250,8 +268,8 @@ impl Waypoint for AirportWaypoint {
     fn get_type(&self) -> WaypointType {
         WaypointType::AIRPORT
     }
-    fn get_elevation(&self) -> f64 {
-        self.elevation
+    fn get_elevation(&self) -> i32 {
+        self.elevation.get()
     }
     fn get_loc(&self) -> Coordinate {
         self.airport.get_loc()
@@ -274,6 +292,8 @@ impl Waypoint for AirportWaypoint {
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
+    fn set_elevation(&self, elevation: i32) {
+    }
 }
 
 #[cfg(test)]
@@ -285,9 +305,9 @@ mod tests {
     #[test]
     fn test_equality() {
         let w1 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 10.0, Coordinate::new(13.0, 111.0));
+            SimpleWaypoint::new_gps_waypoint("".to_string(), 10, Coordinate::new(13.0, 111.0));
         let w2 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 20.0, Coordinate::new(23.0, 121.0));
+            SimpleWaypoint::new_gps_waypoint("".to_string(), 20, Coordinate::new(23.0, 121.0));
 
         let a = Box::new(w1.clone());
         let b = Box::new(w1.clone());
@@ -300,9 +320,9 @@ mod tests {
     #[test]
     fn test_equality_airport_type() {
         let ap = make_airport("YSSY");
-        let w1 = AirportWaypoint::new(ap, 20.0, false);
+        let w1 = AirportWaypoint::new(ap, 20, false);
         let ap = make_airport("YMLB");
-        let w2 = AirportWaypoint::new(ap, 20.0, false);
+        let w2 = AirportWaypoint::new(ap, 20, false);
         let a = Box::new(w1.clone());
         let b = Box::new(w1.clone());
         assert!(do_test(a, b));
@@ -314,15 +334,15 @@ mod tests {
     #[test]
     fn test_equality_diff_type() {
         let w1 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 10.0, Coordinate::new(13.0, 111.0));
+            SimpleWaypoint::new_gps_waypoint("".to_string(), 10, Coordinate::new(13.0, 111.0));
         let ap = make_airport("YSSY");
-        let w2 = AirportWaypoint::new(ap, 20.0, false);
+        let w2 = AirportWaypoint::new(ap, 20, false);
         let a = Box::new(w1.clone());
         let b = Box::new(w2.clone());
         assert!(!do_test(a, b));
     }
 
     fn do_test(a: Box<dyn Waypoint>, b: Box<dyn Waypoint>) -> bool {
-        waypoint::eq(&a, &b)
+        waypoint::eq(a, b)
     }
 }
