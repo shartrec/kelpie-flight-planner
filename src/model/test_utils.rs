@@ -1,4 +1,3 @@
-
 use super::airport::{Airport, AirportType};
 
 pub fn make_airport(id: &str) -> super::airport::Airport {

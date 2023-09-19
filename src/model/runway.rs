@@ -1,5 +1,3 @@
-use std::fmt;
-
 #[derive(Debug, Clone)]
 pub struct Runway {
     ils_opposite_freq: f64,

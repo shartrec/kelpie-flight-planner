@@ -1,6 +1,7 @@
-use crate::model::fix::Fix;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
+use crate::model::fix::Fix;
 
 pub struct FixParserFG {}
 
@@ -66,9 +67,10 @@ impl FixParserFG {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, io::BufReader, path::PathBuf};
+
     use crate::model::fix::Fix;
     use crate::model::location::Location;
-    use std::{fs, io::BufReader, path::PathBuf};
 
     use super::FixParserFG;
 

@@ -1,9 +1,10 @@
-use lazy_static::lazy_static;
-use preferences::{AppInfo, Preferences, PreferencesMap};
 use std::{
     str::FromStr,
     sync::{Arc, RwLock},
 };
+
+use lazy_static::lazy_static;
+use preferences::{AppInfo, Preferences, PreferencesMap};
 
 const PREFS_PATH: &str = "planner";
 const APP_INFO: AppInfo = AppInfo {
@@ -115,9 +116,11 @@ pub fn manager() -> &'static PreferenceManager {
 
 #[cfg(test)]
 mod tests {
-    use crate::preference;
-    use preferences::PreferencesMap;
     use std::sync::{Arc, RwLock};
+
+    use preferences::PreferencesMap;
+
+    use crate::preference;
 
     #[test]
     fn test_save_restore() {

@@ -1,5 +1,6 @@
-use super::location::Location;
 use crate::earth::coordinate::Coordinate;
+
+use super::location::Location;
 
 #[derive(Clone)]
 pub struct Fix {

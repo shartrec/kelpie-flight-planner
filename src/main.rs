@@ -1,7 +1,7 @@
 use gtk::{Application, CssProvider, gio, glib};
 use gtk::gdk::Display;
-use gtk::gio::{File, SimpleAction, SimpleActionGroup};
-use gtk::glib::{clone, closure_local, RustClosure, Variant};
+use gtk::gio::{File, SimpleAction};
+use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use simplelog::*;

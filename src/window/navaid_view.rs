@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
+use std::ops::Deref;
+
 use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use regex::RegexBuilder;
@@ -54,7 +56,7 @@ mod imp {
                                 (1, &navaid.get_name()),
                                 (2, &navaid.get_lat_as_string()),
                                 (3, &navaid.get_long_as_string()),
-                                (4, &(navaid.get_elevation()as i32))
+                                (4, &(navaid.get_elevation()))
                             ]);
                     }
                     self.navaid_list.set_model(Some(&store));

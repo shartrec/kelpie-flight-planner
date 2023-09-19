@@ -1,6 +1,8 @@
 use std::cell::Cell;
-use super::{airport::Airport, fix::Fix, location::Location, navaid::Navaid};
+
 use crate::earth::coordinate::Coordinate;
+
+use super::{airport::Airport, fix::Fix, location::Location, navaid::Navaid};
 
 pub trait Waypoint {
     fn get_id(&self) -> String;

@@ -5,7 +5,6 @@ use gtk::glib::clone;
 use gtk::prelude::{ActionMapExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
-
 pub mod imp;
 mod airport_view;
 mod navaid_view;

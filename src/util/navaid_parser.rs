@@ -1,8 +1,7 @@
-use crate::earth::coordinate::Coordinate;
-use crate::model::navaid::{Navaid, NavaidType};
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+
+use crate::model::navaid::{Navaid, NavaidType};
 
 pub struct NavaidParserFG {}
 
@@ -114,9 +113,10 @@ impl NavaidParserFG {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, io::BufReader, path::PathBuf};
+
     use crate::model::location::Location;
     use crate::model::navaid::{Navaid, NavaidType};
-    use std::{fs, io::BufReader, path::PathBuf};
 
     use super::NavaidParserFG;
 

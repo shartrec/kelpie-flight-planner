@@ -1,10 +1,11 @@
-use std::cell::{Cell, Ref, RefCell};
+use std::cell::{Ref, RefCell};
 use std::ops::Deref;
-use std::sync::{Arc, RwLock, RwLockReadGuard};
+
 use gtk::glib::PropertySet;
+
 use crate::earth::coordinate::Coordinate;
 use crate::model::waypoint::WaypointType;
-use crate::preference::{USE_MAGNETIC_HEADINGS, UNITS};
+use crate::preference::{UNITS, USE_MAGNETIC_HEADINGS};
 use crate::util::distance_format::DistanceFormat;
 use crate::util::hour_format::HourFormat;
 use crate::util::speed_format::SpeedFormat;
@@ -13,7 +14,7 @@ use super::aircraft::Aircraft;
 use super::airport::Airport;
 use super::location::Location;
 use super::sector::Sector;
-use super::waypoint::{self, AirportWaypoint, Waypoint};
+use super::waypoint::{self, Waypoint};
 
 #[derive(Default)]
 pub struct Plan {
@@ -230,10 +231,10 @@ impl Plan {
      * @param loc
      * @return double Distance
      */
-    pub fn get_leg_distance_to(&self, wp: &dyn Waypoint) -> i32 {
+    pub fn get_leg_distance_to(&self, wp: &dyn Waypoint) -> f64 {
         match self.get_previous_location(wp) {
             Some(prev) => prev.distance_to(&wp.get_loc()),
-            None => 0,
+            None => 0.0,
         }
     }
 
@@ -341,8 +342,9 @@ fn compare_wp(a: &dyn Waypoint, b: &dyn Waypoint) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::Plan;
     use crate::model::test_utils::make_airport;
+
+    use super::Plan;
 
     #[test]
     fn test_name() {

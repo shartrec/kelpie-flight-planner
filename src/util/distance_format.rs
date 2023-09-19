@@ -19,10 +19,9 @@ impl DistanceFormat {
         }
     }
 
-    pub fn format(&self, distance: &i32) -> String {
-        let converted_distance = (*distance as f64 * self.conversion_factor).round();
-
-        format!("{:.0}{}", converted_distance, self.distance_unit)
+    pub fn format(&self, distance: &f64) -> String {
+        let converted_distance = distance * self.conversion_factor;
+        format!("{:.1}{}", converted_distance, self.distance_unit)
     }
 }
 
@@ -32,9 +31,9 @@ mod tests {
 
     #[test]
     fn test_fmt_distance() {
-        assert_eq!(DistanceFormat::new("Nm").format(&35), "35Nm");
-        assert_eq!(DistanceFormat::new("Mi").format(&34), "39Mi");
-        assert_eq!(DistanceFormat::new("Km").format(&34), "63Km");
+        assert_eq!(DistanceFormat::new("Nm").format(&35.0), "35.0Nm");
+        assert_eq!(DistanceFormat::new("Mi").format(&34.0), "39.1Mi");
+        assert_eq!(DistanceFormat::new("Km").format(&34.0), "63.0Km");
     }
 }
 

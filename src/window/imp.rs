@@ -1,9 +1,9 @@
 use std::thread;
 
 use glib::subclass::InitializingObject;
-use gtk::{Builder, Button, CompositeTemplate, glib, Stack};
+use gtk::{Button, CompositeTemplate, glib, Stack};
 use gtk::gio::File;
-use gtk::glib::{MainContext, PRIORITY_DEFAULT, PropertyGet};
+use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 

@@ -5,10 +5,11 @@ use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
-    use std::sync::{Arc, RwLock};
     use std::ops::Deref;
+    use std::sync::{Arc, RwLock};
+
     use glib::subclass::InitializingObject;
-    use gtk::{Button, Entry, TreeModel};
+    use gtk::{Button, Entry};
     use gtk::glib::clone;
     use regex::RegexBuilder;
 
@@ -60,7 +61,7 @@ mod imp {
                                 (1, &airport.get_name()),
                                 (2, &airport.get_lat_as_string()),
                                 (3, &airport.get_long_as_string()),
-                                (4, &(airport.get_elevation() as i32))
+                                (4, &(airport.get_elevation()))
                             ]);
                     }
                     self.airport_list.set_model(Some(&store));

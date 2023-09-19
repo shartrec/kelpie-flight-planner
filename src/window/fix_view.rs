@@ -1,9 +1,10 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
+use std::ops::Deref;
+
 use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
-use regex::RegexBuilder;
 
 mod imp {
     use glib::subclass::InitializingObject;

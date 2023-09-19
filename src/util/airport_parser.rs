@@ -1,10 +1,10 @@
-use std::cell::Cell;
-use crate::earth::coordinate::Coordinate;
-use crate::model::airport::{Airport, AirportType};
-use crate::model::runway::Runway;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek};
+
+use crate::earth::coordinate::Coordinate;
+use crate::model::airport::{Airport, AirportType};
+use crate::model::runway::Runway;
 
 pub struct AirportParserFG850 {
     airport_map: HashMap<String, Airport>,
@@ -86,7 +86,7 @@ impl AirportParserFG850 {
 
                     // Now read runways to get a latitude and longitude
                     // and find the longest
-                    let mut max_length = 0;
+                    let mut max_length = 0.0;
 
                     let mut latitude = 0.0;
                     let mut longitude = 0.0;
@@ -159,7 +159,7 @@ impl AirportParserFG850 {
 
                                 let c1 = Coordinate::new(r_lat, r_long);
                                 let c2 = Coordinate::new(r1_lat, r1_long);
-                                let r_length = c1.distance_to(&c2) * 6076;
+                                let r_length = c1.distance_to(&c2) * 6076.0;
                                 if r_length > max_length {
                                     max_length = r_length;
                                     latitude = (r_lat + r1_lat) / 2.0;
@@ -219,9 +219,10 @@ impl AirportParserFG850 {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, io::BufReader, path::PathBuf};
+
     use crate::model::airport::Airport;
     use crate::model::location::Location;
-    use std::{fs, io::BufReader, path::PathBuf};
 
     use super::AirportParserFG850;
 

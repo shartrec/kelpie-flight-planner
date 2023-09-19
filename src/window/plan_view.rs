@@ -10,11 +10,11 @@ mod imp {
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::{TreePath, TreeStore};
-    use crate::model::aircraft::Aircraft;
+    use gtk::TreeStore;
 
+    use crate::model::aircraft::Aircraft;
     use crate::model::plan::Plan;
-    use crate::model::waypoint::{AirportWaypoint, Waypoint, WaypointType};
+    use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
 
     use super::*;
@@ -124,6 +124,7 @@ mod imp {
                         (Col::Elev as u32, &(airport.get_elevation() as i32)),
                         (Col::Lat as u32, &airport.get_lat_as_string()),
                         (Col::Long as u32, &airport.get_long_as_string()),
+                        (Col::Dist as u32, &plan.get_leg_distance_to_as_string(&airport)),
                     ]);
                 }
 

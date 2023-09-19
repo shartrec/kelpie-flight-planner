@@ -7,8 +7,8 @@ use gtk::glib::clone::Downgrade;
 use gtk::glib::Sender;
 use lazy_static::lazy_static;
 use log::info;
-use crate::event::Event;
 
+use crate::event::Event;
 use crate::model::airport::Airport;
 use crate::model::fix::Fix;
 use crate::model::location::Location;
