@@ -81,14 +81,14 @@
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkPaned" id="Pane1V">
+          <object class="GtkPaned" id="pane_1v">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="orientation">horizontal</property>
             <property name="position">600</property>
             <property name="vexpand">true</property>
             <child>
-              <object class="GtkPaned" id="Pane1H">
+              <object class="GtkPaned" id="pane_1h">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="orientation">vertical</property>

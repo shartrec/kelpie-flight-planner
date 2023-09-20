@@ -1,7 +1,7 @@
 use std::thread;
 
 use glib::subclass::InitializingObject;
-use gtk::{Button, CompositeTemplate, glib, Stack};
+use gtk::{Button, CompositeTemplate, glib, Paned, Stack};
 use gtk::gio::File;
 use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
@@ -17,6 +17,10 @@ use crate::window::plan_view::PlanView;
 #[derive(CompositeTemplate, Default)]
 #[template(resource = "/com/shartrec/kelpie_planner/window.ui")]
 pub struct Window {
+    #[template_child]
+    pub pane_1v: TemplateChild<Paned>,
+    #[template_child]
+    pub pane_1h: TemplateChild<Paned>,
     #[template_child]
     pub airport_view: TemplateChild<AirportView>,
     #[template_child]
@@ -41,6 +45,26 @@ impl Window {
         view.imp().new_plan();
         self.plan_stack.add_titled(&view, Some("newxx"), &"New Plan");
     }
+
+    fn layout_panels(&self) {
+        let pref = crate::preference::manager();
+
+        // Set the size of the window
+        if let Some(p) = pref.get::<i32>("vertical-split-pos") {
+            self.pane_1v.set_position(p);
+        }
+        if let Some(p) = pref.get::<i32>("horizontal-split-pos") {
+            self.pane_1h.set_position(p);
+        }
+    }
+    fn save_panel_layout(&self) {
+        let pref = crate::preference::manager();
+
+        // Set the size of the window
+        pref.put("vertical-split-pos", self.pane_1v.position());
+        pref.put("horizontal-split-pos", self.pane_1h.position());
+    }
+
 
 }
 
@@ -70,6 +94,9 @@ impl ObjectImpl for Window {
 
         let obj = self.obj();
         obj.setup_actions();
+        obj.load_window_size();
+
+        self.layout_panels();
 
         //todo Remove this
         // Connect to "clicked" signal of `button`
@@ -106,7 +133,18 @@ impl BuildableImpl for Window {}
 impl WidgetImpl for Window {}
 
 // Trait shared by all windows
-impl WindowImpl for Window {}
+impl WindowImpl for Window {
+    // Save window state right before the window will be closed
+    fn close_request(&self) -> glib::signal::Inhibit {
+        self.save_panel_layout();
+        // Save window size
+        self.obj()
+            .save_window_size()
+            .expect("Failed to save window state");
+        // Allow to invoke other event handlers
+        self.parent_close_request()
+    }
+}
 
 // Trait shared by all application windows
 impl ApplicationWindowImpl for Window {}
