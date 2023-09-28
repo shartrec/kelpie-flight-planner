@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use preferences::{AppInfo, Preferences, PreferencesMap};
 
 const PREFS_PATH: &str = "planner";
-const APP_INFO: AppInfo = AppInfo {
+pub const APP_INFO: AppInfo = AppInfo {
     name: "kelpie-flight-planner",
     author: "shartrec.com",
 };

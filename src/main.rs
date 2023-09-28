@@ -10,6 +10,7 @@ use window::Window;
 
 mod earth;
 mod event;
+mod hangar;
 mod model;
 mod preference;
 mod planner;

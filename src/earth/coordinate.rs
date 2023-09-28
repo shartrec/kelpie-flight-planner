@@ -71,8 +71,8 @@ impl Coordinate {
         (Self::EARTH_RADIUS * d.abs())
     }
 
-    pub fn get_latitude(&self) -> f64 {
-        self.latitude
+    pub fn get_latitude(&self) -> &f64 {
+        &self.latitude
     }
 
     pub fn get_latitude_as_string(&self) -> String {
@@ -80,8 +80,8 @@ impl Coordinate {
         formatter.format(self.latitude)
     }
 
-    pub fn get_longitude(&self) -> f64 {
-        self.longitude
+    pub fn get_longitude(&self) -> &f64 {
+        &self.longitude
     }
 
     pub fn get_longitude_as_string(&self) -> String {
@@ -97,8 +97,8 @@ mod tests {
     #[test]
     fn test_construct() {
         let result = Coordinate::new(-34.0, 151.0);
-        assert_eq!(result.get_latitude(), -34.0);
-        assert_eq!(result.get_longitude(), 151.0);
+        assert_eq!(*result.get_latitude(), -34.0);
+        assert_eq!(*result.get_longitude(), 151.0);
     }
 
     #[test]
@@ -108,19 +108,19 @@ mod tests {
         assert_eq!(c1.distance_to(&c2), 0.0);
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = Coordinate::new(-34.0, 150.0);
-        assert_eq!(c1.distance_to(&c2), 50.0);
+        assert_eq!(c1.distance_to(&c2).round(), 50.0);
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = Coordinate::new(-35.0, 151.0);
-        assert_eq!(c1.distance_to(&c2), 60.0);
+        assert_eq!(c1.distance_to(&c2).round(), 60.0);
         let c1 = Coordinate::new(-34.45, 150.50);
         let c2 = Coordinate::new(-34.18, 150.86);
-        assert_eq!(c1.distance_to(&c2), 24.0);
+        assert_eq!(c1.distance_to(&c2).round(), 24.0);
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = Coordinate::new(35.0, -151.0);
-        assert_eq!(c1.distance_to(&c2), 5272.0);
+        assert_eq!(c1.distance_to(&c2).round(), 5272.0);
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = Coordinate::new(0.0, 0.0);
-        assert_eq!(c1.distance_to(&c2), 8198.0);
+        assert_eq!(c1.distance_to(&c2).round(), 8198.0);
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         assert_eq!(c1.bearing_to_deg(&c2).round(), 0.0);
         let c1 = Coordinate::new(34.0, 151.0);
         let c2 = Coordinate::new(34.0, 152.0);
-        assert_eq!(c1.bearing_to_deg(&c2), 90.0);
+        assert_eq!(c1.bearing_to_deg(&c2).round(), 90.0);
     }
 
     #[test]

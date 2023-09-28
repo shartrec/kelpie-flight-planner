@@ -3,6 +3,26 @@
   -->
 
 <interface>
+  <menu id="airports-menu">
+    <section>
+      <item>
+        <attribute name="label">Add to plan</attribute>
+        <attribute name="action">airport.add_to_plan</attribute>
+      </item>
+      <item>
+        <attribute name="label">View airport</attribute>
+        <attribute name="action">airport.view</attribute>
+      </item>
+      <item>
+        <attribute name="label">Find navaids near</attribute>
+        <attribute name="action">airport.find_navaids_near</attribute>
+      </item>
+      <item>
+        <attribute name="label">Find fixes near</attribute>
+        <attribute name="action">airport.find_fixes_near</attribute>
+      </item>
+    </section>
+  </menu>
 
   <template class="AirportView" parent="GtkWidget">
     <property name="layout-manager">
@@ -16,7 +36,7 @@
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkScrolledWindow">
+          <object class="GtkScrolledWindow" id="airport_window">
             <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
             <property name="vscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
             <property name="propagate-natural-width">true</property>
@@ -75,7 +95,9 @@
                   <object class="GtkTreeViewColumn">
                     <property name="title" translatable="yes">Elevation</property>
                     <child>
-                      <object class="GtkCellRendererText" id="a-elev-renderer"/>
+                      <object class="GtkCellRendererText" id="a-elev-renderer">
+                        <property name="xalign">1.0</property>
+                      </object>
                       <attributes>
                         <attribute name="text">4</attribute>
                       </attributes>
@@ -87,29 +109,61 @@
           </object>
         </child>
         <child>
-          <object class="GtkBox">
-            <property name="vexpand">false</property>
-            <property name="hexpand">true</property>
-            <property name="spacing">10</property>
+          <object class="GtkBox" id="airport_search_box">
+            <property name="orientation">vertical</property>
             <style>
               <class name="search-box"/>
             </style>
             <child>
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">Id or Name</property>
-                <property name="can-focus">false</property>
+              <object class="GtkBox">
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Id or Name</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="airport_search_name">
+                    <property name="max-length">20</property>
+                    <property name="height-request">1</property>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="airport_search_name">
-                <property name="max-length">20</property>
-                <property name="height-request">1</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="airport_search">
-                <property name="label">Search</property>
-                <property name="sensitive">false</property>
+              <object class="GtkBox">
+                <property name="vexpand">false</property>
+                <property name="hexpand">true</property>
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">or near Lat</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="airport_search_lat">
+                    <property name="max-length">10</property>
+                    <property name="height-request">1</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Long</property>
+                    <property name="can-focus">false</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="airport_search_long">
+                    <property name="max-length">10</property>
+                    <property name="height-request">1</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="airport_search">
+                    <property name="label">Search</property>
+                    <property name="sensitive">false</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

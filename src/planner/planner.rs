@@ -13,6 +13,7 @@ use crate::model::navaid::{Navaid, NavaidType};
 use crate::model::plan::Plan;
 use crate::model::waypoint::{AirportWaypoint, FixWaypoint, NavaidWaypoint, SimpleWaypoint, Waypoint, WaypointType};
 use crate::preference::*;
+use crate::util::location_filter::{Filter, RangeFilter};
 
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
@@ -155,7 +156,7 @@ impl Planner<'_> {
 
         let range = leg_distance as f64 / 2.0; // - _min_leg_distance;
 
-        let near_aids = self.get_locations_near(self.navaids, midpoint, range);
+        let near_aids = self.get_navaids_near(self.navaids, midpoint, range);
         let mut best_loc: Option<Box<Navaid>> = None;
         let mut best_ndb: Option<Box<Navaid>> = None;
         let mut nearest = 100000.0;
@@ -200,7 +201,7 @@ impl Planner<'_> {
     }
 
     fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Box<Navaid>> {
-        let near_aids = self.get_locations_near::<Navaid>(&self.navaids, coord, max_range);
+        let near_aids = self.get_navaids_near(&self.navaids, coord, max_range);
 
         let mut best_loc: Option<Box<Navaid>> = None;
         let mut best_ndb: Option<Box<Navaid>> = None;
@@ -243,7 +244,7 @@ impl Planner<'_> {
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
-        let near_aids = self.get_locations_near(self.fixes, midpoint, range);
+        let near_aids = self.get_fixes_near(self.fixes, midpoint, range);
         let mut best_loc: Option<Box<Fix>> = None;
         let mut nearest = 100000.0;
 
@@ -268,7 +269,7 @@ impl Planner<'_> {
     }
 
     fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Box<Fix>> {
-        let near_aids = self.get_locations_near::<Fix>(&self.fixes, coord, max_range);
+        let near_aids = self.get_fixes_near(&self.fixes, coord, max_range);
 
         let mut best_loc: Option<Box<Fix>> = None;
         let mut nearest = 100000.0;
@@ -336,7 +337,7 @@ impl Planner<'_> {
 
     fn add_waypoints_to_leg(&self, prev_wp: &dyn Waypoint, to: &dyn Waypoint, plan: &mut Vec<Box<dyn Waypoint>>, i: usize, leg_length: f64) {
         let mut additional_points = leg_length as f64 / self.max_leg_distance as f64;
-        let extra_points = if (self.add_waypoint_bias && (additional_points.fract() > 0.2)) {
+        let extra_points = if self.add_waypoint_bias && (additional_points.fract() > 0.2) {
             additional_points.ceil()
         } else {
             additional_points.floor()
@@ -356,36 +357,44 @@ impl Planner<'_> {
         }
     }
 
-    fn get_locations_near<'a, T: Location>(&'a self, locations: &'a Arc<RwLock<Vec<Box<T>>>>, point: &Coordinate, range: f64)
-                                           -> Vec<Box<T>> {
-        // We do a little optimization here rather than calculating
-        // all distances accurately; we make a quick rough calculation to exclude many coordinates
-        let rough_lat_sep = range as f64 / 60.0;
-        let rough_lon_sep = range as f64 / (60.0 * point.get_latitude().to_radians().cos());
+    fn get_navaids_near(&self, locations: &Arc<RwLock<Vec<Box<Navaid>>>>, point: &Coordinate, range: f64)
+                                           -> Vec<Box<Navaid>> {
 
-        let mut near_locations: Vec<Box<T>> = Vec::new();
+        let mut near_locations: Vec<Box<Navaid>> = Vec::new();
 
-        let guard = locations.read().unwrap();
-        let locations = guard.deref();
-        let x: Vec<&Box<T>> = locations.iter().filter(move |loc| {
-            let loc_coord = loc.get_loc();
-            {
-                if (point.get_latitude() - loc_coord.get_latitude()).abs() > rough_lat_sep {
-                    return false;
-                }
-                if (point.get_longitude() - loc_coord.get_longitude()).abs() > rough_lon_sep {
-                    return false;
-                }
-                let distance = point.distance_to(&loc_coord);
-                distance <= range
+        if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range) {
+            let guard = locations.read().unwrap();
+            let locations = guard.deref();
+            let x: Vec<&Box<Navaid>> = locations.iter().filter(move |loc| {
+                filter.filter(&***loc)
+            }).collect();
+
+            for l in x {
+                near_locations.push(Box::new(*l.clone()));
             }
-        }).collect();
-
-        for l in x {
-            near_locations.push(Box::new(*l.clone()));
         }
         near_locations
     }
+
+    fn get_fixes_near(&self, locations: &Arc<RwLock<Vec<Box<Fix>>>>, point: &Coordinate, range: f64)
+                                           -> Vec<Box<Fix>> {
+
+        let mut near_locations: Vec<Box<Fix>> = Vec::new();
+
+        if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range) {
+            let guard = locations.read().unwrap();
+            let locations = guard.deref();
+            let x: Vec<&Box<Fix>>= locations.iter().filter(move |loc| {
+                filter.filter(&***loc)
+            }).collect();
+
+            for l in x {
+                near_locations.push(Box::new(*l.clone()));
+            }
+        }
+        near_locations
+    }
+
 
     fn get_deviation(&self, heading_from: f64, bearing_to_deg: f64) -> f64 {
         let mut raw_deviation = (bearing_to_deg - heading_from).abs();
@@ -407,7 +416,7 @@ impl Planner<'_> {
             let mut guard = sector.get_waypoints().write().expect("Can't get read lock on sectors");
             let mut waypoints = guard.deref_mut();
             waypoints.retain(|wp| {
-                wp.get_type() != WaypointType::TOC && wp.get_type() != WaypointType::BOD
+                *wp.get_type() != WaypointType::TOC && *wp.get_type() != WaypointType::BOD
             });
 
             let max_alt = calc_max_altitude(
@@ -577,10 +586,10 @@ pub fn set_elevations(
     let mut prev_wp = from.clone();
 
     for wp in waypoints {
-        if wp.get_type() == WaypointType::TOC {
+        if *wp.get_type() == WaypointType::TOC {
             ascent = false;
             alt = max_alt;
-        } else if wp.get_type() == WaypointType::BOD {
+        } else if *wp.get_type() == WaypointType::BOD {
             ascent = false;
             descent = true;
             alt = max_alt;
@@ -594,14 +603,14 @@ pub fn set_elevations(
                 ascent = false;
             }
 
-            wp.set_elevation(alt);
+            wp.set_elevation(&alt);
         } else if descent {
             let distance = prev_wp.get_loc().distance_to(&wp.get_loc());
             let leg_time = distance as f64 / plan.get_aircraft().as_ref().map(|a| *a.get_sink_speed() as f64).unwrap_or(80.0);
             alt -= (leg_time * plan.get_aircraft().as_ref().map(|a| *a.get_sink_rate() as f64).unwrap_or(700.0) * 60.0) as i32;
-            wp.set_elevation(alt);
+            wp.set_elevation(&alt);
         } else {
-            wp.set_elevation(alt);
+            wp.set_elevation(&alt);
         }
 
         prev_wp = wp.deref();

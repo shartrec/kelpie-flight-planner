@@ -5,21 +5,21 @@ use crate::earth::coordinate::Coordinate;
 use super::{airport::Airport, fix::Fix, location::Location, navaid::Navaid};
 
 pub trait Waypoint {
-    fn get_id(&self) -> String;
-    fn get_name(&self) -> String;
-    fn get_type(&self) -> WaypointType;
+    fn get_id(&self) -> &str;
+    fn get_name(&self) -> &str;
+    fn get_type(&self) -> &WaypointType;
     fn get_elevation(&self) -> i32;
-    fn get_loc(&self) -> Coordinate;
-    fn get_lat(&self) -> f64;
-    fn get_freq(&self) -> Option<f64> {
+    fn get_loc(&self) -> &Coordinate;
+    fn get_lat(&self) -> &f64;
+    fn get_freq(&self) -> Option<&f64> {
         None
     }
     fn get_lat_as_string(&self) -> String;
-    fn get_long(&self) -> f64;
+    fn get_long(&self) -> &f64;
     fn get_long_as_string(&self) -> String;
-    fn is_locked(&self) -> bool;
+    fn is_locked(&self) -> &bool;
     fn copy(&self) -> Box<dyn Waypoint>;
-    fn set_elevation(&self, elevation: i32);
+    fn set_elevation(&self, elevation: &i32);
 }
 
 pub fn eq(a: Box<dyn Waypoint>, b: Box<dyn Waypoint>) -> bool {
@@ -28,8 +28,8 @@ pub fn eq(a: Box<dyn Waypoint>, b: Box<dyn Waypoint>) -> bool {
     }
     // We already know both a & b are the same type
     match a.get_type() {
-        WaypointType::AIRPORT => a.get_id().eq(&b.get_id()),
-        WaypointType::NAVAID => a.get_id().eq(&b.get_id()),
+        WaypointType::AIRPORT => a.get_id().eq(b.get_id()),
+        WaypointType::NAVAID => a.get_id().eq(b.get_id()),
         _ => a.get_loc().eq(&b.get_loc()),
     }
 }
@@ -84,43 +84,43 @@ impl SimpleWaypoint {
 }
 
 impl Waypoint for SimpleWaypoint {
-    fn get_id(&self) -> String {
-        self.id.clone()
+    fn get_id(&self) -> &str {
+        &self.id
     }
-    fn get_name(&self) -> String {
-        self.id.clone()
+    fn get_name(&self) -> &str {
+        &self.id
     }
-    fn get_type(&self) -> WaypointType {
-        self.type_.clone()
+    fn get_type(&self) -> &WaypointType {
+        &self.type_
     }
     fn get_elevation(&self) -> i32 {
         self.elevation.get()
     }
-    fn get_loc(&self) -> Coordinate {
-        self.loc.clone()
+    fn get_loc(&self) -> &Coordinate {
+        &self.loc
     }
-    fn get_lat(&self) -> f64 {
-        self.loc.get_latitude()
+    fn get_lat(&self) -> &f64 {
+        &self.loc.get_latitude()
     }
     fn get_lat_as_string(&self) -> String {
         self.loc.get_latitude_as_string()
     }
-    fn get_long(&self) -> f64 {
-        self.loc.get_longitude()
+    fn get_long(&self) -> &f64 {
+        &self.loc.get_longitude()
     }
     fn get_long_as_string(&self) -> String {
         self.loc.get_longitude_as_string()
     }
-    fn is_locked(&self) -> bool {
-        self.lock
+    fn is_locked(&self) -> &bool {
+        &self.lock
     }
 
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
 
-    fn set_elevation(&self, elevation: i32) {
-        self.elevation.set(elevation);
+    fn set_elevation(&self, elevation: &i32) {
+        self.elevation.set(elevation.clone());
     }
 }
 
@@ -142,41 +142,41 @@ impl FixWaypoint {
 }
 
 impl Waypoint for FixWaypoint {
-    fn get_id(&self) -> String {
-        self.fix.get_id()
+    fn get_id(&self) -> &str {
+        &self.fix.get_id()
     }
-    fn get_name(&self) -> String {
-        self.fix.get_name()
+    fn get_name(&self) -> &str {
+        &self.fix.get_name()
     }
-    fn get_type(&self) -> WaypointType {
-        WaypointType::FIX
+    fn get_type(&self) -> &WaypointType {
+        &WaypointType::FIX
     }
     fn get_elevation(&self) -> i32 {
         self.elevation.get()
     }
-    fn get_loc(&self) -> Coordinate {
+    fn get_loc(&self) -> &Coordinate {
         self.fix.get_loc()
     }
-    fn get_lat(&self) -> f64 {
+    fn get_lat(&self) -> &f64 {
         self.fix.get_lat()
     }
     fn get_lat_as_string(&self) -> String {
         self.fix.get_lat_as_string()
     }
-    fn get_long(&self) -> f64 {
+    fn get_long(&self) -> &f64 {
         self.fix.get_long()
     }
     fn get_long_as_string(&self) -> String {
         self.fix.get_long_as_string()
     }
-    fn is_locked(&self) -> bool {
-        self.locked
+    fn is_locked(&self) -> &bool {
+        &self.locked
     }
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
-    fn set_elevation(&self, elevation: i32) {
-        self.elevation.set(elevation);
+    fn set_elevation(&self, elevation: &i32) {
+        self.elevation.set(elevation.clone());
     }
 }
 
@@ -198,44 +198,44 @@ impl NavaidWaypoint {
 }
 
 impl Waypoint for NavaidWaypoint {
-    fn get_id(&self) -> String {
+    fn get_id(&self) -> &str {
         self.navaid.get_id()
     }
-    fn get_name(&self) -> String {
+    fn get_name(&self) -> &str {
         self.navaid.get_name()
     }
-    fn get_type(&self) -> WaypointType {
-        WaypointType::NAVAID
+    fn get_type(&self) -> &WaypointType {
+        &WaypointType::NAVAID
     }
     fn get_elevation(&self) -> i32 {
         self.elevation.get()
     }
-    fn get_loc(&self) -> Coordinate {
-        self.navaid.get_loc()
+    fn get_loc(&self) -> &Coordinate {
+        &self.navaid.get_loc()
     }
-    fn get_lat(&self) -> f64 {
-        self.navaid.get_lat()
+    fn get_lat(&self) -> &f64 {
+        &self.navaid.get_lat()
     }
     fn get_lat_as_string(&self) -> String {
         self.navaid.get_lat_as_string()
     }
-    fn get_long(&self) -> f64 {
-        self.navaid.get_long()
+    fn get_long(&self) -> &f64 {
+        &self.navaid.get_long()
     }
     fn get_long_as_string(&self) -> String {
         self.navaid.get_long_as_string()
     }
-    fn is_locked(&self) -> bool {
-        self.locked
+    fn is_locked(&self) -> &bool {
+        &self.locked
     }
-    fn get_freq(&self) -> Option<f64> {
-        Some(self.navaid.get_freq().clone())
+    fn get_freq(&self) -> Option<&f64> {
+        Some(self.navaid.get_freq())
     }
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
-    fn set_elevation(&self, elevation: i32) {
-        self.elevation.set(elevation);
+    fn set_elevation(&self, elevation: &i32) {
+        self.elevation.set(elevation.clone());
     }
 }
 
@@ -261,40 +261,40 @@ impl AirportWaypoint {
 }
 
 impl Waypoint for AirportWaypoint {
-    fn get_id(&self) -> String {
-        self.airport.get_id()
+    fn get_id(&self) -> &str {
+        &self.airport.get_id()
     }
-    fn get_name(&self) -> String {
-        self.airport.get_name()
+    fn get_name(&self) -> &str {
+        &self.airport.get_name()
     }
-    fn get_type(&self) -> WaypointType {
-        WaypointType::AIRPORT
+    fn get_type(&self) -> &WaypointType {
+        &WaypointType::AIRPORT
     }
     fn get_elevation(&self) -> i32 {
         self.elevation.get()
     }
-    fn get_loc(&self) -> Coordinate {
-        self.airport.get_loc()
+    fn get_loc(&self) -> &Coordinate {
+        &self.airport.get_loc()
     }
-    fn get_lat(&self) -> f64 {
-        self.airport.get_lat()
+    fn get_lat(&self) -> &f64 {
+        &self.airport.get_lat()
     }
     fn get_lat_as_string(&self) -> String {
         self.airport.get_lat_as_string()
     }
-    fn get_long(&self) -> f64 {
-        self.airport.get_long()
+    fn get_long(&self) -> &f64 {
+        &self.airport.get_long()
     }
     fn get_long_as_string(&self) -> String {
         self.airport.get_long_as_string()
     }
-    fn is_locked(&self) -> bool {
-        self.locked
+    fn is_locked(&self) -> &bool {
+        &self.locked
     }
     fn copy(&self) -> Box<dyn Waypoint> {
         Box::new(self.clone())
     }
-    fn set_elevation(&self, elevation: i32) {
+    fn set_elevation(&self, elevation: &i32) {
     }
 }
 

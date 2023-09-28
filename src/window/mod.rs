@@ -10,6 +10,7 @@ mod airport_view;
 mod navaid_view;
 mod fix_view;
 mod plan_view;
+mod util;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)

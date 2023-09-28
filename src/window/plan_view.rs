@@ -10,7 +10,8 @@ mod imp {
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::TreeStore;
+    use gtk::{Stack, TreeStore, Widget};
+    use crate::hangar::hangar::Hangar;
 
     use crate::model::aircraft::Aircraft;
     use crate::model::plan::Plan;
@@ -43,7 +44,7 @@ mod imp {
         pub(crate) fn new_plan(&self) {
             let mut guard = self.plan.write().expect("Should always have a plan");
             guard.add_sector(None, None);
-            guard.set_aircraft(&Some(Aircraft::new("Cessna".to_string(), 140, 7000, 110, 1000, 100, 500)));
+            guard.set_aircraft(&Hangar::get_hangar().get_default_aircraft());
         }
 
         pub fn get_plan(&self) -> Arc<RwLock<Plan>> {
@@ -90,7 +91,7 @@ mod imp {
                     let wp_row = tree_store.append(Some(&row));
                     tree_store.set(&wp_row, &[
                         (Col::Name as u32, &airport.get_name()),
-                        (Col::Elev as u32, &(airport.get_elevation() as i32)),
+                        (Col::Elev as u32, &(airport.get_elevation())),
                         (Col::Lat as u32, &airport.get_lat_as_string()),
                         (Col::Long as u32, &airport.get_long_as_string()),
                     ]);
@@ -104,7 +105,7 @@ mod imp {
                     };
                     tree_store.set(&wp_row, &[
                         (Col::Name as u32, &wp.get_name()),
-                        (Col::Elev as u32, &(wp.get_elevation() as i32)),
+                        (Col::Elev as u32, &(wp.get_elevation())),
                         (Col::Lat as u32, &wp.get_lat_as_string()),
                         (Col::Long as u32, &wp.get_long_as_string()),
                         (Col::Freq as u32, &(match wp.get_freq() {
@@ -121,7 +122,7 @@ mod imp {
                     let wp_row = tree_store.append(Some(&row));
                     tree_store.set(&wp_row, &[
                         (Col::Name as u32, &airport.get_name()),
-                        (Col::Elev as u32, &(airport.get_elevation() as i32)),
+                        (Col::Elev as u32, &(airport.get_elevation())),
                         (Col::Lat as u32, &airport.get_lat_as_string()),
                         (Col::Long as u32, &airport.get_long_as_string()),
                         (Col::Dist as u32, &plan.get_leg_distance_to_as_string(&airport)),
@@ -132,6 +133,11 @@ mod imp {
 
             self.plan_tree.set_model(Some(&tree_store));
             self.plan_tree.expand_all();
+
+            if let Some(stack) = self.obj().parent().and_downcast_ref::<Stack>() {
+                stack.page(self.obj().as_ref()).set_title(&plan.get_name());
+            }
+
         }
 
         pub fn initialise(&self) -> () {}

@@ -43,7 +43,7 @@ impl Plan {
             None => ()
         }
         match end {
-            Some(e) => sector.set_start(e),
+            Some(e) => sector.set_end(e),
             None => ()
         }
         self.sectors.borrow_mut().push(RefCell::new(sector));
@@ -56,7 +56,7 @@ impl Plan {
             None => ()
         }
         match end {
-            Some(e) => sector.set_start(e),
+            Some(e) => sector.set_end(e),
             None => ()
         }
         self.sectors.borrow_mut().insert(pos as usize, RefCell::new(sector));
@@ -112,17 +112,17 @@ impl Plan {
         self.dirty.borrow().clone()
     }
 
-    fn get_name(&self) -> String {
+    pub fn get_name(&self) -> String {
         if self.path.borrow().is_none() {
             let mut start: String = "".to_string();
             let mut end: String = "".to_string();
             let sectors = self.sectors.borrow();
             if sectors.len() > 0 {
                 if let Some(airport_start) = sectors[0].borrow().get_start() {
-                    start = airport_start.get_id();
+                    start = airport_start.get_id().to_string();
                 }
                 if let Some(airport_end) = sectors[0].borrow().get_end() {
-                    end = airport_end.get_id();
+                    end = airport_end.get_id().to_string();
                 }
                 if !start.is_empty() || !end.is_empty() {
                     return format!("{}-{}.fpl", start, end);
@@ -278,9 +278,9 @@ impl Plan {
                 if compare_wp(wp.deref(), waypoint) {
                     return speed;
                 }
-                if wp.get_type() == WaypointType::TOC {
+                if *wp.get_type() == WaypointType::TOC {
                     speed = cruise.clone();
-                } else if wp.get_type() == WaypointType::BOD {
+                } else if *wp.get_type() == WaypointType::BOD {
                     speed = descend.clone();
                 }
             }
@@ -317,12 +317,12 @@ impl Plan {
                     if compare_wp(wp.deref(), waypoint) {
                         return speed;
                     }
-                    if wp.get_type() == WaypointType::TOC {
+                    if *wp.get_type() == WaypointType::TOC {
                         speed = match self.get_aircraft().deref() {
                             Some(a) => a.get_cruise_speed().clone(),
                             None => 0,
                         };
-                    } else if wp.get_type() == WaypointType::BOD {
+                    } else if *wp.get_type() == WaypointType::BOD {
                         speed = match self.get_aircraft().deref() {
                             Some(a) => a.get_sink_speed().clone(),
                             None => 0,

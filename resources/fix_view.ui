@@ -16,7 +16,7 @@
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkScrolledWindow">
+          <object class="GtkScrolledWindow" id="fix_window">
             <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
             <property name="vscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
             <property name="propagate-natural-width">true</property>
@@ -65,31 +65,64 @@
         </child>
         <child>
           <object class="GtkBox">
-            <property name="spacing">10</property>
+            <property name="orientation">vertical</property>
             <style>
               <class name="search-box"/>
             </style>
             <child>
-              <object class="GtkLabel">
-                <property name="label" translatable="yes">Id</property>
-                <property name="vexpand">false</property>
-                <property name="hexpand">false</property>
+              <object class="GtkBox">
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Id</property>
+                    <property name="vexpand">false</property>
+                    <property name="hexpand">false</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="fix_search_name">
+                    <property name="max-length">20</property>
+                    <property name="height-request">1</property>
+                    <property name="vexpand">false</property>
+                    <property name="hexpand">false</property>
+                  </object>
+                </child>
               </object>
             </child>
             <child>
-              <object class="GtkEntry" id="fix_search_name">
-                <property name="max-length">20</property>
-                <property name="height-request">1</property>
+              <object class="GtkBox">
                 <property name="vexpand">false</property>
-                <property name="hexpand">false</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="fix_search">
-                <property name="label">Search</property>
-                <property name="sensitive">false</property>
-                <property name="vexpand">false</property>
-                <property name="hexpand">false</property>
+                <property name="hexpand">true</property>
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">or near Lat</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="fix_search_lat">
+                    <property name="max-length">10</property>
+                    <property name="height-request">1</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label" translatable="yes">Long</property>
+                    <property name="can-focus">false</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="fix_search_long">
+                    <property name="max-length">10</property>
+                    <property name="height-request">1</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="fix_search">
+                    <property name="label">Search</property>
+                    <property name="sensitive">false</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

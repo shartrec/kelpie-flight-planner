@@ -8,11 +8,14 @@ use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
     use glib::subclass::InitializingObject;
-    use gtk::{Button, Entry};
+    use gtk::{Button, Entry, ScrolledWindow};
     use gtk::glib::clone;
 
     use crate::earth;
     use crate::model::location::Location;
+    use crate::util::lat_long_format::LatLongFormat;
+    use crate::util::location_filter::{Filter, CombinedFilter, IdFilter, RangeFilter};
+    use crate::window::util::show_error_dialog;
 
     use super::*;
 
@@ -20,9 +23,15 @@ mod imp {
     #[template(resource = "/com/shartrec/kelpie_planner/fix_view.ui")]
     pub struct FixView {
         #[template_child]
+        pub fix_window: TemplateChild<ScrolledWindow>,
+        #[template_child]
         pub fix_list: TemplateChild<TreeView>,
         #[template_child]
         pub fix_search_name: TemplateChild<Entry>,
+        #[template_child]
+        pub fix_search_lat: TemplateChild<Entry>,
+        #[template_child]
+        pub fix_search_long: TemplateChild<Entry>,
         #[template_child]
         pub fix_search: TemplateChild<Button>,
     }
@@ -36,11 +45,48 @@ mod imp {
 
         pub fn search(&self) {
             let term = self.fix_search_name.text();
-            let sterm = term.as_str();
+            let lat = self.fix_search_lat.text();
+            let long = self.fix_search_long.text();
 
+            let mut combined_filter = CombinedFilter::new();
+            if !term.is_empty() {
+                if let Some(filter) = IdFilter::new(term.as_str()) {
+                    combined_filter.add(Box::new(filter));
+                }
+            }
+            if !lat.is_empty() || !long.is_empty() {
+                if lat.is_empty() || long.is_empty() {
+                    //show message popup
+                    show_error_dialog(&self.obj().root(), "Enter both a Latitude and Longitude for search.");
+                    return;
+                } else {
+                    let mut lat_as_float = 0.0;
+                    let lat_format = LatLongFormat::lat_format();
+                    match lat_format.parse(lat.as_str()) {
+                        Ok(latitude) => lat_as_float = latitude,
+                        Err(_) => {
+                            show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
+                            return;
+                        }
+                    }
+                    let mut long_as_float = 0.0;
+                    let long_format = LatLongFormat::long_format();
+                    match long_format.parse(long.as_str()) {
+                        Ok(longitude) => long_as_float = longitude,
+                        Err(_) => {
+                            show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
+                            return;
+                        }
+                    }
+                    if let Some(filter) = RangeFilter::new(lat_as_float, long_as_float, 100.0) {
+                        combined_filter.add(Box::new(filter));
+                    }
+                }
+            }
             let fixes = earth::get_earth_model().get_fixes().read().unwrap();
             let searh_result = fixes.iter().filter(move |a| {
-                a.get_id().eq_ignore_ascii_case(sterm)
+                let fix: &dyn Location = &***a;
+                combined_filter.filter(fix)
             });
             let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type()]);
             for fix in searh_result {

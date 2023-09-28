@@ -3,20 +3,24 @@
  */
 use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use crate::window::Window;
 
 mod imp {
+    use std::boxed::Box;
     use std::ops::Deref;
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::{Button, Entry};
+    use gtk::{Button, Entry, ScrolledWindow};
     use gtk::glib::clone;
-    use regex::RegexBuilder;
 
     use crate::earth;
     use crate::model::location::Location;
     use crate::model::plan::Plan;
+    use crate::util::lat_long_format::LatLongFormat;
+    use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
     use crate::window::plan_view::PlanView;
+    use crate::window::util::show_error_dialog;
     use crate::window::Window;
 
     use super::*;
@@ -25,13 +29,18 @@ mod imp {
     #[template(resource = "/com/shartrec/kelpie_planner/airport_view.ui")]
     pub struct AirportView {
         #[template_child]
+        pub airport_window: TemplateChild<ScrolledWindow>,
+        #[template_child]
         pub airport_list: TemplateChild<TreeView>,
         #[template_child]
         pub airport_search_name: TemplateChild<Entry>,
         #[template_child]
+        pub airport_search_lat: TemplateChild<Entry>,
+        #[template_child]
+        pub airport_search_long: TemplateChild<Entry>,
+        #[template_child]
         pub airport_search: TemplateChild<Button>,
     }
-
 
     impl AirportView {
         pub fn initialise(&self) -> () {}
@@ -41,33 +50,64 @@ mod imp {
         }
 
         pub fn search(&self) {
+            // CHeck we have sensible search criteria
             let term = self.airport_search_name.text();
-            let sterm = term.as_str();
-            let regex = RegexBuilder::new(sterm)
-                .case_insensitive(true)
-                .build();
+            let lat = self.airport_search_lat.text();
+            let long = self.airport_search_long.text();
 
-            match regex {
-                Ok(r) => {
-                    let airports = earth::get_earth_model().get_airports().read().unwrap();
-                    let searh_result = airports.iter().filter(move |a| {
-                        a.get_id().eq_ignore_ascii_case(sterm) || r.is_match(a.get_name().as_str())
-                    });
-                    let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type(), i32::static_type()]);
-                    for airport in searh_result {
-                        store.insert_with_values(
-                            None, &[
-                                (0, &airport.get_id()),
-                                (1, &airport.get_name()),
-                                (2, &airport.get_lat_as_string()),
-                                (3, &airport.get_long_as_string()),
-                                (4, &(airport.get_elevation()))
-                            ]);
-                    }
-                    self.airport_list.set_model(Some(&store));
+            let mut combined_filter = CombinedFilter::new();
+            if !term.is_empty() {
+                if let Some(filter) = NameIdFilter::new(term.as_str()) {
+                    combined_filter.add(Box::new(filter));
                 }
-                Err(_) => (),
             }
+            if !lat.is_empty() || !long.is_empty() {
+                if lat.is_empty() || long.is_empty() {
+                    //show message popup
+                    show_error_dialog(&self.obj().root(), "Enter both a Latitude and Longitude for search.");
+                    return;
+                } else {
+                    let mut lat_as_float = 0.0;
+                    let lat_format = LatLongFormat::lat_format();
+                    match lat_format.parse(lat.as_str()) {
+                        Ok(latitude) => lat_as_float = latitude,
+                        Err(_) => {
+                            show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
+                            return;
+                        }
+                    }
+                    let mut long_as_float = 0.0;
+                    let long_format = LatLongFormat::long_format();
+                    match long_format.parse(long.as_str()) {
+                        Ok(longitude) => long_as_float = longitude,
+                        Err(_) => {
+                            show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
+                            return;
+                        }
+                    }
+                    if let Some(filter) = RangeFilter::new(lat_as_float, long_as_float, 100.0) {
+                        combined_filter.add(Box::new(filter));
+                    }
+                }
+            }
+            let airports = earth::get_earth_model().get_airports().read().unwrap();
+            let searh_result = airports.iter().filter(move |a| {
+                let airport: &dyn Location = &***a;
+                combined_filter.filter(airport)
+            });
+            let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type(), i32::static_type()]);
+
+            for airport in searh_result {
+                store.insert_with_values(
+                    None, &[
+                        (0, &airport.get_id()),
+                        (1, &airport.get_name()),
+                        (2, &airport.get_lat_as_string()),
+                        (3, &airport.get_long_as_string()),
+                        (4, &(airport.get_elevation()))
+                    ]);
+            }
+            self.airport_list.set_model(Some(&store));
         }
     }
 
@@ -119,11 +159,39 @@ mod imp {
                 }
             }));
 
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(3);
+            gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                println!("Button '{}' pressed! at ({}, {})", gesture.button(),x,y);
+                if let Some((model, iter)) = view.airport_list.selection().selected() {
+                    println!("selected airport: {}", model.get::<String>(&iter, 0));
+                }
+            }));
+            self.airport_list.add_controller(gesture);
+
+            let gesture = gtk::EventControllerKey::new();
+            gesture.connect_key_released(clone!(@weak self as view => move |controller, key_code, key_type, modifiers| {
+                println!("Key pressed code:'{}' val:'{}', Modifiers:{})", key_code, key_type, modifiers);
+                if let Some((model, iter)) = view.airport_list.selection().selected() {
+                    println!("selected airport: {}", model.get::<String>(&iter, 0));
+                }
+            }));
+            self.airport_list.add_controller(gesture);
+
             self.airport_search.connect_clicked(
                 clone!(@weak self as window => move |search| {
                 window.search();
             }));
             self.airport_search_name.connect_activate(
+                clone!(@weak self as window => move |search| {
+                window.search();
+            }));
+            self.airport_search_lat.connect_activate(
+                clone!(@weak self as window => move |search| {
+                window.search();
+            }));
+            self.airport_search_long.connect_activate(
                 clone!(@weak self as window => move |search| {
                 window.search();
             }));
@@ -148,3 +216,4 @@ impl Default for AirportView {
         Self::new()
     }
 }
+

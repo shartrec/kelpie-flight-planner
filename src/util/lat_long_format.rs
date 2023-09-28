@@ -2,6 +2,7 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
+use std::num::ParseFloatError;
 use std::str::FromStr;
 
 pub struct LatLongFormat {
@@ -72,54 +73,62 @@ impl LatLongFormat {
         let mut min = 0.0;
         let mut sec = 0.0;
 
-        let work = source.trim();
-        let last_char = work.chars().last().unwrap_or(' ');
+        let just_a_number = source.parse::<f64>();
+        match just_a_number {
+            Ok(n) => {
+                Ok(n)
+            }
+            Err(_) => {
+                let work = source.trim();
+                let last_char = work.chars().last().unwrap_or(' ');
 
-        if last_char == self.pos_token {
-            sign = 1.0;
-        } else if last_char == self.neg_token {
-            sign = -1.0;
-        }
+                if last_char == self.pos_token {
+                    sign = 1.0;
+                } else if last_char == self.neg_token {
+                    sign = -1.0;
+                }
 
-        let tokenizer = work
-            .split(|c: char| {
-                c.is_whitespace() || c == '.' || c == '\u{00b0}' || c == '"' || c == '\''
-            })
-            .filter(|token| !token.is_empty());
+                let tokenizer = work
+                    .split(|c: char| {
+                        c.is_whitespace() || c == '.' || c == '\u{00b0}' || c == '"' || c == '\''
+                    })
+                    .filter(|token| !token.is_empty());
 
-        let tokens: Vec<&str> = tokenizer.collect();
+                let tokens: Vec<&str> = tokenizer.collect();
 
-        if let Some(deg_tok) = tokens.get(0) {
-            deg = match f64::from_str(deg_tok) {
-                Ok(num) => num,
-                Err(_) => return Err("Invalid coordinate format"),
-            };
-            if deg > 180.0 {
-                return Err("Out of range");
+                if let Some(deg_tok) = tokens.get(0) {
+                    deg = match f64::from_str(deg_tok) {
+                        Ok(num) => num,
+                        Err(_) => return Err("Invalid coordinate format"),
+                    };
+                    if deg > 180.0 {
+                        return Err("Out of range");
+                    }
+                }
+
+                if let Some(min_tok) = tokens.get(1) {
+                    min = match f64::from_str(min_tok) {
+                        Ok(num) => num,
+                        Err(_) => return Err("Invalid coordinate format"),
+                    };
+                    if min > 60.0 {
+                        return Err("Out of Range");
+                    }
+                }
+
+                if let Some(sec_tok) = tokens.get(2) {
+                    sec = match f64::from_str(sec_tok) {
+                        Ok(num) => num,
+                        Err(_) => return Err("Invalid coordinate format"),
+                    };
+                    if sec > 60.0 {
+                        return Err("Out of Range");
+                    }
+                }
+
+                Ok((deg + min / 60.0 + sec / 3600.0) * sign)
             }
         }
-
-        if let Some(min_tok) = tokens.get(1) {
-            min = match f64::from_str(min_tok) {
-                Ok(num) => num,
-                Err(_) => return Err("Invalid coordinate format"),
-            };
-            if min > 60.0 {
-                return Err("Out of Range");
-            }
-        }
-
-        if let Some(sec_tok) = tokens.get(2) {
-            sec = match f64::from_str(sec_tok) {
-                Ok(num) => num,
-                Err(_) => return Err("Invalid coordinate format"),
-            };
-            if sec > 60.0 {
-                return Err("Out of Range");
-            }
-        }
-
-        Ok((deg + min / 60.0 + sec / 3600.0) * sign)
     }
 }
 

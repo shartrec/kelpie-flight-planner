@@ -42,8 +42,8 @@ impl Navaid {
         self.type_.clone()
     }
 
-    pub fn get_freq(&self) -> f64 {
-        self.freq
+    pub fn get_freq(&self) -> &f64 {
+        &self.freq
     }
 
     pub fn get_range(&self) -> i32 {
@@ -56,37 +56,28 @@ impl Navaid {
 }
 
 impl Location for Navaid {
-    fn get_elevation(&self) -> i32 {
-        self.elevation
+    fn get_elevation(&self) -> &i32 {
+        &self.elevation
     }
-
-    fn get_id(&self) -> String {
-        self.id.clone()
+    fn get_id(&self) -> &str {
+        &self.id.as_str()
     }
-
-    fn get_lat(&self) -> f64 {
-        self.coordinate.get_latitude()
+    fn get_lat(&self) -> &f64 {
+        &self.coordinate.get_latitude()
     }
-
     fn get_lat_as_string(&self) -> String {
         self.coordinate.get_latitude_as_string().clone()
     }
-
-    fn get_long(&self) -> f64 {
-        self.coordinate.get_longitude()
+    fn get_long(&self) -> &f64 {
+        &self.coordinate.get_longitude()
     }
-
     fn get_long_as_string(&self) -> String {
         self.coordinate.get_longitude_as_string().clone()
     }
-
-    fn get_loc(&self) -> Coordinate {
-        self.coordinate.clone()
+    fn get_loc(&self) -> &Coordinate {
+        &self.coordinate
     }
-
-    fn get_name(&self) -> String {
-        self.name.clone()
-    }
+    fn get_name(&self) -> &str {self.name.as_str()}
 }
 
 #[derive(Clone, PartialEq)]

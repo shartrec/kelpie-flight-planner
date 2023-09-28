@@ -28,7 +28,7 @@ impl Sector {
     pub fn set_start(&mut self, start: &Airport) {
         self.airport_start.set(Some(AirportWaypoint::new(
             start.clone(),
-            start.get_elevation(),
+            start.get_elevation().clone(),
             true,
         )));
     }
@@ -36,7 +36,7 @@ impl Sector {
     pub fn set_end(&mut self, end: &Airport) {
         self.airport_end.set(Some(AirportWaypoint::new(
             end.clone(),
-            end.get_elevation(),
+            end.get_elevation().clone(),
             true,
         )));
     }
@@ -101,13 +101,13 @@ impl Sector {
         let w1 = binding.deref();
         let n1 = match w1 {
             Some(w) => w.get_id(),
-            None => "".to_string(),
+            None => "",
         };
         let binding = self.airport_end.borrow();
         let w2 = binding.deref();
         let n2 = match w2 {
             Some(w) => w.get_id(),
-            None => "".to_string(),
+            None => "",
         };
         format!("{} --> {}", n1, n2)
     }

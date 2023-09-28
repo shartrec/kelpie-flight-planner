@@ -44,6 +44,7 @@ impl Window {
         let view = PlanView::new();
         view.imp().new_plan();
         self.plan_stack.add_titled(&view, Some("newxx"), &"New Plan");
+        self.plan_stack.set_visible_child(&view);
     }
 
     fn layout_panels(&self) {

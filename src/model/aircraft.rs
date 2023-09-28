@@ -19,6 +19,7 @@ impl Aircraft {
         climb_rate: i32,
         sink_speed: i32,
         sink_rate: i32,
+        is_default: bool,
     ) -> Self {
         Aircraft {
             name,
@@ -28,7 +29,7 @@ impl Aircraft {
             climb_rate,
             sink_speed,
             sink_rate,
-            is_default: false,
+            is_default,
         }
     }
 
