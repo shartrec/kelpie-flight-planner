@@ -10,11 +10,81 @@
         <property name="orientation">vertical</property>
       </object>
     </property>
-    <!--    <child>-->
-    <!--      <object class="GtkBox">-->
-    <!--        <property name="orientation">vertical</property>-->
-    <!--        <property name="vexpand">true</property>-->
-    <!--        <property name="hexpand">true</property>-->
+    <child>
+      <object class="GtkBox">
+        <property name="margin-start">5</property>
+        <property name="margin-top">5</property>
+        <property name="margin-bottom">5</property>
+        <property name="spacing">5</property>
+        <child>
+          <object class="GtkButton" id="btn_make_plan">
+            <property name="tooltip_text">Generate plan</property>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/generate_plan.gif</property>
+                <property name="icon_size">1</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="btn_new_sector">
+            <property name="tooltip_text">Add Sector</property>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/new_sector.gif</property>
+                <property name="icon_size">1</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="btn_move_up">
+            <property name="tooltip_text">Move up</property>
+            <property name="sensitive">false</property>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/up.gif</property>
+                <property name="icon_size">1</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="btn_move_down">
+            <property name="tooltip_text">Move down</property>
+            <property name="sensitive">false</property>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/down.gif</property>
+                <property name="icon_size">1</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkDropDown" id="aircraft_combo">
+          </object>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="set_max_alt">
+            <property name="label">Set max altitude</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="max_alt">
+          </object>
+        </child>
+      </object>
+    </child>
     <child>
       <object class="GtkScrolledWindow">
         <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
@@ -104,7 +174,6 @@
                 <property name="title" translatable="yes">Dist</property>
                 <child>
                   <object class="GtkCellRendererText" id="a-dist-renderer">
-                    <property name="xalign">1.0</property>
                   </object>
                   <attributes>
                     <attribute name="text">6</attribute>

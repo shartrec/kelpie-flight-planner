@@ -1,7 +1,7 @@
 use std::thread;
 
 use glib::subclass::InitializingObject;
-use gtk::{Button, CompositeTemplate, glib, Paned, Stack};
+use gtk::{Button, CompositeTemplate, glib, Notebook, Paned, Stack};
 use gtk::gio::File;
 use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
@@ -22,6 +22,8 @@ pub struct Window {
     #[template_child]
     pub pane_1h: TemplateChild<Paned>,
     #[template_child]
+    pub search_notebook: TemplateChild<Notebook>,
+    #[template_child]
     pub airport_view: TemplateChild<AirportView>,
     #[template_child]
     pub navaid_view: TemplateChild<NavaidView>,
@@ -36,7 +38,7 @@ pub struct Window {
 
 impl Window {
     pub(crate) fn load_plan_from_files(&self, files: &[File]) {
-        println!("Nead to load file{:?} here", files[0].path());
+        todo!("Nead to load file{:?} here", files[0].path());
         // todo
     }
 
@@ -127,7 +129,7 @@ impl ObjectImpl for Window {
 
 }
 
-// Trait to allow us to add menubas
+// Trait to allow us to add menubars
 impl BuildableImpl for Window {}
 
 // Trait shared by all widgets

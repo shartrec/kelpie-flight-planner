@@ -2,6 +2,7 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
+use std::cell::Cell;
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock};
 
@@ -11,7 +12,7 @@ use crate::model::fix::Fix;
 use crate::model::location::Location;
 use crate::model::navaid::{Navaid, NavaidType};
 use crate::model::plan::Plan;
-use crate::model::waypoint::{AirportWaypoint, FixWaypoint, NavaidWaypoint, SimpleWaypoint, Waypoint, WaypointType};
+use crate::model::waypoint::Waypoint;
 use crate::preference::*;
 use crate::util::location_filter::{Filter, RangeFilter};
 
@@ -47,8 +48,8 @@ impl Planner<'_> {
             fixes: earth::get_earth_model().get_fixes(),
         }
     }
-    pub(crate) fn make_plan(&self, from: Option<AirportWaypoint>, to: Option<AirportWaypoint>) -> Vec<Box<dyn Waypoint>> {
-        let mut plan: Vec<Box<dyn Waypoint>> = Vec::new();
+    pub(crate) fn make_plan(&self, from: Option<Waypoint>, to: Option<Waypoint>) -> Vec<Waypoint> {
+        let mut plan: Vec<Waypoint> = Vec::new();
 
         if let Some(from) = from {
             if let Some(to) = to {
@@ -71,7 +72,6 @@ impl Planner<'_> {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
                 } else {
-                    self.add_fixes_to_plan(&from, &to, &mut plan);
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
@@ -81,28 +81,28 @@ impl Planner<'_> {
         plan
     }
 
-    fn add_navaids_to_plan(&self, from: &dyn Waypoint,
-                           to: &dyn Waypoint,
-                           plan: &mut Vec<Box<dyn Waypoint>>) {
+    fn add_navaids_to_plan(&self, from: &Waypoint,
+                           to: &Waypoint,
+                           plan: &mut Vec<Waypoint>) {
         if let Some(arrival_beacon) = self.get_navaid_nearest(&to.get_loc(), ARRIVAL_BEACON_RANGE) {
-            let wp: NavaidWaypoint = NavaidWaypoint::new(*arrival_beacon, 0, false);
+            let wp = Waypoint::Navaid { navaid: *arrival_beacon, elevation: Cell::new(0), locked: false };
 
             self.add_navaids_between(from, &wp.clone(), plan);
-            plan.push(Box::new(wp.clone()));
+            plan.push(wp);
         } else {
             self.add_navaids_between(from, to, plan);
         }
     }
 
-    fn add_fixes_to_plan(&self, from: &dyn Waypoint,
-                         to: &dyn Waypoint,
-                         plan: &mut Vec<Box<dyn Waypoint>>) {
+    fn add_fixes_to_plan(&self, from: &Waypoint,
+                         to: &Waypoint,
+                         plan: &mut Vec<Waypoint>) {
         self.add_fixes_between(from, to, plan);
     }
 
-    fn add_navaids_between(&self, from: &dyn Waypoint,
-                           to: &dyn Waypoint,
-                           plan: &mut Vec<Box<dyn Waypoint>>) {
+    fn add_navaids_between(&self, from: &Waypoint,
+                           to: &Waypoint,
+                           plan: &mut Vec<Waypoint>) {
         let distance = from.get_loc().distance_to(&to.get_loc()) as f64;
 
         if distance < self.max_leg_distance {
@@ -113,18 +113,18 @@ impl Planner<'_> {
         let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
 
         if let Some(mid_nav_aid) = self.get_navaid_nearest_midpoint(&from.get_loc(), &to.get_loc(), &midpoint) {
-            let wp = NavaidWaypoint::new(*mid_nav_aid, 0, false);
+            let wp = Waypoint::Navaid { navaid: *mid_nav_aid, elevation: Cell::new(0), locked: false };
+            let save_wp = wp.clone();
 
             self.add_navaids_between(from, &wp, plan);
-            plan.push(Box::new(wp.clone()));
-
-            self.add_navaids_between(&wp, to, plan);
+            plan.push(wp);
+            self.add_navaids_between(&save_wp, to, plan);
         }
     }
 
-    fn add_fixes_between(&self, from: &dyn Waypoint,
-                         to: &dyn Waypoint,
-                         plan: &mut Vec<Box<dyn Waypoint>>) {
+    fn add_fixes_between(&self, from: &Waypoint,
+                         to: &Waypoint,
+                         plan: &mut Vec<Waypoint>) {
         let distance = from.get_loc().distance_to(&to.get_loc()) as f64;
 
         if distance < self.max_leg_distance {
@@ -135,12 +135,12 @@ impl Planner<'_> {
         let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
 
         if let Some(mid_fix_aid) = self.get_fix_nearest_midpoint(&from.get_loc(), &to.get_loc(), &midpoint) {
-            let wp = FixWaypoint::new(*mid_fix_aid, 0, false);
-
+            let wp = Waypoint::Fix { fix: *mid_fix_aid, elevation: Cell::new(0), locked: false };
+            let save_wp = wp.clone();
             self.add_fixes_between(from, &wp, plan);
-            plan.push(Box::new(wp.clone()));
+            plan.push(wp);
 
-            self.add_fixes_between(&wp, to, plan);
+            self.add_fixes_between(&save_wp, to, plan);
         }
     }
 
@@ -283,9 +283,9 @@ impl Planner<'_> {
         best_loc
     }
 
-    fn add_waypoints_between(&self, from: &dyn Waypoint,
-                             to: &dyn Waypoint,
-                             plan: &mut Vec<Box<dyn Waypoint>>) {
+    fn add_waypoints_between(&self, from: &Waypoint,
+                             to: &Waypoint,
+                             plan: &mut Vec<Waypoint>) {
         let distance = from.get_loc().distance_to(&to.get_loc());
 
         if distance < self.max_leg_distance {
@@ -295,15 +295,16 @@ impl Planner<'_> {
         let heading = from.get_loc().bearing_to(&to.get_loc()).to_degrees();
         let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
 
-        let wp = SimpleWaypoint::new_gps_waypoint("<Waypoint>".to_string(), 0, midpoint);
+        let wp = Waypoint::Simple { loc: midpoint, elevation: Cell::new(0), locked: false };
+        let save_wp = wp.clone();
 
         self.add_waypoints_between(from, &wp, plan);
-        plan.push(Box::new(wp.clone()));
+        plan.push(wp);
 
-        self.add_waypoints_between(&wp, to, plan);
+        self.add_waypoints_between(&save_wp, to, plan);
     }
 
-    fn add_waypoints(&self, from: &dyn Waypoint, to: &dyn Waypoint, plan: &mut Vec<Box<dyn Waypoint>>) {
+    fn add_waypoints(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
 
         // Walk the legs and find those that are over the wished-for interval
         let max_leg_interval: f64 = if self.add_waypoint_bias {
@@ -321,7 +322,7 @@ impl Planner<'_> {
                     let leg_length = prev_wp.get_loc().distance_to(&wp.get_loc());
                     if leg_length >= max_leg_interval {
                         // The following changes the structure of the plan so we need to get out and start over
-                        self.add_waypoints_to_leg(prev_wp, to, plan, i, leg_length);
+                        self.add_waypoints_to_leg(&prev_wp, to, plan, i, leg_length);
                         break;
                     }
                     finished = true;
@@ -331,35 +332,33 @@ impl Planner<'_> {
         // Try for the final leg
         let leg_length = prev_wp.get_loc().distance_to(&to.get_loc());
         if leg_length >= max_leg_interval {
-            self.add_waypoints_to_leg(prev_wp, to, plan, plan.len(), leg_length);
+            self.add_waypoints_to_leg(&prev_wp, to, plan, plan.len(), leg_length);
         }
     }
 
-    fn add_waypoints_to_leg(&self, prev_wp: &dyn Waypoint, to: &dyn Waypoint, plan: &mut Vec<Box<dyn Waypoint>>, i: usize, leg_length: f64) {
+    fn add_waypoints_to_leg(&self, prev_wp: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>, i: usize, leg_length: f64) {
         let mut additional_points = leg_length as f64 / self.max_leg_distance as f64;
         let extra_points = if self.add_waypoint_bias && (additional_points.fract() > 0.2) {
             additional_points.ceil()
         } else {
             additional_points.floor()
         } as i32;
-        let interval = leg_length / extra_points as f64 ;
+        let interval = leg_length / extra_points as f64;
 
-        println!("Interval {}", interval);
-
-        let mut last_wp = prev_wp.copy();
+        let mut last_wp = prev_wp.clone();
 
         for a_pos in 0..extra_points - 1 {
             let heading = last_wp.get_loc().bearing_to_deg(&to.get_loc());
             let x_loc = last_wp.get_loc().coordinate_at(interval, heading);
-            let x = SimpleWaypoint::new_gps_waypoint("<Waypoint>".to_string(), 0, x_loc); //$NON-NLS-1$
-            plan.insert(i + a_pos as usize, Box::new(x.clone()));
-            last_wp = Box::new(x.clone());
+            let wp = Waypoint::Simple { loc: x_loc, elevation: Cell::new(0), locked: false };
+            let save_wp = wp.clone();
+            plan.insert(i + a_pos as usize, wp);
+            last_wp = save_wp;
         }
     }
 
     fn get_navaids_near(&self, locations: &Arc<RwLock<Vec<Box<Navaid>>>>, point: &Coordinate, range: f64)
-                                           -> Vec<Box<Navaid>> {
-
+                        -> Vec<Box<Navaid>> {
         let mut near_locations: Vec<Box<Navaid>> = Vec::new();
 
         if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range) {
@@ -377,14 +376,13 @@ impl Planner<'_> {
     }
 
     fn get_fixes_near(&self, locations: &Arc<RwLock<Vec<Box<Fix>>>>, point: &Coordinate, range: f64)
-                                           -> Vec<Box<Fix>> {
-
+                      -> Vec<Box<Fix>> {
         let mut near_locations: Vec<Box<Fix>> = Vec::new();
 
         if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range) {
             let guard = locations.read().unwrap();
             let locations = guard.deref();
-            let x: Vec<&Box<Fix>>= locations.iter().filter(move |loc| {
+            let x: Vec<&Box<Fix>> = locations.iter().filter(move |loc| {
                 filter.filter(&***loc)
             }).collect();
 
@@ -416,7 +414,14 @@ impl Planner<'_> {
             let mut guard = sector.get_waypoints().write().expect("Can't get read lock on sectors");
             let mut waypoints = guard.deref_mut();
             waypoints.retain(|wp| {
-                *wp.get_type() != WaypointType::TOC && *wp.get_type() != WaypointType::BOD
+                match wp {
+                    Waypoint::Toc { .. } | Waypoint::Bod { .. } => {
+                        false
+                    }
+                    _ => {
+                        true
+                    }
+                }
             });
 
             let max_alt = calc_max_altitude(
@@ -453,15 +458,15 @@ impl Planner<'_> {
     }
 }
 
-pub fn add_bod(plan: &Plan, from: &AirportWaypoint, to: &AirportWaypoint, waypoints: &mut Vec<Box<dyn Waypoint>>, max_alt: i32) {
+pub fn add_bod(plan: &Plan, from: &Waypoint, to: &Waypoint, waypoints: &mut Vec<Waypoint>, max_alt: i32) {
     let mut done = false;
     let alt_to_bod = max_alt - to.get_elevation();
     let aircraft = plan.get_aircraft();
-    let time_to_bod = alt_to_bod  as f64 / aircraft.as_ref().map(|a| a.get_sink_rate().clone() as f64).unwrap_or(500.0) / 60.0;
+    let time_to_bod = alt_to_bod as f64 / aircraft.as_ref().map(|a| a.get_sink_rate().clone() as f64).unwrap_or(500.0) / 60.0;
     let dist_to_bod = aircraft.as_ref().map(|a| a.get_sink_speed().clone() as f64).unwrap_or(100.0) * time_to_bod;
 
     let mut distance_remaining = dist_to_bod as f64;
-    let mut next_wp: &dyn Waypoint = to;
+    let mut next_wp: &Waypoint = to;
 
     let mut insertion_spot = None;
     let mut bod = None;
@@ -473,14 +478,14 @@ pub fn add_bod(plan: &Plan, from: &AirportWaypoint, to: &AirportWaypoint, waypoi
         if leg_length >= distance_remaining {
             let heading = wp.get_loc().bearing_to_deg(&next_wp.get_loc());
             let bod_loc = wp.get_loc().coordinate_at(leg_length - distance_remaining, heading);
-            bod = Some(SimpleWaypoint::new_bod_waypoint("BOD".to_string(), max_alt as i32, bod_loc));
+            bod = Some(Waypoint::Bod { loc: bod_loc, elevation: Cell::new(max_alt as i32), locked: false });
             insertion_spot = Some((i + 1).clone());
             done = true;
             break;
         }
 
         distance_remaining -= leg_length;
-        next_wp = wp.as_ref();
+        next_wp = wp;
     }
 
     if !done {
@@ -489,26 +494,27 @@ pub fn add_bod(plan: &Plan, from: &AirportWaypoint, to: &AirportWaypoint, waypoi
         if leg_length >= distance_remaining {
             let heading = from.get_loc().bearing_to_deg(&next_wp.get_loc());
             let bod_loc = from.get_loc().coordinate_at(leg_length - distance_remaining, heading);
-            bod = Some(SimpleWaypoint::new_bod_waypoint("BOD".to_string(), max_alt as i32, bod_loc));
+            bod = Some(Waypoint::Bod { loc: bod_loc, elevation: Cell::new(max_alt as i32), locked: false });
             insertion_spot = Some(0);
         }
     }
     if let Some(i) = insertion_spot {
-        waypoints.insert(i, Box::new(bod.unwrap()));
+        if let Some(wp) = bod {
+            waypoints.insert(i, wp);
+        }
     }
-
 }
 
-pub fn add_toc(plan: &Plan, from: &dyn Waypoint, to: &dyn Waypoint, waypoints: &mut Vec<Box<dyn Waypoint>>, max_alt: i32) {
+pub fn add_toc(plan: &Plan, from: &Waypoint, to: &Waypoint, waypoints: &mut Vec<Waypoint>, max_alt: i32) {
     let mut done = false;
     let alt_to_toc = max_alt - from.get_elevation();
     let aircraft = plan.get_aircraft();
 
-    let time_to_toc = alt_to_toc as f64 / aircraft.as_ref().map(|a| a.get_climb_rate().clone() as f64).unwrap_or(1000.0)/ 60.0;
+    let time_to_toc = alt_to_toc as f64 / aircraft.as_ref().map(|a| a.get_climb_rate().clone() as f64).unwrap_or(1000.0) / 60.0;
     let dist_to_toc = aircraft.as_ref().map(|a| a.get_climb_speed().clone() as f64).unwrap_or(120.0) * time_to_toc;
 
     let mut distance_remaining = dist_to_toc as f64;
-    let mut prev_wp = from.clone();
+    let mut prev_wp = from;
     let mut insertion_spot = None;
     let mut toc = None;
 
@@ -519,14 +525,14 @@ pub fn add_toc(plan: &Plan, from: &dyn Waypoint, to: &dyn Waypoint, waypoints: &
         if leg_length >= distance_remaining {
             let heading = prev_wp.get_loc().bearing_to_deg(&wp.get_loc());
             let toc_loc = prev_wp.get_loc().coordinate_at(distance_remaining, heading);
-            toc = Some(SimpleWaypoint::new_toc_waypoint("TOC".to_string(), max_alt as i32, toc_loc));
+            toc = Some(Waypoint::Toc { loc: toc_loc, elevation: Cell::new(max_alt as i32), locked: false });
             insertion_spot = Some(i);
             done = true;
             break;
         }
 
         distance_remaining -= leg_length;
-        prev_wp = wp.as_ref();
+        prev_wp = wp;
     }
 
     if !done {
@@ -535,29 +541,30 @@ pub fn add_toc(plan: &Plan, from: &dyn Waypoint, to: &dyn Waypoint, waypoints: &
         if leg_length >= distance_remaining {
             let heading = prev_wp.get_loc().bearing_to_deg(&to.get_loc());
             let toc_loc = prev_wp.get_loc().coordinate_at(distance_remaining, heading);
-            let toc = SimpleWaypoint::new_toc_waypoint("TOC".to_string(), max_alt as i32, toc_loc);
-            waypoints.push(Box::new(toc));
+            let wp = Waypoint::Toc { loc: toc_loc, elevation: Cell::new(max_alt as i32), locked: false };
+            waypoints.push(wp);
         }
     }
     if let Some(i) = insertion_spot {
-        waypoints.insert(i, Box::new(toc.unwrap()));
+        if let Some(wp) = toc {
+            waypoints.insert(i, wp);
+        }
     }
 }
 
 fn calc_max_altitude(
     plan: &Plan,
-    from: &dyn Waypoint,
-    to: &dyn Waypoint,
-    waypoints: &Vec<Box<dyn Waypoint>>,
+    from: &Waypoint,
+    to: &Waypoint,
+    waypoints: &Vec<Waypoint>,
 ) -> i32 {
-
     let mut dist = 0.0;
-    let mut prev_wp = from.clone();
+    let mut prev_wp = from;
 
     for wp in waypoints {
         let leg_length = prev_wp.get_loc().distance_to(&wp.get_loc()) as f64;
         dist += leg_length;
-        prev_wp = wp.deref();
+        prev_wp = wp;
     }
 
     let leg_length = prev_wp.get_loc().distance_to(&to.get_loc());
@@ -565,7 +572,7 @@ fn calc_max_altitude(
 
     let mut alt = plan.get_plan_altitude();
 
-    while calc_climb_sink_distance(&plan,to, from, alt) > dist {
+    while calc_climb_sink_distance(&plan, to, from, alt) > dist {
         alt -= 500;
     }
 
@@ -574,68 +581,72 @@ fn calc_max_altitude(
 
 pub fn set_elevations(
     plan: &Plan,
-    from: &dyn Waypoint,
-    _to: &dyn Waypoint,
-    waypoints: &Vec<Box<dyn Waypoint>>,
+    from: &Waypoint,
+    _to: &Waypoint,
+    waypoints: &Vec<Waypoint>,
     max_alt: i32,
 ) {
-    let mut alt = from.get_elevation();
+    let mut alt = from.get_elevation().clone();
     let mut ascent = true;
     let mut descent = false;
 
-    let mut prev_wp = from.clone();
+    let mut prev_wp = from;
 
     for wp in waypoints {
-        if *wp.get_type() == WaypointType::TOC {
-            ascent = false;
-            alt = max_alt;
-        } else if *wp.get_type() == WaypointType::BOD {
-            ascent = false;
-            descent = true;
-            alt = max_alt;
-        } else if ascent {
-            let distance = prev_wp.get_loc().distance_to(&wp.get_loc());
-            let leg_time = distance as f64 / plan.get_aircraft().as_ref().map(|a| *a.get_climb_speed() as f64).unwrap_or(120.0);
-            alt += (leg_time * plan.get_aircraft().as_ref().map(|a| *a.get_climb_rate() as f64).unwrap_or(1000.0) * 60.0) as i32;
-
-            if alt > max_alt {
-                alt = max_alt;
+        match wp {
+            Waypoint::Toc{ .. } => {
                 ascent = false;
+                alt = max_alt;
             }
+            Waypoint::Bod{ .. } => {
+                ascent = false;
+                descent = true;
+                alt = max_alt;
+            }
+            _ => {
+                if ascent {
+                    let distance = prev_wp.get_loc().distance_to(&wp.get_loc());
+                    let leg_time = distance as f64 / plan.get_aircraft().as_ref().map(|a| *a.get_climb_speed() as f64).unwrap_or(120.0);
+                    alt += (leg_time * plan.get_aircraft().as_ref().map(|a| *a.get_climb_rate() as f64).unwrap_or(1000.0) * 60.0) as i32;
 
-            wp.set_elevation(&alt);
-        } else if descent {
-            let distance = prev_wp.get_loc().distance_to(&wp.get_loc());
-            let leg_time = distance as f64 / plan.get_aircraft().as_ref().map(|a| *a.get_sink_speed() as f64).unwrap_or(80.0);
-            alt -= (leg_time * plan.get_aircraft().as_ref().map(|a| *a.get_sink_rate() as f64).unwrap_or(700.0) * 60.0) as i32;
-            wp.set_elevation(&alt);
-        } else {
-            wp.set_elevation(&alt);
+                    if alt > max_alt {
+                        alt = max_alt;
+                        ascent = false;
+                    }
+
+                    wp.set_elevation(&alt);
+                } else if descent {
+                    let distance = prev_wp.get_loc().distance_to(&wp.get_loc());
+                    let leg_time = distance as f64 / plan.get_aircraft().as_ref().map(|a| *a.get_sink_speed() as f64).unwrap_or(80.0);
+                    alt -= (leg_time * plan.get_aircraft().as_ref().map(|a| *a.get_sink_rate() as f64).unwrap_or(700.0) * 60.0) as i32;
+                    wp.set_elevation(&alt);
+                } else {
+                    wp.set_elevation(&alt);
+                }
+            }
         }
-
-        prev_wp = wp.deref();
+        prev_wp = wp;
     }
 }
 
-fn calc_climb_sink_distance(plan: &Plan, from: &dyn Waypoint, to: &dyn Waypoint, altitude: i32) -> f64 {
-    let alt_to_toc = (altitude - from.get_elevation())  as f64;
+fn calc_climb_sink_distance(plan: &Plan, from: &Waypoint, to: &Waypoint, altitude: i32) -> f64 {
+    let alt_to_toc = (altitude - from.get_elevation()) as f64;
     let time_to_toc = alt_to_toc / plan.get_aircraft().as_ref().map(|a| *a.get_climb_rate() as f64).unwrap_or(1000.0) / 60.0;
     let dist_to_toc = plan.get_aircraft().as_ref().map(|a| *a.get_climb_speed() as f64).unwrap_or(120.0) * time_to_toc;
 
-    let alt_to_bod = (altitude - to.get_elevation())  as f64 ;
+    let alt_to_bod = (altitude - to.get_elevation()) as f64;
     let time_to_bod = alt_to_bod / plan.get_aircraft().as_ref().map(|a| *a.get_sink_rate() as f64).unwrap_or(700.0) / 60.0;
     let dist_to_bod = plan.get_aircraft().as_ref().map(|a| *a.get_sink_speed() as f64).unwrap_or(80.0) * time_to_bod;
 
     dist_to_toc + dist_to_bod
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, RwLock};
 
     use crate::model::test_utils::make_airport_at;
-    use crate::model::waypoint::AirportWaypoint;
+    use crate::model::waypoint::Waypoint;
     use crate::preference::USE_GPS;
 
     use super::Planner;
@@ -648,7 +659,7 @@ mod tests {
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
-            add_gps_waypoints: false,
+            add_gps_waypoints: true,
             add_waypoint_bias: false,
             plan_type: USE_GPS.to_string(),
             navaids: &Arc::new(RwLock::new(Vec::new())),
@@ -656,15 +667,15 @@ mod tests {
         };
 
         let ap = make_airport_at("YSSY", -34.0, 151.0);
-        let w1 = AirportWaypoint::new(ap, 20, false);
+        let w1 = Waypoint::Airport{ airport: ap, locked: false };
         let ap = make_airport_at("YPER", -32.1, 120.5);
-        let w2 = AirportWaypoint::new(ap, 20, false);
+        let w2 = Waypoint::Airport{ airport: ap, locked: false };
 
         let plan = planner.make_plan(Some(w1), Some(w2));
 
         for wp in &plan {
             println!("WP - {}, {}", wp.get_lat_as_string(), wp.get_long_as_string())
         }
-        assert_eq!(plan.len(), 15);
+        assert_eq!(plan.len(), 14);
     }
 }

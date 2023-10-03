@@ -2,7 +2,7 @@ use crate::earth::coordinate::Coordinate;
 
 use super::location::Location;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Fix {
     id: String,
     coordinate: Coordinate,
@@ -46,5 +46,5 @@ impl Location for Fix {
         &self.coordinate
     }
 
-    fn get_name(&self) -> &str {""}
+    fn get_name(&self) -> &str {&self.get_id()}
 }

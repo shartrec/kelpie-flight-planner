@@ -3,27 +3,6 @@
   -->
 
 <interface>
-  <menu id="airports-menu">
-    <section>
-      <item>
-        <attribute name="label">Add to plan</attribute>
-        <attribute name="action">airport.add_to_plan</attribute>
-      </item>
-      <item>
-        <attribute name="label">View airport</attribute>
-        <attribute name="action">airport.view</attribute>
-      </item>
-      <item>
-        <attribute name="label">Find navaids near</attribute>
-        <attribute name="action">airport.find_navaids_near</attribute>
-      </item>
-      <item>
-        <attribute name="label">Find fixes near</attribute>
-        <attribute name="action">airport.find_fixes_near</attribute>
-      </item>
-    </section>
-  </menu>
-
   <template class="AirportView" parent="GtkWidget">
     <property name="layout-manager">
       <object class="GtkBoxLayout">
@@ -109,8 +88,9 @@
           </object>
         </child>
         <child>
-          <object class="GtkBox" id="airport_search_box">
+          <object class="GtkBox">
             <property name="orientation">vertical</property>
+            <property name="spacing">10</property>
             <style>
               <class name="search-box"/>
             </style>

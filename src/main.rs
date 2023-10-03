@@ -85,13 +85,13 @@ fn connect_actions(app: &Application, window: &Window) {
 
     let action = SimpleAction::new("open", None);
     action.connect_activate(move |action, parameter| {
-        println!("Open clicked");
+        todo!("Open clicked");
     });
     app.add_action(&action);
 
     let action = SimpleAction::new("save", None);
     action.connect_activate(move |action, parameter| {
-        println!("Save clicked");
+        todo!("Save clicked");
     });
     app.add_action(&action);
 

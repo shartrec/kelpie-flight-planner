@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
+use log::info;
+
 use crate::model::fix::Fix;
 
 pub struct FixParserFG {}
@@ -27,7 +29,7 @@ impl FixParserFG {
                             return Err(err_msg);
                         }
                     }
-                    println!("{}", msg.kind());
+                    info!("{}", msg.kind());
                     () // We ignore the error on the first two rows - NOT UTF-8
                 }
             }

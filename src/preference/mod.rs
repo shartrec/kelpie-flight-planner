@@ -4,6 +4,7 @@ use std::{
 };
 
 use lazy_static::lazy_static;
+use log::error;
 use preferences::{AppInfo, Preferences, PreferencesMap};
 
 const PREFS_PATH: &str = "planner";
@@ -52,7 +53,7 @@ lazy_static! {
             match PreferencesMap::<String>::load(&APP_INFO, PREFS_PATH) {
                 Ok(map) => Arc::new(RwLock::new(map)),
                 Err(e) => {
-                    println!("Error openning preferences {}", e);
+                    error!("Error opening preferences {}", e);
                     Arc::new(RwLock::new(PreferencesMap::new()))
                 }
             }

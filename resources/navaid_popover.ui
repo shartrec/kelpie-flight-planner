@@ -1,0 +1,22 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+  <menu id="navaids-menu">
+    <section>
+      <item>
+        <attribute name="label">Add to plan</attribute>
+        <attribute name="action">navaid.add_to_plan</attribute>
+      </item>
+      <item>
+        <attribute name="label">Find airports near</attribute>
+        <attribute name="action">navaid.find_airports_near</attribute>
+      </item>
+      <item>
+        <attribute name="label">Find fixes near</attribute>
+        <attribute name="action">navaid.find_fixes_near</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

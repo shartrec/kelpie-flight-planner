@@ -4,16 +4,16 @@ use std::sync::{Arc, RwLock};
 
 use gtk::glib::{PropertyGet, PropertySet};
 
+use crate::model::plan::Plan;
+
 use super::airport::Airport;
 use super::location::Location;
-use super::waypoint::{AirportWaypoint, Waypoint};
+use super::waypoint::Waypoint;
 
-struct Plan {}
-
-pub struct Sector {
-    airport_start: RefCell<Option<AirportWaypoint>>,
-    airport_end: RefCell<Option<AirportWaypoint>>,
-    waypoints: Arc<RwLock<Vec<Box<dyn Waypoint>>>>,
+pub struct Sector<> {
+    airport_start: RefCell<Option<Waypoint>>,
+    airport_end: RefCell<Option<Waypoint>>,
+    waypoints: Arc<RwLock<Vec<Waypoint>>>,
 }
 
 impl Sector {
@@ -25,76 +25,60 @@ impl Sector {
         }
     }
 
-    pub fn set_start(&mut self, start: &Airport) {
-        self.airport_start.set(Some(AirportWaypoint::new(
-            start.clone(),
-            start.get_elevation().clone(),
-            true,
-        )));
+    pub fn set_start(&self, start: &Airport) {
+        self.airport_start.set(Some(Waypoint::Airport {
+            airport: start.clone(),
+            locked: true,
+        }));
     }
 
-    pub fn set_end(&mut self, end: &Airport) {
-        self.airport_end.set(Some(AirportWaypoint::new(
-            end.clone(),
-            end.get_elevation().clone(),
-            true,
-        )));
+    pub fn set_end(&self, end: &Airport) {
+        self.airport_end.set(Some(Waypoint::Airport {
+            airport: end.clone(),
+            locked: true,
+        }));
     }
-    pub fn add_waypoint(&self, index: usize, waypoint: Box<dyn Waypoint>) {
-        if index <= self.waypoints.read().unwrap().len() {
-            self.waypoints.write().unwrap().insert(index, waypoint);
+    pub fn clear_start(&self) {
+        self.airport_start.set(None);
+    }
+
+    pub fn clear_end(&self) {
+        self.airport_end.set(None);
+    }
+    pub fn insert_waypoint(&self, index: usize, waypoint: Waypoint) {
+        if let Ok(mut vec) = self.waypoints.write() {
+            if index <= vec.len() {
+                vec.insert(index, waypoint);
+            }
         }
     }
 
-    pub fn add_all_waypoint(&self, waypoints: Vec<Box<dyn Waypoint>>) {
-        let mut vec = self.waypoints.write().expect("Can't get sector lock");
-        vec.clear();
-        for wp in waypoints {
-            println!("adding wp - {}", wp.get_name());
-            vec.push(wp);
+    pub fn add_waypoint(&self, waypoint: Waypoint) {
+        if let Ok(mut vec) = self.waypoints.write() {
+            vec.push(waypoint);
         }
     }
 
+    pub fn add_all_waypoint(&self, waypoints: Vec<Waypoint>) {
+        if let Ok(mut vec) = self.waypoints.write() {
+            vec.clear();
+            for wp in waypoints {
+                vec.push(wp);
+            }
+        }
+    }
 
-
-
-    // fn add_waypoint_after(&self, at: Box<dyn Waypoint>, waypoint_: Box<dyn Waypoint>) {
-    //     let found_at = {
-    //         let wps = self.waypoints.read().unwrap();
-    //         wps.iter().position(|w| {
-    //             waypoint::eq(w.copy(), at)
-    //         })
-    //     }; // Lock gets dropped here
-    //     match found_at {
-    //         Some(i) => self.add_waypoint(i + 1, waypoint_),
-    //         None => self.add_waypoint(self.waypoints.read().unwrap().len(), waypoint_),
-    //     }
-    // }
-    //
-    // fn add_waypoint_before(&mut self, at: Box<dyn Waypoint>, waypoint_: Box<dyn Waypoint>) {
-    //     let found_at = {
-    //         let wps = self.waypoints.read().unwrap();
-    //         wps.iter().position(|w| waypoint::eq(w.copy(), at))
-    //     }; // Lock gets dropped here
-    //     match found_at {
-    //         Some(i) => self.add_waypoint(i, waypoint_),
-    //         None => self.add_waypoint(self.waypoints.read().unwrap().len(), waypoint_),
-    //     }
-    // }
-    //
-    // fn remove_waypoint(&mut self, waypoint: Box<dyn Waypoint>) {
-    //     let found_at = {
-    //         let wps = self.waypoints.read().unwrap();
-    //         wps.iter().position(|w| waypoint::eq(w.copy(), waypoint))
-    //     }; // Lock gets dropped here
-    //     match found_at {
-    //         Some(i) => {
-    //             self.waypoints.write().unwrap().remove(i);
-    //             ()
-    //         }
-    //         None => (),
-    //     }
-    // }
+    pub fn remove_waypoint(&self, index: usize) -> Option<Waypoint> {
+        if let Ok(mut vec) = self.waypoints.write() {
+            if index < vec.len() {
+                Some(vec.remove(index))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 
     pub fn get_name(&self) -> String {
         let binding = self.airport_start.borrow();
@@ -112,15 +96,15 @@ impl Sector {
         format!("{} --> {}", n1, n2)
     }
 
-    pub fn get_start(&self) -> Option<AirportWaypoint> {
+    pub fn get_start(&self) -> Option<Waypoint> {
         self.airport_start.borrow().clone()
     }
 
-    pub fn get_end(&self) -> Option<AirportWaypoint> {
+    pub fn get_end(&self) -> Option<Waypoint> {
         self.airport_end.borrow().clone()
     }
 
-    pub fn get_waypoints(&self) -> &Arc<RwLock<Vec<Box<dyn Waypoint>>>> {
+    pub fn get_waypoints(&self) -> &Arc<RwLock<Vec<Waypoint>>> {
         &self.waypoints
     }
 
@@ -128,21 +112,30 @@ impl Sector {
         self.waypoints.read().unwrap().len()
     }
 
-    pub fn get_waypoint(&self, pos: usize) -> Option<Box<dyn Waypoint>> {
-        Some(self.waypoints.read().unwrap()[pos].copy())
+    pub fn get_waypoint(&self, pos: usize) -> Option<Waypoint> {
+        Some(self.waypoints.read().unwrap()[pos].clone())
     }
 
-    pub fn get_duration(&self) -> f64 {
-        10.0
+    //todo
+    pub fn get_duration(&self, plan: &Plan) -> f64 {
+        match self.waypoints.read() {
+            Ok(waypoints) => {
+                waypoints.iter().map(move |wp| {
+                    plan.get_time_to(wp)
+                }).reduce(|acc, t| acc + t).unwrap_or(0.0)
+            }
+            _ => 0.0,
+        }
     }
-    // Other methods of the Sector struct go here...
 }
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
+
     use crate::earth::coordinate::Coordinate;
     use crate::model::test_utils::make_airport;
-    use crate::model::waypoint::{SimpleWaypoint, Waypoint};
+    use crate::model::waypoint::Waypoint;
 
     use super::Sector;
 
@@ -166,31 +159,32 @@ mod tests {
         s.set_start(&make_airport("YSSY"));
         s.set_end(&make_airport("YMLB"));
         let w1 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 10, Coordinate::new(13.0, 111.0));
+            Waypoint::Simple { loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false };
         let w2 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 20, Coordinate::new(23.0, 121.0));
+            Waypoint::Simple { loc: Coordinate::new(23.0, 121.0), elevation: Cell::new(20), locked: false };
         let w3 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 30, Coordinate::new(33.0, 131.0));
+            Waypoint::Simple { loc: Coordinate::new(33.0, 131.0), elevation: Cell::new(30), locked: false };
         let w4 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 40, Coordinate::new(43.0, 141.0));
-        // s.add_waypoint(0, Box::new(w1.clone()));
-        // s.add_waypoint_after(Box::new(w1.clone()), Box::new(w2.clone()));
-        // s.add_waypoint_after(Box::new(w2.clone()), Box::new(w3.clone()));
-        // s.add_waypoint_before(Box::new(w2.clone()), Box::new(w4.clone()));
-        //
-        // let wps = s.waypoints.read().unwrap();
-        // assert_eq!(wps.len(), 4);
-        // assert_eq!(wps.get(0).unwrap().get_loc(), w1.get_loc());
-        // assert_eq!(wps.get(1).unwrap().get_loc(), w4.get_loc());
-        // assert_eq!(wps.get(2).unwrap().get_loc(), w2.get_loc());
-        // assert_eq!(wps.get(3).unwrap().get_loc(), w3.get_loc());
-        // drop(wps);
-        //
-        // s.remove_waypoint(Box::new(w2.clone()));
-        // let wps = s.waypoints.read().unwrap();
-        // assert_eq!(wps.len(), 3);
-        // assert_eq!(wps.get(0).unwrap().get_loc(), w1.get_loc());
-        // assert_eq!(wps.get(1).unwrap().get_loc(), w4.get_loc());
-        // assert_eq!(wps.get(2).unwrap().get_loc(), w3.get_loc());
+            Waypoint::Simple { loc: Coordinate::new(43.0, 141.0), elevation: Cell::new(40), locked: false };
+
+        s.add_waypoint(w1.clone());
+        s.add_waypoint(w2.clone());
+        s.add_waypoint(w3.clone());
+        s.insert_waypoint(1, w4.clone());
+
+        let wps = s.waypoints.read().unwrap();
+        assert_eq!(wps.len(), 4);
+        assert_eq!(wps.get(0).unwrap().get_loc(), w1.get_loc());
+        assert_eq!(wps.get(1).unwrap().get_loc(), w4.get_loc());
+        assert_eq!(wps.get(2).unwrap().get_loc(), w2.get_loc());
+        assert_eq!(wps.get(3).unwrap().get_loc(), w3.get_loc());
+        drop(wps);
+
+        s.remove_waypoint(2);
+        let wps = s.waypoints.read().unwrap();
+        assert_eq!(wps.len(), 3);
+        assert_eq!(wps.get(0).unwrap().get_loc(), w1.get_loc());
+        assert_eq!(wps.get(1).unwrap().get_loc(), w4.get_loc());
+        assert_eq!(wps.get(2).unwrap().get_loc(), w3.get_loc());
     }
 }

@@ -1,0 +1,26 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+  <menu id="airports-menu">
+    <section>
+      <item>
+        <attribute name="label">Add to plan</attribute>
+        <attribute name="action">airport.add_to_plan</attribute>
+      </item>
+      <item>
+        <attribute name="label">View airport</attribute>
+        <attribute name="action">airport.view</attribute>
+      </item>
+      <item>
+        <attribute name="label">Find navaids near</attribute>
+        <attribute name="action">airport.find_navaids_near</attribute>
+      </item>
+      <item>
+        <attribute name="label">Find fixes near</attribute>
+        <attribute name="action">airport.find_fixes_near</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

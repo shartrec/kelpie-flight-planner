@@ -3,9 +3,16 @@
  */
 
 
-use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root};
-use gtk::prelude::{DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt};
+use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root, ScrolledWindow};
 use gtk::glib::Cast;
+use gtk::prelude::{CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt};
+use gtk::subclass::prelude::ObjectSubclassIsExt;
+
+use crate::window::airport_view::AirportView;
+use crate::window::fix_view::FixView;
+use crate::window::navaid_view::NavaidView;
+use crate::window::plan_view::PlanView;
+use crate::window::Window;
 
 // The following allows us to test an enttry field for numeric only chgaracters
 // To use it
@@ -38,3 +45,92 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
     };
 }
 
+pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            our_window.imp().plan_stack.visible_child().and_downcast::<PlanView>()
+        }
+        None => {
+            None
+        }
+    }
+}
+pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            our_window.imp().airport_view.try_get()
+        }
+        None => {
+            None
+        }
+    }
+}
+pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            if let Some(notebook) = our_window.imp().search_notebook.try_get() {
+                if let Some(view) = our_window.imp().airport_view.try_get() {
+                    let page_num = notebook.page_num(&view);
+                    notebook.set_current_page(page_num);
+                }
+            }
+            ()
+        }
+        None => ()
+    }
+}
+pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            our_window.imp().navaid_view.try_get()
+        }
+        None => {
+            None
+        }
+    }
+}
+pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            if let Some(notebook) = our_window.imp().search_notebook.try_get() {
+                if let Some(view) = our_window.imp().navaid_view.try_get() {
+                    let page_num = notebook.page_num(&view);
+                    notebook.set_current_page(page_num);
+                }
+            }
+            ()
+        }
+        None => ()
+    }
+}
+pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            our_window.imp().fix_view.try_get()
+        }
+        None => {
+            None
+        }
+    }
+}
+pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            if let Some(notebook) = our_window.imp().search_notebook.try_get() {
+                if let Some(view) = our_window.imp().fix_view.try_get() {
+                    let page_num = notebook.page_num(&view);
+                    notebook.set_current_page(page_num);
+                }
+            }
+            ()
+        }
+        None => ()
+    }
+}

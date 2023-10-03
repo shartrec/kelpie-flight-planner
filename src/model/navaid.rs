@@ -2,9 +2,9 @@ use crate::earth::coordinate::Coordinate;
 
 use super::location::Location;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Navaid {
-    id: String,
+    pub(crate) id: String,
     type_: NavaidType,
     coordinate: Coordinate,
     name: String,

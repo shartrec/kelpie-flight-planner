@@ -1,0 +1,18 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+  <menu id="plan-menu">
+    <section>
+      <item>
+        <attribute name="label">Remove</attribute>
+        <attribute name="action">plan.remove</attribute>
+      </item>
+      <item>
+        <attribute name="label">View airport</attribute>
+        <attribute name="action">plan.view</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

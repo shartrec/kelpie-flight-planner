@@ -140,24 +140,24 @@ mod tests {
     fn test_coordinate_at() {
         let c1 = Coordinate::new(0.0, 151.0);
         let c2 = c1.coordinate_at(120.0, 60.0);
-        assert!(is_between(c2.latitude, 0.99, 1.01));
-        assert!(is_between(c2.longitude, 152.72, 152.74));
+        assert!(assert_between(c2.latitude, 0.99, 1.01));
+        assert!(assert_between(c2.longitude, 152.72, 152.74));
 
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = c1.coordinate_at(120.0, 120.0);
-        assert!(is_between(c2.latitude, -34.99, -34.97));
-        assert!(is_between(c2.longitude, 153.10, 153.12));
+        assert_between(c2.latitude, -34.99, -34.97);
+        assert_between(c2.longitude, 153.10, 153.12);
 
         let c1 = Coordinate::new(-34.0, 151.0);
         let c2 = c1.coordinate_at(100000.0, 120.0);
-        assert!(is_between(c2.latitude, 43.0, 44.0));
-        assert!(is_between(c2.longitude, 28.0, 29.0));
+        assert_between(c2.latitude, 43.0, 44.0);
+        assert_between(c2.longitude, 28.0, 29.0);
     }
 
-    fn is_between(variable: f64, bottom: f64, top: f64) -> bool {
+    fn assert_between(variable: f64, bottom: f64, top: f64) -> bool {
         let result = variable >= bottom && variable <= top;
         if !result {
-            println!("Variable {} not between {} and {}", variable, bottom, top);
+            assert!(result, "Variable {} not between {} and {}", variable, bottom, top);
         }
         result
     }

@@ -3,7 +3,7 @@ use crate::earth::FEET_PER_DEGREE;
 
 use super::location::Location;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Airport {
     id: String,
     coordinate: Coordinate,
@@ -220,7 +220,7 @@ impl Location for Airport {
     fn get_name(&self) -> &str {self.name.as_str()}
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Runway {
     // ... Runway fields
 }
@@ -247,7 +247,7 @@ impl Runway {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Taxiway {
     nodes: Vec<LayoutNode>,
 }
@@ -258,12 +258,12 @@ impl Taxiway {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct LayoutNode {
     // ... LayoutNode fields
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum AirportType {
     AIRPORT,
     SEABASE,

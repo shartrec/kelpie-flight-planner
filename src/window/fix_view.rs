@@ -7,15 +7,22 @@ use gtk::{Button, Entry, ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
+    use std::cell::Cell;
+
     use glib::subclass::InitializingObject;
-    use gtk::{Button, Entry, ScrolledWindow};
+    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
+    use gtk::gdk::Rectangle;
+    use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
+    use log::error;
 
     use crate::earth;
+    use crate::earth::coordinate::Coordinate;
     use crate::model::location::Location;
+    use crate::model::waypoint::Waypoint;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{Filter, CombinedFilter, IdFilter, RangeFilter};
-    use crate::window::util::show_error_dialog;
+    use crate::util::location_filter::{CombinedFilter, Filter, IdFilter, RangeFilter};
+    use crate::window::util::{get_airport_view, get_navaid_view, get_plan_view, show_airport_view, show_error_dialog, show_navaid_view};
 
     use super::*;
 
@@ -99,6 +106,28 @@ mod imp {
             }
             self.fix_list.set_model(Some(&store));
         }
+
+        fn add_selected_to_plan(&self) {
+            if let Some((model, iter)) = self.fix_list.selection().selected() {
+                let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
+                if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                    match get_plan_view(&self.fix_window.get()) {
+                        Some(view) => {
+                            // get the plan
+                            view.imp().add_waypoint_to_plan(Waypoint::Fix {fix: *fix.clone(), elevation: Cell::new(0), locked: true});
+                        },
+                        None => (),
+                    }
+                }
+            }
+        }
+
+        pub fn search_near(&self, coordinate: &Coordinate) {
+            &self.fix_search_lat.set_text(&coordinate.get_latitude_as_string());
+            &self.fix_search_long.set_text(&coordinate.get_longitude_as_string());
+            &self.fix_search.activate();
+        }
     }
 
 
@@ -123,6 +152,32 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
+            self.fix_list.connect_row_activated(clone!(@weak self as view => move |list_view, position, col| {
+                 view.add_selected_to_plan();
+            }));
+
+
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(3);
+            gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+
+                let builder = Builder::from_resource("/com/shartrec/kelpie_planner/fix_popover.ui");
+                let menu = builder.object::<MenuModel>("fixes-menu");
+                match menu {
+                    Some(popover) => {
+                        let popover = PopoverMenu::builder()
+                            .menu_model(&popover)
+                            .pointing_to(&Rectangle::new(x as i32, y as i32, 1, 1))
+                            .build();
+                        popover.set_parent(&view.fix_list.get());
+                        popover.popup();
+                    }
+                    None => error!(" Not a popover"),
+                }
+            }));
+            self.fix_list.add_controller(gesture);
+
             self.fix_search.connect_clicked(
                 clone!(@weak self as window => move |search| {
                 window.search();
@@ -131,6 +186,67 @@ mod imp {
                 clone!(@weak self as window => move |search| {
                 window.search();
             }));
+            self.fix_search_lat.connect_activate(
+                clone!(@weak self as window => move |search| {
+                window.search();
+            }));
+            self.fix_search_long.connect_activate(
+                clone!(@weak self as window => move |search| {
+                window.search();
+            }));
+
+            let actions = SimpleActionGroup::new();
+            self.fix_list.get().insert_action_group("fix", Some(&actions));
+            let action = SimpleAction::new("add_to_plan", None);
+            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+               view.fix_list.activate();
+            }));
+            let actions = SimpleActionGroup::new();
+            self.fix_list.get().insert_action_group("fix", Some(&actions));
+
+            let action = SimpleAction::new("find_airports_near", None);
+            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+                if let Some((model, iter)) = view.fix_list.selection().selected() {
+                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                    if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                        match get_airport_view(&view.fix_window.get()) {
+                            Some(airport_view) => {
+                                show_airport_view(&view.fix_window.get());
+                                airport_view.imp().search_near(&fix.get_loc());
+                                ()
+                            },
+                            None => (),
+                        }
+                    }
+               }
+            }));
+            actions.add_action(&action);
+
+            let action = SimpleAction::new("find_navaids_near", None);
+            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+                if let Some((model, iter)) = view.fix_list.selection().selected() {
+                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                    let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
+                    if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                        match get_navaid_view(&view.fix_window.get()) {
+                            Some(navaid_view) => {
+                                show_navaid_view(&view.fix_window.get());
+                                navaid_view.imp().search_near(&fix.get_loc());
+                                ()
+                            },
+                            None => (),
+                        }
+                    }
+               }
+            }));
+
+            actions.add_action(&action);
+            let action = SimpleAction::new("add_to_plan", None);
+            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+                view.add_selected_to_plan();
+            }));
+            actions.add_action(&action);
+
         }
     }
 

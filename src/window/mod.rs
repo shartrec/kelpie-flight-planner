@@ -1,7 +1,5 @@
 use glib::Object;
 use gtk::{Application, gio, glib};
-use gtk::gio::{SimpleAction, SimpleActionGroup};
-use gtk::glib::clone;
 use gtk::prelude::{ActionMapExt, GtkWindowExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
@@ -26,15 +24,6 @@ impl Window {
     }
 
     fn setup_actions(&self) {
-        let action_copy = SimpleAction::new("copy", None);
-
-        action_copy.connect_activate(clone!(@weak self as window => move |action, parameter| {
-            // Get state
-            println!("Copy menu clicked")
-        }));
-        let actions = SimpleActionGroup::new();
-        self.insert_action_group("plan", Some(&actions));
-        actions.add_action(&action_copy);
 
     }
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {

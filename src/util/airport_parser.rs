@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek};
 
+use log::info;
+
 use crate::earth::coordinate::Coordinate;
 use crate::model::airport::{Airport, AirportType};
 use crate::model::runway::Runway;
@@ -45,7 +47,7 @@ impl AirportParserFG850 {
                             return Err(err_msg);
                         }
                     }
-                    println!("{}", msg.kind());
+                    info!("{}", msg.kind());
                     () // We ignore the error on the first two rows - NOT UTF-8
                 }
             }
