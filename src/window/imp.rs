@@ -1,17 +1,19 @@
 use std::thread;
 
 use glib::subclass::InitializingObject;
-use gtk::{Button, CompositeTemplate, glib, Notebook, Paned, Stack};
+use gtk::{CompositeTemplate, glib, Notebook, Paned, Stack};
 use gtk::gio::File;
 use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 
 use crate::event::Event;
+use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
 use crate::window::fix_view::FixView;
 use crate::window::navaid_view::NavaidView;
 use crate::window::plan_view::PlanView;
+use crate::window::world_map_view::WorldMapView;
 
 // Object holding the state
 #[derive(CompositeTemplate, Default)]
@@ -30,10 +32,11 @@ pub struct Window {
     #[template_child]
     pub fix_view: TemplateChild<FixView>,
     #[template_child]
-    pub plan_stack: TemplateChild<Stack>,
-//todo remove
+    pub airport_map_view: TemplateChild<AirportMapView>,
     #[template_child]
-    pub map_button: TemplateChild<Button>,
+    pub world_map_view: TemplateChild<WorldMapView>,
+    #[template_child]
+    pub plan_stack: TemplateChild<Stack>,
 }
 
 impl Window {
@@ -101,11 +104,10 @@ impl ObjectImpl for Window {
 
         self.layout_panels();
 
-        //todo Remove this
-        // Connect to "clicked" signal of `button`
-        self.map_button.connect_clicked(move |button| {
-            // Set the label to "Hello World!" after the button has been clicked on
-        });
+
+        let airport_view = Box::new(self.airport_view.clone());
+        let navaid_view = Box::new(self.navaid_view.clone());
+        let fix_view = Box::new(self.fix_view.clone());
 
         let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
         let transmitter = tx.clone();
@@ -113,10 +115,6 @@ impl ObjectImpl for Window {
         thread::spawn(move || {
             crate::earth::initialise(transmitter);
         });
-
-        let airport_view = Box::new(self.airport_view.clone());
-        let navaid_view = Box::new(self.navaid_view.clone());
-        let fix_view = Box::new(self.fix_view.clone());
         rx.attach(None, move |ev: Event| {
             match ev {
                 Event::AirportsLoaded => airport_view.imp().airports_loaded(),

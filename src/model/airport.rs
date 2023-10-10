@@ -1,17 +1,24 @@
+use std::{fmt, fs};
+use std::io::BufReader;
+use std::sync::{Arc, RwLock};
+
+use log::{error, warn};
+
+use crate::earth::{FEET_PER_DEGREE, get_earth_model};
 use crate::earth::coordinate::Coordinate;
-use crate::earth::FEET_PER_DEGREE;
+use crate::util::airport_parser::AirportParserFG850;
 
 use super::location::Location;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct Airport {
     id: String,
     coordinate: Coordinate,
     elevation: i32,
     control_tower: bool,
-    runways: Option<Vec<Runway>>,
+    runways: Arc<RwLock<Vec<Runway>>>,
     show_default_buildings: bool,
-    taxiways: Option<Vec<Taxiway>>,
+    taxiways: Arc<RwLock<Vec<Taxiway>>>,
     max_runway_length: i64,
     airport_type: Option<AirportType>,
     name: String,
@@ -34,86 +41,102 @@ impl Airport {
             coordinate: Coordinate::new(latitude, longitude),
             elevation,
             control_tower,
-            runways: None,
+            runways: Arc::new(RwLock::new(Vec::new())),
             show_default_buildings,
-            taxiways: None,
+            taxiways: Arc::new(RwLock::new(Vec::new())),
             max_runway_length,
             airport_type,
             name,
         }
     }
 
-    pub fn add_runway(&mut self, runway: Runway) {
-        self.runways.get_or_insert_with(|| Vec::new()).push(runway);
+    pub fn add_runway(&self, runway: Runway) {
+        self.runways.write().expect("Can't get airport lock").push(runway);
     }
 
-    pub fn add_taxiway(&mut self, taxiway: Taxiway) {
-        self.taxiways
-            .get_or_insert_with(|| Vec::new())
-            .insert(0, taxiway);
+    pub fn add_taxiway(&self, taxiway: Taxiway) {
+        self.taxiways.write().expect("Can't get airport lock").push(taxiway);
     }
 
     pub fn get_control_tower(&self) -> bool {
         self.control_tower
     }
 
-    pub fn get_runway(&self, i: usize) -> Option<&Runway> {
-        self.runways.as_ref().and_then(|runways| runways.get(i))
-    }
-
     pub fn get_runway_count(&self) -> usize {
-        self.runways
-            .as_ref()
-            .map(|runways| runways.len())
-            .unwrap_or(0)
+        self.get_runways().read().expect("Can't get airport lock").len()
     }
 
-    pub fn get_runways(&mut self) -> &mut Vec<Runway> {
-        if self.runways.is_none() {
-            self.load_runways_and_taxiways();
+    pub fn get_runways(&self) -> &Arc<RwLock<Vec<Runway>>> {
+        let mut loaded = false;
+        if !self.runways.read().expect("Can't get airport lock").is_empty() {
+            loaded = true;
         }
-        self.runways.as_mut().unwrap()
+        if !loaded {
+            self.load_runways_and_taxiways()
+        }
+        &self.runways
     }
 
-    pub fn get_longest_runway(&mut self) -> Option<&Runway> {
-        if self.runways.is_none() {
-            self.load_runways_and_taxiways();
+    pub fn get_longest_runway(&self) -> Option<Runway> {
+        let mut longest: Option<Runway> = None;
+
+        for runway in self.get_runways().read().expect("Can't get airport lock").iter() {
+            if longest.is_none() {
+                longest = Some(runway.clone())
+            } else {
+                if runway.get_length() > longest.clone().unwrap().get_length() {
+                    longest = Some(runway.clone());
+                }
+            }
         }
-        let longest_runway = self
-            .runways
-            .as_ref()
-            .map(|runways| runways.iter().max_by_key(|runway| runway.get_length()));
-        longest_runway.unwrap()
+        longest
     }
 
     pub fn get_show_default_buildings(&self) -> bool {
         self.show_default_buildings
     }
 
-    pub fn get_taxiway(&self, i: usize) -> Option<&Taxiway> {
-        self.taxiways.as_ref().and_then(|taxiways| taxiways.get(i))
-    }
-
-    pub fn get_taxiway_count(&self) -> usize {
-        self.taxiways
-            .as_ref()
-            .map(|taxiways| taxiways.len())
-            .unwrap_or(0)
-    }
-
-    pub fn get_taxiways(&mut self) -> &mut Vec<Taxiway> {
-        if self.taxiways.is_none() {
-            self.load_runways_and_taxiways();
+    pub fn get_taxiways(&self) -> &Arc<RwLock<Vec<Taxiway>>> {
+        // We check runways here as all airports have a runway, but in FlightGear maybe no Taxiways defined
+        let mut loaded = false;
+        if !self.runways.read().expect("Can't get airport lock").is_empty() {
+            loaded = true;
         }
-        self.taxiways.as_mut().unwrap()
+        if !loaded {
+            self.load_runways_and_taxiways()
+        }
+        &self.taxiways
     }
 
     pub fn get_type(&self) -> Option<AirportType> {
         self.airport_type.clone()
     }
 
-    pub fn load_runways_and_taxiways(&mut self) {
-        // ... Load runways and taxiways
+    pub fn load_runways_and_taxiways(&self) {
+        let pref = crate::preference::manager();
+
+        let runway_offsets = get_earth_model().get_runway_offsets();
+
+        let file =
+            match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
+                Some(p) => fs::File::open(p),
+                None => {
+                    error!("Path to airports file not found");
+                    return;
+                }
+            };
+        match file {
+            Ok(f) => {
+                let parser = AirportParserFG850::new();
+                let mut reader = BufReader::new(f);
+                let result = parser.load_runways(self, runway_offsets, &mut reader);
+                match result {
+                    Err(e) => warn!("{}", e),
+                    _ => ()
+                }
+            }
+            Err(_e) => warn!("Unable to open airport data"),
+        }
     }
 
     pub fn get_max_runway_length(&self) -> i64 {
@@ -125,15 +148,55 @@ impl Airport {
     }
 
     pub fn calc_airport_extent(&self) -> [f64; 4] {
-        // ... Calculate airport_pane extent
-        // Return values as an array
-        [0.0, 0.0, 0.0, 0.0]
+        // Start of by assuming just the airport with no runways or taxiways
+        let mut min_lat = self.get_lat().clone();
+        let mut max_lat = self.get_lat().clone();
+        let mut min_long = self.get_long().clone();
+        let mut max_long = self.get_long().clone();
+
+        // for each runway get its extent
+        for runway in self.runways.read().expect("Can't get airport lock").iter() {
+            let extent = self.calc_extent(runway.lat, runway.long, runway.heading, runway.length, runway.width);
+            if extent[0] < min_lat {
+                min_lat = extent[0];
+            }
+            if extent[1] > max_lat {
+                max_lat = extent[1];
+            }
+            if extent[2] < min_long {
+                min_long = extent[2];
+            }
+            if extent[3] > max_long {
+                max_long = extent[3];
+            }
+        }
+
+        // for each taxiway get its extent
+        for taxiway in self.taxiways.read().expect("Can't get airport lock").iter() {
+            let nodes = taxiway.get_nodes();
+            for node in nodes {
+                if node.get_lat() < min_lat {
+                    min_lat = node.get_lat();
+                }
+                if node.get_lat() > max_lat {
+                    max_lat = node.get_lat();
+                }
+                if node.get_long() < min_long {
+                    min_long = node.get_long();
+                }
+                if node.get_long() > max_long {
+                    max_long = node.get_long();
+                }
+            }
+        }
+
+        [min_lat, max_lat, min_long, max_long]
     }
 
-    ///  
-    ///	 Calculate the extent of a runway or taxiway
-    ///	 @param runway
-    ///	 return
+    ///
+    ///     Calculate the extent of a runway or taxiway
+    ///     @param runway
+    ///     return
     ///
     fn calc_extent(&self, lat: f64, lon: f64, heading: f64, length: i32, width: i32) -> [f64; 4] {
         let mut extent: [f64; 4] = [0.0; 4];
@@ -177,14 +240,21 @@ impl Airport {
         extent
     }
 
-    fn calc_runway_extent(&self, r: &Runway) -> [f64; 4] {
-        self.calc_extent(
-            r.get_lat(),
-            r.get_long(),
-            r.get_heading(),
-            r.get_length(),
-            r.get_width(),
-        )
+    pub fn get_ils(&self, runway_id: &str) -> Option<f64> {
+        let ils = get_earth_model().get_ils().read().expect("can't get ils lock");
+        match ils.get(&self.id) {
+            Some(list) => {
+                let mut freq = None;
+                for tuple in list {
+                    if tuple.0 == runway_id {
+                        freq = Some(tuple.1);
+                        break;
+                    }
+                }
+                freq
+            }
+            None => None
+        }
     }
 }
 
@@ -217,50 +287,212 @@ impl Location for Airport {
         &self.coordinate
     }
 
-    fn get_name(&self) -> &str {self.name.as_str()}
+    fn get_name(&self) -> &str { self.name.as_str() }
 }
 
-#[derive(Clone, PartialEq)]
+impl PartialEq for Airport {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
+    }
+}
+
+impl Default for Airport {
+    fn default() -> Self {
+        Self {
+            id: "".to_string(),
+            coordinate: Coordinate::new(0.0, 0.0),
+            elevation: 0,
+            control_tower: false,
+            runways: Arc::new(RwLock::new(Vec::new())),
+            show_default_buildings: false,
+            taxiways: Arc::new(RwLock::new(Vec::new())),
+            max_runway_length: 0,
+            airport_type: None,
+            name: "".to_string(),
+        }
+    }
+}
+
+
+#[derive(Default, Clone, PartialEq)]
 pub struct Runway {
-    // ... Runway fields
+    number: String,
+    lat: f64,
+    long: f64,
+    heading: f64,
+    length: i32,
+    width: i32,
+    centre_line_lights: bool,
+    surface: String,
+    edge_lights: String,
 }
 
 impl Runway {
-    pub fn get_length(&self) -> i32 {
-        10
+    pub fn new(
+        number: String,
+        lat: f64,
+        long: f64,
+        length: i32,
+        width: i32,
+        heading: f64,
+        centre_line_lights: bool,
+        surface: String,
+        edge_lights: String,
+    ) -> Self {
+        Self {
+            number,
+            lat,
+            long,
+            heading,
+            length,
+            width,
+            centre_line_lights,
+            surface,
+            edge_lights,
+        }
     }
 
-    pub fn get_lat(&self) -> f64 {
-        10.0
+    pub fn get_centre_line_lights(&self) -> bool {
+        self.centre_line_lights
     }
 
-    pub fn get_long(&self) -> f64 {
-        10.0
+    pub fn get_edge_lights(&self) -> &str {
+        &self.edge_lights
     }
 
     pub fn get_heading(&self) -> f64 {
-        10.0
+        self.heading
+    }
+
+    pub fn get_lat(&self) -> f64 {
+        self.lat
+    }
+
+    pub fn get_length(&self) -> i32 {
+        self.length
+    }
+
+    pub fn get_long(&self) -> f64 {
+        self.long
+    }
+
+
+    pub fn get_surface(&self) -> &str {
+        &self.surface
     }
 
     pub fn get_width(&self) -> i32 {
-        10
+        self.width
+    }
+
+    pub fn get_number(&self) -> &str {
+        &self.number
+    }
+
+    pub(crate) fn get_opposite_number(&self) -> String {
+        match self.number.as_str() {
+            "N" => "S".to_string(),
+            "S" => "N".to_string(),
+            "E" => "W".to_string(),
+            "W" => "E".to_string(),
+            _ => {
+                let (heading_part, extra_part) = if self.number.ends_with('R') {
+                    (self.number.trim_end_matches('R'), "L")
+                } else if self.number.ends_with('L') {
+                    (self.number.trim_end_matches('L'), "R")
+                } else if self.number.ends_with('C') {
+                    (self.number.trim_end_matches('C'), "C")
+                } else {
+                    (self.number.as_str(), "")
+                };
+
+                let x = heading_part.parse::<i32>().unwrap_or(0);
+                format!("{:02}{}", if x < 18 { x + 18 } else { x - 18 }, extra_part)
+            }
+        }
+    }
+
+    pub fn get_number_pair(&self) -> String {
+        format!("{}/{}", self.get_number(), self.get_opposite_number())
     }
 }
 
-#[derive(Clone, PartialEq)]
+impl fmt::Display for Runway {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Taxiway {} - Length: {}, Width: {}, Surface: {}",
+            self.number, self.length, self.width, self.surface
+        )
+    }
+}
+
+#[derive(Default, Clone)]
 pub struct Taxiway {
     nodes: Vec<LayoutNode>,
 }
 
 impl Taxiway {
-    pub fn get_nodes(&self) -> Vec<LayoutNode> {
-        self.nodes.clone()
+    pub fn new(
+        nodes: Vec<LayoutNode>
+    ) -> Self {
+        Self {
+            nodes
+        }
+    }
+
+    pub fn get_nodes(&self) -> &Vec<LayoutNode> {
+        &self.nodes
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Default, Clone)]
 pub struct LayoutNode {
-    // ... LayoutNode fields
+    _type: String,
+    lat: f64,
+    long: f64,
+    bezier_lat: f64,
+    bezier_long: f64,
+}
+
+impl LayoutNode {
+    pub fn new(
+        _type: String,
+        lat: f64,
+        long: f64,
+        bezier_lat: f64,
+        bezier_long: f64,
+    ) -> Self {
+        Self {
+            _type,
+            lat,
+            long,
+            bezier_lat,
+            bezier_long,
+        }
+    }
+
+    pub fn get_type(&self) -> &str {
+        &self._type
+    }
+    pub fn get_lat(&self) -> f64 {
+        self.lat
+    }
+
+    pub fn get_long(&self) -> f64 {
+        self.long
+    }
+    pub fn get_bezier_lat(&self) -> f64 {
+        self.bezier_lat
+    }
+
+    pub fn get_bezier_long(&self) -> f64 {
+        self.bezier_long
+    }
 }
 
 #[derive(Clone, PartialEq)]

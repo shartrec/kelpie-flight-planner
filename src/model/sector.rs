@@ -1,13 +1,11 @@
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
-
-use gtk::glib::{PropertyGet, PropertySet};
+use gtk::glib::PropertySet;
 
 use crate::model::plan::Plan;
 
 use super::airport::Airport;
-use super::location::Location;
 use super::waypoint::Waypoint;
 
 pub struct Sector<> {
@@ -25,14 +23,14 @@ impl Sector {
         }
     }
 
-    pub fn set_start(&self, start: &Airport) {
+    pub fn set_start(&self, start: Arc<Airport>) {
         self.airport_start.set(Some(Waypoint::Airport {
             airport: start.clone(),
             locked: true,
         }));
     }
 
-    pub fn set_end(&self, end: &Airport) {
+    pub fn set_end(&self, end: Arc<Airport>) {
         self.airport_end.set(Some(Waypoint::Airport {
             airport: end.clone(),
             locked: true,
@@ -141,23 +139,23 @@ mod tests {
 
     #[test]
     fn test_set_start() {
-        let mut s = Sector::new();
-        s.set_start(&make_airport("YSSY"));
+        let s = Sector::new();
+        s.set_start(make_airport("YSSY"));
         assert_eq!(s.get_start().unwrap().get_id(), "YSSY");
     }
 
     #[test]
     fn test_set_end() {
-        let mut s = Sector::new();
-        s.set_end(&make_airport("YMLB"));
+        let s = Sector::new();
+        s.set_end(make_airport("YMLB"));
         assert_eq!(s.get_end().unwrap().get_id(), "YMLB");
     }
 
     #[test]
     fn test_waypoints() {
-        let mut s = Sector::new();
-        s.set_start(&make_airport("YSSY"));
-        s.set_end(&make_airport("YMLB"));
+        let s = Sector::new();
+        s.set_start(make_airport("YSSY"));
+        s.set_end(make_airport("YMLB"));
         let w1 =
             Waypoint::Simple { loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false };
         let w2 =

@@ -5,6 +5,7 @@
 // Range filer for determining if a coordinate is within the specified distance of another
 
 use regex::{Regex, RegexBuilder};
+
 use crate::earth::coordinate::Coordinate;
 use crate::model::location::Location;
 

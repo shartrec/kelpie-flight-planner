@@ -1,13 +1,14 @@
 use glib::Object;
 use gtk::{Application, gio, glib};
-use gtk::prelude::{ActionMapExt, GtkWindowExt, WidgetExt};
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use gtk::prelude::GtkWindowExt;
 
 pub mod imp;
 mod airport_view;
+mod airport_map_view;
 mod navaid_view;
 mod fix_view;
 mod plan_view;
+mod world_map_view;
 mod util;
 
 glib::wrapper! {

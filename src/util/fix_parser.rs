@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::sync::Arc;
 
 use log::info;
 
@@ -10,7 +11,7 @@ pub struct FixParserFG {}
 impl FixParserFG {
     pub fn load_fixes(
         &mut self,
-        fixes: &mut Vec<Box<Fix>>,
+        fixes: &mut Vec<Arc<Fix>>,
         reader: &mut BufReader<File>,
     ) -> Result<(), String> {
         let mut buf = String::new();
@@ -61,7 +62,7 @@ impl FixParserFG {
                 let id = tokenizer.next().unwrap_or("");
 
                 let fix = Fix::new(id.to_string(), latitude, longitude);
-                fixes.push(Box::new(fix));
+                fixes.push(Arc::new(fix));
             }
         }
     }
@@ -70,6 +71,7 @@ impl FixParserFG {
 #[cfg(test)]
 mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
+    use std::sync::Arc;
 
     use crate::model::fix::Fix;
     use crate::model::location::Location;
@@ -78,7 +80,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut fixs: Vec<Box<Fix>> = Vec::new();
+        let mut fixs: Vec<Arc<Fix>> = Vec::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test/fixes.dat");

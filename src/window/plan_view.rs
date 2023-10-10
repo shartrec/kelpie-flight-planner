@@ -1,7 +1,6 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{TreeStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use gtk::gio;
 
@@ -10,7 +9,7 @@ mod imp {
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, DropDown, Label, ListItem, PopoverMenu, SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore};
+    use gtk::{Builder, Button, DropDown, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{ListStore, MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
@@ -24,6 +23,7 @@ mod imp {
     use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
     use crate::preference::AUTO_PLAN;
+    use crate::window::util::get_airport_map_view;
 
     use super::*;
 
@@ -32,6 +32,8 @@ mod imp {
     pub struct PlanView {
         #[template_child]
         pub aircraft_combo: TemplateChild<DropDown>,
+        #[template_child]
+        pub plan_window: TemplateChild<ScrolledWindow>,
         #[template_child]
         pub plan_tree: TemplateChild<TreeView>,
         #[template_child]
@@ -60,7 +62,7 @@ mod imp {
 
     impl PlanView {
         pub(crate) fn new_plan(&self) {
-            let mut guard = self.plan.write().expect("Should always have a plan");
+            let guard = self.plan.write().expect("Should always have a plan");
             guard.add_sector(None, None);
             guard.set_aircraft(&Hangar::get_hangar().get_default_aircraft());
         }
@@ -109,11 +111,6 @@ mod imp {
                 }
                 for wp in s.get_waypoints().read().expect("Can't get read lock on sectors").deref() {
                     let wp_row = tree_store.append(Some(&row));
-                    let aircraft = plan.get_aircraft();
-                    let speeds = match aircraft.deref() {
-                        Some(a) => (a.get_climb_speed(), a.get_cruise_speed(), a.get_sink_speed()),
-                        None => (&100, &140, &80),
-                    };
                     tree_store.set(&wp_row, &[
                         (Col::Name as u32, &wp.get_name()),
                         (Col::Elev as u32, &(wp.get_elevation())),
@@ -155,7 +152,7 @@ mod imp {
 
         fn make_plan(&self) {
             let planner = Planner::new();
-            let mut plan = self.plan.write().expect("Could not get plan lock");
+            let plan = self.plan.write().expect("Could not get plan lock");
             for s in plan.get_sectors().iter() {
                 let waypoints = planner.make_plan(s.borrow().get_start(), s.borrow().get_end());
                 s.borrow_mut().deref().add_all_waypoint(waypoints);
@@ -166,21 +163,21 @@ mod imp {
 
         pub fn initialise(&self) -> () {}
 
-        pub fn add_airport_to_plan(&self, loc: Airport) {
+        pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {
             let mut added = false;
-            let mut plan = self.plan.write().expect("Can't get lock on plan");
+            let plan = self.plan.write().expect("Can't get lock on plan");
             // See if a sector is selected
             if let Some((model, iter)) = self.plan_tree.selection().selected() {
                 let path = model.path(&iter).indices();
                 // Sectors are at the top level
                 if path.len() == 1 {
                     let sector_index = path[0] as usize;
-                    let mut sector = &plan.get_sectors()[sector_index];
+                    let sector = &plan.get_sectors()[sector_index];
                     if sector.borrow().get_start() == None {
-                        sector.deref().borrow_mut().set_start(&loc.clone());
+                        sector.deref().borrow_mut().set_start(loc.clone());
                         added = true;
                     } else if sector.borrow().get_end() == None {
-                        sector.deref().borrow_mut().set_end(&loc.clone());
+                        sector.deref().borrow_mut().set_end(loc.clone());
                         added = true;
                     }
                 }
@@ -190,11 +187,11 @@ mod imp {
                 plan.add_airport(loc);
             }
             drop(plan);
-            &self.refresh(None);
+            let _ = &self.refresh(None);
         }
 
         pub fn add_waypoint_to_plan(&self, waypoint: Waypoint) {
-            let mut plan = self.plan.write().expect("Can't get lock on plan");
+            let plan = self.plan.write().expect("Can't get lock on plan");
             // See if a sector or waypoint is selected
             if let Some((model, iter)) = self.plan_tree.selection().selected() {
                 let path = model.path(&iter).indices();
@@ -202,7 +199,7 @@ mod imp {
                 match path.len() {
                     1 => { // a Sector only is selected
                         let sector_index = path[0] as usize;
-                        let mut sector = &plan.get_sectors()[sector_index];
+                        let sector = &plan.get_sectors()[sector_index];
                         sector.deref().borrow_mut().add_waypoint(waypoint);
                     }
                     2 => {
@@ -212,7 +209,7 @@ mod imp {
                         if wp_index != 0 {
                             wp_index -= 1;
                         }
-                        let mut sector = &plan.get_sectors()[sector_index];
+                        let sector = &plan.get_sectors()[sector_index];
                         sector.deref().borrow_mut().insert_waypoint(wp_index, waypoint);
                     }
                     _ => {
@@ -228,13 +225,13 @@ mod imp {
                 }
             }
             drop(plan);
-            &self.refresh(None);
+            let _ = &self.refresh(None);
         }
 
         fn new_sector(&self) {
             let mut prev_airport_id = "".to_string();
             let mut prev = false;
-            let mut plan = self.plan.write().expect("Can't get lock on plan");
+            let plan = self.plan.write().expect("Can't get lock on plan");
 
 
             if let Some(prev_sector) = plan.get_sectors().last() {
@@ -252,15 +249,15 @@ mod imp {
 
             if prev {
                 if let Some(airport) = earth::get_earth_model().get_airport_by_id(prev_airport_id.as_str()) {
-                    plan.add_airport(*airport);
+                    plan.add_airport(airport);
                 }
             }
             drop(plan);
-            &self.refresh(None);
+            let _ = &self.refresh(None);
         }
 
         fn move_selected_up(&self) {
-            let mut plan = self.plan.write().expect("Can't get lock on plan");
+            let plan = self.plan.write().expect("Can't get lock on plan");
             let mut tree_path: Option<TreePath> = None;
 
             // See if a sector or waypoint is selected
@@ -271,14 +268,14 @@ mod imp {
                     1 => (),
                     2 => {
                         let sector_index = path[0] as usize;
-                        let mut wp_index = path[1] as usize;
+                        let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
                         if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
                             let i = wp_index - 1;
                             if let Some(wp) = &sector.borrow().remove_waypoint(i) {
-                                &sector.borrow().insert_waypoint(i - 1, wp.clone());
+                                let _ = &sector.borrow().insert_waypoint(i - 1, wp.clone());
                                 tree_path = Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
                             }
                         }
@@ -287,11 +284,11 @@ mod imp {
                 }
             }
             drop(plan);
-            &self.refresh(tree_path);
+            let _ = &self.refresh(tree_path);
         }
 
         fn move_selected_down(&self) {
-            let mut plan = self.plan.write().expect("Can't get lock on plan");
+            let plan = self.plan.write().expect("Can't get lock on plan");
             let mut tree_path: Option<TreePath> = None;
             // See if a sector or waypoint is selected
             if let Some((model, iter)) = self.plan_tree.selection().selected() {
@@ -301,14 +298,14 @@ mod imp {
                     1 => (),
                     2 => {
                         let sector_index = path[0] as usize;
-                        let mut wp_index = path[1] as usize;
+                        let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
                         if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
                             let i = wp_index - 1;
                             if let Some(wp) = &sector.borrow().remove_waypoint(i) {
-                                &sector.borrow().insert_waypoint(i + 1, wp.clone());
+                                let _ = &sector.borrow().insert_waypoint(i + 1, wp.clone());
                                 tree_path = Some(TreePath::from_indices(&[sector_index as i32, (i + 2) as i32]));
                             }
                         }
@@ -317,12 +314,12 @@ mod imp {
                 }
             }
             drop(plan);
-            &self.refresh(tree_path);
+            let _ = &self.refresh(tree_path);
         }
 
         fn remove_selected(&self) {
-            let mut plan = self.plan.write().expect("Can't get lock on plan");
-            let mut tree_path: Option<TreePath> = None;
+            let plan = self.plan.write().expect("Can't get lock on plan");
+            let tree_path: Option<TreePath> = None;
             // See if a sector or waypoint is selected
             if let Some((model, iter)) = self.plan_tree.selection().selected() {
                 let path = model.path(&iter).indices();
@@ -334,24 +331,74 @@ mod imp {
                     }
                     2 => {
                         let sector_index = path[0] as usize;
-                        let mut wp_index = path[1] as usize;
+                        let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
                         if wp_index == 0 {
-                            &sector.borrow().clear_start();
+                            let _ = &sector.borrow().clear_start();
                         } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            &sector.borrow().clear_end();
+                            let _ = &sector.borrow().clear_end();
                         } else {
                             let i = wp_index - 1;
-                            &sector.borrow().remove_waypoint(i);
+                            let _ = &sector.borrow().remove_waypoint(i);
                         }
                     }
                     _ => {}
                 }
             }
             drop(plan);
-            &self.refresh(tree_path);
+            let _ = &self.refresh(tree_path);
+        }
+
+        fn view_airport(&self) {
+            let plan = self.plan.write().expect("Can't get lock on plan");
+            let tree_path: Option<TreePath> = None;
+            // See if a sector or waypoint is selected
+            if let Some((model, iter)) = self.plan_tree.selection().selected() {
+                let path = model.path(&iter).indices();
+                // Sectors are at the top level
+                match path.len() {
+                    1 => {}
+                    2 => {
+                        let sector_index = path[0] as usize;
+                        let wp_index = path[1] as usize;
+                        let sectors = plan.get_sectors();
+                        let sector = &sectors[sector_index];
+                        if wp_index == 0 {
+                            if let Some(wp) = &sector.borrow().get_start() {
+                                match wp {
+                                    Waypoint::Airport {airport, ..} => {
+                                        self.view_airport_int(airport.clone());
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
+                            if let Some(wp) = &sector.borrow().get_end() {
+                                match wp {
+                                    Waypoint::Airport { airport, .. } => {
+                                        self.view_airport_int(airport.clone());
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            drop(plan);
+            let _ = &self.refresh(tree_path);
+        }
+
+        fn view_airport_int(&self, airport: Arc<Airport>) {
+            match get_airport_map_view(&self.plan_window.get()) {
+                Some(airport_map_view) => {
+                    airport_map_view.imp().set_airport(airport);
+                },
+                None => (),
+            }
         }
 
         fn setup_aircraft_combo(&self) {
@@ -419,7 +466,7 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.btn_make_plan.connect_clicked(clone!(@weak self as view => move |search| {
+            self.btn_make_plan.connect_clicked(clone!(@weak self as view => move |_search| {
                 view.make_plan();
                 view.refresh(None);
             }));
@@ -437,13 +484,13 @@ mod imp {
                             .menu_model(&popover)
                             .pointing_to(&Rectangle::new(x as i32, y as i32, 1, 1))
                             .build();
-                        popover.set_parent(&view.plan_tree.get());
+                        popover.set_parent(&view.plan_window.get());
                         popover.popup();
                     }
                     None => error!(" Not a popover"),
                 }
             }));
-            self.plan_tree.add_controller(gesture);
+            self.plan_window.add_controller(gesture);
 
             self.btn_new_sector.connect_clicked(clone!(@weak self as view => move |_| {
                 view.new_sector();
@@ -466,7 +513,7 @@ mod imp {
                     let path = model.path(&iter).indices();
                     if path.len() > 1 {
                         let sector_index = path[0] as usize;
-                        let mut wp_index = path[1] as usize;
+                        let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 0 and < sectors.len() - 1
                         if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
@@ -481,17 +528,17 @@ mod imp {
 
             // Set up the popup menu
             let actions = SimpleActionGroup::new();
-            self.plan_tree.get().insert_action_group("plan", Some(&actions));
+            self.plan_window.get().insert_action_group("plan", Some(&actions));
 
             let action = SimpleAction::new("remove", None);
-            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                view.remove_selected();
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("view", None);
-            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
-               todo!("View airport map")
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+               view.view_airport();
             }));
             actions.add_action(&action);
 

@@ -10,6 +10,8 @@
     <file compressed="true" preprocess="xml-stripblanks">navaid_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">fix_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">fix_popover.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">airport_map_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">world_map_view.ui</file>
 
     <!-- Icon images follow -->
     <file>images/generate_plan.gif</file>

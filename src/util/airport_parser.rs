@@ -1,33 +1,27 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Seek};
+use std::sync::{Arc, RwLock};
 
 use log::info;
 
 use crate::earth::coordinate::Coordinate;
-use crate::model::airport::{Airport, AirportType};
-use crate::model::runway::Runway;
+use crate::model::airport::{Airport, AirportType, LayoutNode, Runway, Taxiway};
+use crate::model::location::Location;
 
 pub struct AirportParserFG850 {
-    airport_map: HashMap<String, Airport>,
-    runway_map: HashMap<String, Runway>,
-    runway_opposite_map: HashMap<String, Runway>,
-    runway_offsets: HashMap<String, usize>,
 }
 
 impl AirportParserFG850 {
     pub fn new() -> Self {
         Self {
-            airport_map: HashMap::with_capacity(25000),
-            runway_map: HashMap::with_capacity(25000),
-            runway_opposite_map: HashMap::with_capacity(25000),
-            runway_offsets: HashMap::with_capacity(25000),
         }
     }
 
     pub fn load_airports(
         &mut self,
-        airports: &mut Vec<Box<Airport>>,
+        airports: &mut Vec<Arc<Airport>>,
+        runway_offsets: &mut HashMap<String, usize>,
         reader: &mut BufReader<File>,
     ) -> Result<(), String> {
         // Skip header rows
@@ -36,9 +30,10 @@ impl AirportParserFG850 {
         let mut buf = String::new();
         for _i in 0..3 {
             buf.clear();
+            offset = reader.stream_position().unwrap() as usize;
             match reader.read_line(&mut buf) {
                 Ok(0) => return Ok(()), // EOF
-                Ok(_bytes) => offset = reader.stream_position().unwrap() as usize,
+                Ok(_bytes) => (),
                 Err(msg) => {
                     match msg.kind() {
                         std::io::ErrorKind::InvalidData => (),
@@ -84,7 +79,7 @@ impl AirportParserFG850 {
                         name.push_str(&" ");
                         name.push_str(token);
                     }
-                    self.runway_offsets.insert(id.to_string(), offset);
+                    runway_offsets.insert(id.to_string(), offset);
 
                     // Now read runways to get a latitude and longitude
                     // and find the longest
@@ -93,13 +88,14 @@ impl AirportParserFG850 {
                     let mut latitude = 0.0;
                     let mut longitude = 0.0;
 
-                    // Now we start reading through the runways and taxiways untile we get to the next airport entry
+                    // Now we start reading through the runways and taxiways until we get to the next airport entry
                     let mut buf2 = String::new();
 
                     buf2.clear();
+                    offset = reader.stream_position().unwrap() as usize;
                     match reader.read_line(&mut buf2) {
                         Ok(0) => return Ok(()), // EOF
-                        Ok(_bytes) => offset = reader.stream_position().unwrap() as usize,
+                        Ok(_bytes) => (),
                         Err(msg) => {
                             let err_msg = format!("{}", msg).to_string();
                             return Err(err_msg);
@@ -122,7 +118,7 @@ impl AirportParserFG850 {
                                 tokenizer.next(); //edge lights
                                 tokenizer.next(); //auto gen distremaining signs
 
-                                let r_number = tokenizer.next();
+                                let _number = tokenizer.next();
                                 let r_lat = tokenizer
                                     .next()
                                     .unwrap_or("0.0")
@@ -141,7 +137,7 @@ impl AirportParserFG850 {
                                 tokenizer.next(); // REIL flag
 
                                 // Now the other end.  needed to get the length
-                                let r1_number = tokenizer.next();
+                                let _number = tokenizer.next();
                                 let r1_lat = tokenizer
                                     .next()
                                     .unwrap_or("0.0")
@@ -169,9 +165,10 @@ impl AirportParserFG850 {
                                 }
                             }
                             buf2.clear();
+                            offset = reader.stream_position().unwrap() as usize;
                             match reader.read_line(&mut buf2) {
                                 Ok(0) => return Ok(()), // EOF
-                                Ok(_bytes) => offset = reader.stream_position().unwrap() as usize,
+                                Ok(_bytes) => (),
                                 Err(msg) => {
                                     let err_msg = format!("{}", msg).to_string();
                                     return Err(err_msg);
@@ -190,13 +187,13 @@ impl AirportParserFG850 {
                         name,
                         max_length as i64,
                     );
-                    airports.push(Box::new(airport));
+                    airports.push(Arc::new(airport));
                     buf.clear();
                     buf.push_str(buf2.as_str());
                 } else {
                     buf.clear();
                     match reader.read_line(&mut buf) {
-                        Ok(0) => return (Ok(())), // EOF
+                        Ok(0) => return Ok(()), // EOF
                         Ok(_bytes) => (),
                         Err(msg) => {
                             let err_msg = format!("{}", msg).to_string();
@@ -206,9 +203,10 @@ impl AirportParserFG850 {
                 }
             } else {
                 buf.clear();
+                offset = reader.stream_position().unwrap() as usize;
                 match reader.read_line(&mut buf) {
                     Ok(0) => return Ok(()), // EOF
-                    Ok(bytes) => offset = reader.stream_position().unwrap() as usize,
+                    Ok(_bytes) => (),
                     Err(msg) => {
                         let err_msg = format!("{}", msg).to_string();
                         return Err(err_msg);
@@ -217,11 +215,207 @@ impl AirportParserFG850 {
             }
         }
     }
+
+    pub fn load_runways(
+        &self,
+        airport: &Airport,
+        runway_offsets: &Arc<RwLock<HashMap<String, usize>>>,
+        rdr_airport: &mut BufReader<File>,
+    ) -> Result<(), String> {
+
+        let mut tokenizer: std::str::SplitWhitespace;
+        let mut buf = String::new();
+
+        let offsets = runway_offsets.read().expect("Couldn't get lock on runway offsets");
+        let  offset = offsets.get(airport.get_id());
+        match offset {
+            Some(o) => rdr_airport.seek_relative(*o as i64),
+            _ => Ok(())
+        }.expect("Seek on airport failed");
+
+        loop {
+            buf.clear();
+            match rdr_airport.read_line(&mut buf) {
+                Ok(0) => return Ok(()), // EOF
+                Ok(_) => (),
+                Err(msg) => {
+                    let err_msg = format!("{}", msg).to_string();
+                    return Err(err_msg);
+                }
+            }
+
+            if !buf.is_empty() {
+                tokenizer = buf.split_whitespace();
+                if let Some(r_type) = tokenizer.next() {
+                    if r_type == "1" || r_type == "16" || r_type == "17" {
+                        tokenizer.next();
+                        tokenizer.next();
+                        tokenizer.next();
+                        let id = tokenizer.next().unwrap_or("");
+                        if airport.get_id() == id {
+                            self.load_runways_for_airport(&airport, rdr_airport)?;
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn load_runways_for_airport(
+        &self,
+        airport: &Airport,
+        rdr_airport: &mut BufReader<File>,
+    ) -> Result<(), String> {
+        let mut tokenizer;
+        let mut match_found = true;
+
+        let mut buf = String::new();
+        match rdr_airport.read_line(&mut buf) {
+            Ok(0) => return Ok(()), // EOF
+            Ok(_bytes) => (),
+            Err(msg) => {
+                let err_msg = format!("{}", msg).to_string();
+                return Err(err_msg);
+            }
+        }
+
+        // Load the runways
+        while match_found {
+            if buf.is_empty() {
+                break;
+            }
+            tokenizer = buf.clone();
+            let mut tokens = tokenizer.split_whitespace();
+
+            let r_type = tokens.next().unwrap_or("");
+            if r_type == "100" {
+                let r_width = token_f64(tokens.next()) * 3.28;
+                let r_surface = tokens.next().unwrap_or("");
+                tokens.next(); // Shoulder surface
+                tokens.next(); // Smoothness
+                tokens.next(); // Centre lights
+                let r_edge_lights = tokens.next().unwrap_or("");  //edge lights
+                tokens.next();  //auto gen dist remaining signs
+                let r_number = tokens.next().unwrap_or("");
+                let r_lat = token_f64(tokens.next());
+                let r_long = token_f64(tokens.next());
+                tokens.next(); // Length displaced threshold
+                tokens.next(); // Length overrun
+                let _markings = tokens.next().unwrap_or("");  //edge lights
+                tokens.next(); // Approach lights
+                tokens.next(); // TDZ flag
+                tokens.next(); // REIL flag
+
+                // Now the other end. needed to get the length
+                let _number = tokens.next().unwrap_or("");
+                let r1_lat = token_f64(tokens.next());
+                let r1_long = token_f64(tokens.next());
+
+                let c1 = Coordinate::new(r_lat, r_long);
+                let c2 = Coordinate::new(r1_lat,r1_long);
+
+                let r_length = (c1.distance_to(&c2) * 6076.0) as i32;
+                let r_hdg = c1.bearing_to(&c2).to_degrees();
+
+                let lat = (r_lat + r1_lat) / 2.0;
+                let long = (r_long + r1_long) / 2.0;
+
+                let runway = Runway::new(
+                    r_number.to_string(),
+                    lat,
+                    long,
+                    r_length,
+                    r_width as i32,
+                    r_hdg,
+                    false,
+                    r_surface.to_string(),
+                    r_edge_lights.to_string(),
+                );
+
+                airport.add_runway(runway);
+                buf.clear();
+                match rdr_airport.read_line(&mut buf) {
+                    Ok(_bytes) => (),
+                    Err(msg) => {
+                        let err_msg = format!("{}", msg).to_string();
+                        return Err(err_msg);
+                    }
+                }
+
+            } else if r_type == "110" {
+                // Taxiway processing
+                // We don't care about anything but the nodes that we use to draw it.
+                let mut nodes = Vec::new();
+
+                loop {
+                    buf.clear();
+                    match rdr_airport.read_line(&mut buf) {
+                        Ok(_bytes) => (),
+                        Err(msg) => {
+                            let err_msg = format!("{}", msg).to_string();
+                            return Err(err_msg);
+                        }
+                    }
+
+                    if buf.is_empty() {
+                        break;
+                    }
+
+                    let mut tokenizer = buf.split_whitespace();
+
+                    let n_type = tokenizer.next().unwrap_or("");
+                    if n_type == "111" || n_type == "113" || n_type == "115" {
+                        let r1_lat = token_f64(tokenizer.next());
+                        let r1_long = token_f64(tokenizer.next());
+                        nodes.push(LayoutNode::new(n_type.to_string(), r1_lat, r1_long, 0.0, 0.0));
+                    } else if n_type == "112" || n_type == "114" || n_type == "116" {
+                        let r1_lat = token_f64(tokenizer.next());
+                        let r1_long = token_f64(tokenizer.next());
+                        let b1_lat = token_f64(tokenizer.next());
+                        let b1_long = token_f64(tokenizer.next());
+                        nodes.push(LayoutNode::new(n_type.to_string(), r1_lat, r1_long, b1_lat, b1_long));
+                    } else {
+                        break;
+                    }
+                }
+
+                let taxiway = Taxiway::new(nodes);
+
+                airport.add_taxiway(taxiway);
+            } else if r_type == "1" || r_type == "16" || r_type == "17" {
+                match_found = false;
+            } else {
+                buf.clear();
+                match rdr_airport.read_line(&mut buf) {
+                    Ok(_bytes) => (),
+                    Err(msg) => {
+                        let err_msg = format!("{}", msg).to_string();
+                        return Err(err_msg);
+                    }
+                }
+            }
+        }
+
+        // Call the loadIls function (you need to implement this function)
+        // todo
+        // load_ils(rdr_runway_ils, airport)?;
+
+        Ok(())
+    }
+
 }
+
+fn token_f64(t: Option<&str>) -> f64 {
+    t.unwrap_or("0.0").parse::<f64>().unwrap_or(0.0)
+}
+
 
 #[cfg(test)]
 mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
+    use std::collections::HashMap;
+    use std::sync::Arc;
 
     use crate::model::airport::Airport;
     use crate::model::location::Location;
@@ -230,7 +424,8 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut airports: Vec<Box<Airport>> = Vec::new();
+        let mut airports: Vec<Arc<Airport>> = Vec::new();
+        let mut runway_offsets: HashMap<String, usize> = HashMap::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test/airports.dat");
@@ -240,12 +435,12 @@ mod tests {
             Ok(f) => {
                 let mut parser = AirportParserFG850::new();
                 let mut reader = BufReader::new(f);
-                match parser.load_airports(&mut airports, &mut reader) {
+                match parser.load_airports(&mut airports, &mut runway_offsets, &mut reader) {
                     Ok(()) => (),
                     Err(msg) => panic! {"{}", msg},
                 }
             }
-            Err(e) => panic!("Unable to open test airport data"),
+            Err(_e) => panic!("Unable to open test airport data"),
         }
 
         assert_eq!(airports.len(), 22);

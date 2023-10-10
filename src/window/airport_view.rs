@@ -1,18 +1,17 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{Button, Entry, ListStore, TreeView};
+use gtk::{ListStore, TreeView};
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
     use std::boxed::Box;
-    use std::ops::Deref;
 
     use glib::subclass::InitializingObject;
     use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, PropertyGet};
+    use gtk::glib::clone;
     use log::error;
 
     use crate::earth;
@@ -20,7 +19,7 @@ mod imp {
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
-    use crate::window::util::{get_fix_view, get_navaid_view, get_plan_view, show_error_dialog, show_fix_view, show_navaid_view};
+    use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_error_dialog, show_fix_view, show_navaid_view};
 
     use super::*;
 
@@ -66,7 +65,7 @@ mod imp {
                     show_error_dialog(&self.obj().root(), "Enter both a Latitude and Longitude for search.");
                     return;
                 } else {
-                    let mut lat_as_float = 0.0;
+                    let lat_as_float;
                     let lat_format = LatLongFormat::lat_format();
                     match lat_format.parse(lat.as_str()) {
                         Ok(latitude) => lat_as_float = latitude,
@@ -75,7 +74,7 @@ mod imp {
                             return;
                         }
                     }
-                    let mut long_as_float = 0.0;
+                    let long_as_float;
                     let long_format = LatLongFormat::long_format();
                     match long_format.parse(long.as_str()) {
                         Ok(longitude) => long_as_float = longitude,
@@ -116,7 +115,7 @@ mod imp {
                     match get_plan_view(&self.airport_window.get()) {
                         Some(ref mut plan_view) => {
                             // get the plan
-                            plan_view.imp().add_airport_to_plan(*airport);
+                            plan_view.imp().add_airport_to_plan(airport);
                             ()
                         },
                         None => (),
@@ -126,9 +125,9 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
-            &self.airport_search_lat.set_text(&coordinate.get_latitude_as_string());
-            &self.airport_search_long.set_text(&coordinate.get_longitude_as_string());
-            &self.airport_search.activate();
+            self.airport_search_lat.set_text(&coordinate.get_latitude_as_string());
+            self.airport_search_long.set_text(&coordinate.get_longitude_as_string());
+            self.airport_search.activate();
         }
     }
 
@@ -154,7 +153,7 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.airport_list.connect_row_activated(clone!(@weak self as view => move |list_view, position, col| {
+            self.airport_list.connect_row_activated(clone!(@weak self as view => move | _list_view, _position, _col| {
                 view.add_selected_to_plan();
             }));
 
@@ -171,43 +170,43 @@ mod imp {
                             .menu_model(&popover)
                             .pointing_to(&Rectangle::new(x as i32, y as i32, 1, 1))
                             .build();
-                        popover.set_parent(&view.airport_list.get());
+                        popover.set_parent(&view.airport_window.get());
                         popover.popup();
                     }
                     None => error!(" Not a popover"),
                 }
             }));
-            self.airport_list.add_controller(gesture);
+            self.airport_window.add_controller(gesture);
 
             // If the user clicks search or pressses enter in any of the search fields do the search
             self.airport_search.connect_clicked(
-                clone!(@weak self as window => move |search| {
+                clone!(@weak self as window => move |_search| {
                 window.search();
             }));
             self.airport_search_name.connect_activate(
-                clone!(@weak self as window => move |search| {
+                clone!(@weak self as window => move |_search| {
                 window.search();
             }));
             self.airport_search_lat.connect_activate(
-                clone!(@weak self as window => move |search| {
+                clone!(@weak self as window => move |_search| {
                 window.search();
             }));
             self.airport_search_long.connect_activate(
-                clone!(@weak self as window => move |search| {
+                clone!(@weak self as window => move |_search| {
                 window.search();
             }));
 
             let actions = SimpleActionGroup::new();
-            self.airport_list.get().insert_action_group("airport", Some(&actions));
+            self.airport_window.get().insert_action_group("airport", Some(&actions));
 
             let action = SimpleAction::new("add_to_plan", None);
-            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 view.add_selected_to_plan();
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
-            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some((model, iter)) = view.airport_list.selection().selected() {
                     let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
                     if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
@@ -225,7 +224,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
-            action.connect_activate(clone!(@weak self as view => move |action, parameter| {
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some((model, iter)) = view.airport_list.selection().selected() {
                     let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
                     if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
@@ -243,9 +242,18 @@ mod imp {
 
             actions.add_action(&action);
             let action = SimpleAction::new("view", None);
-            action.connect_activate(clone!(@weak self as window => move |action, parameter| {
-               todo!("View airport map")
-                // let _ = &window.imp().new_plan();
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                if let Some((model, iter)) = view.airport_list.selection().selected() {
+                    let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
+                        match get_airport_map_view(&view.airport_window.get()) {
+                            Some(airport_map_view) => {
+                                airport_map_view.imp().set_airport(airport);
+                            },
+                            None => (),
+                        }
+                    }
+               }
             }));
             actions.add_action(&action);
         }

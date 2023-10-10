@@ -1,11 +1,8 @@
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
-
-use gtk::glib::PropertySet;
+use std::sync::Arc;
 
 use crate::earth::coordinate::Coordinate;
-use crate::model::fix::Fix;
-use crate::model::navaid::Navaid;
 use crate::model::waypoint::Waypoint;
 use crate::preference::{UNITS, USE_MAGNETIC_HEADINGS};
 use crate::util::distance_format::DistanceFormat;
@@ -14,7 +11,6 @@ use crate::util::speed_format::SpeedFormat;
 
 use super::aircraft::Aircraft;
 use super::airport::Airport;
-use super::location::Location;
 use super::sector::Sector;
 
 #[derive(Default)]
@@ -37,8 +33,8 @@ impl Plan {
         }
     }
 
-    pub fn add_sector(&self, start: Option<&Airport>, end: Option<&Airport>) {
-        let mut sector = Sector::new();
+    pub fn add_sector(&self, start: Option<Arc<Airport>>, end: Option<Arc<Airport>>) {
+        let sector = Sector::new();
         match start {
             Some(s) => sector.set_start(s),
             None => ()
@@ -50,8 +46,8 @@ impl Plan {
         self.sectors.borrow_mut().push(RefCell::new(sector));
     }
 
-    pub fn add_sector_at(&self, pos: usize, start: Option<&Airport>, end: Option<&Airport>) {
-        let mut sector = Sector::new();
+    pub fn add_sector_at(&self, pos: usize, start: Option<Arc<Airport>>, end: Option<Arc<Airport>>) {
+        let sector = Sector::new();
         match start {
             Some(s) => sector.set_start(s),
             None => ()
@@ -187,28 +183,16 @@ impl Plan {
         None
     }
 
-    pub fn add_airport(&self, airport: Airport) {
-        for mut s in self.sectors.borrow_mut().deref() {
+    pub fn add_airport(&self, airport: Arc<Airport>) {
+        for s in self.sectors.borrow_mut().deref() {
             if s.borrow().get_start().is_none() {
-                s.borrow_mut().set_start(&airport);
+                s.borrow_mut().set_start(airport);
                 return;
             }
             if s.borrow().get_end().is_none() {
-                s.borrow_mut().set_end(&airport);
+                s.borrow_mut().set_end(airport);
                 return;
             }
-        }
-    }
-
-    pub fn add_navaid(&self, navaid: Navaid) {
-        for mut s in self.sectors.borrow_mut().deref() {
-//
-        }
-    }
-
-    pub fn add_fix(&self, navaid: Fix) {
-        for mut s in self.sectors.borrow_mut().deref() {
-//
         }
     }
 
@@ -297,10 +281,10 @@ impl Plan {
                         return speed;
                     }
                     speed = match wp {
-                        Waypoint::Toc { loc, elevation, locked } => {
+                        Waypoint::Toc { .. } => {
                             cruise.clone()
                         }
-                        Waypoint::Bod { loc, elevation, locked } => {
+                        Waypoint::Bod { .. } => {
                             sink.clone()
                         }
                         _ => {
@@ -343,19 +327,19 @@ mod tests {
     fn test_name() {
         let a = make_airport("YSSY");
         let b = make_airport("YMLB");
-        let mut plan = Plan::new();
-        plan.add_sector(Some(&a), Some(&b));
+        let plan = Plan::new();
+        plan.add_sector(Some(a.clone()), Some(b.clone()));
         assert_eq!(plan.get_name(), "YSSY-YMLB.fpl");
 
-        let mut plan = Plan::new();
-        plan.add_sector(None, Some(&b));
+        let plan = Plan::new();
+        plan.add_sector(None, Some(b.clone()));
         assert_eq!(plan.get_name(), "-YMLB.fpl");
 
-        let mut plan = Plan::new();
-        plan.add_sector(Some(&a), None);
+        let plan = Plan::new();
+        plan.add_sector(Some(a.clone()), None);
         assert_eq!(plan.get_name(), "YSSY-.fpl");
 
-        let mut plan = Plan::new();
+        let plan = Plan::new();
         plan.add_sector(None, None);
         assert_eq!(plan.get_name(), "new_plan.fpl");
     }

@@ -1,8 +1,5 @@
-use std::{
-    str::FromStr,
-    sync::{Arc, RwLock},
-};
-
+#![allow(unused)]
+use std::{str::FromStr, sync::{Arc, RwLock}};
 use lazy_static::lazy_static;
 use log::error;
 use preferences::{AppInfo, Preferences, PreferencesMap};

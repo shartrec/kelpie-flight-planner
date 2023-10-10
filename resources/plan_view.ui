@@ -86,7 +86,7 @@
       </object>
     </child>
     <child>
-      <object class="GtkScrolledWindow">
+      <object class="GtkScrolledWindow" id="plan_window">
         <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
         <property name="vscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
         <property name="propagate-natural-width">true</property>

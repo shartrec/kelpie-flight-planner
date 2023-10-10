@@ -2,7 +2,6 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
-use std::num::ParseFloatError;
 use std::str::FromStr;
 
 pub struct LatLongFormat {
@@ -101,7 +100,7 @@ impl LatLongFormat {
                         Ok(num) => num,
                         Err(_) => return Err("Invalid coordinate format"),
                     };
-                    if deg > 180.0 {
+                    if deg > self.max_degree {
                         return Err("Out of range");
                     }
                 }

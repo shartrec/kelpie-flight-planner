@@ -1,9 +1,8 @@
-use std::cmp::Ord;
+use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
 
-use gtk::glib::clone::Downgrade;
 use gtk::glib::Sender;
 use lazy_static::lazy_static;
 use log::info;
@@ -26,21 +25,25 @@ lazy_static! {
         airports: Arc::new(RwLock::new(Vec::new())),
         navaids: Arc::new(RwLock::new(Vec::new())),
         fixes: Arc::new(RwLock::new(Vec::new())),
+        runway_offsets: Arc::new(RwLock::new(HashMap::new())),
+        ils: Arc::new(RwLock::new(HashMap::new())),
     };
 }
 
 pub struct Earth {
-    airports: Arc<RwLock<Vec<Box<Airport>>>>,
-    navaids: Arc<RwLock<Vec<Box<Navaid>>>>,
-    fixes: Arc<RwLock<Vec<Box<Fix>>>>,
+    airports: Arc<RwLock<Vec<Arc<Airport>>>>,
+    navaids: Arc<RwLock<Vec<Arc<Navaid>>>>,
+    fixes: Arc<RwLock<Vec<Arc<Fix>>>>,
+    runway_offsets: Arc<RwLock<HashMap<String, usize>>>,
+    ils: Arc<RwLock<HashMap<String, Vec<(String, f64)>>>>,
 }
 
 impl Earth {
-    pub fn get_airports(&self) -> &Arc<RwLock<Vec<Box<Airport>>>> {
+    pub fn get_airports(&self) -> &Arc<RwLock<Vec<Arc<Airport>>>> {
         &self.airports
     }
 
-    pub fn get_airport_by_id(&self, id: &str) -> Option<Box<Airport>> {
+    pub fn get_airport_by_id(&self, id: &str) -> Option<Arc<Airport>> {
         self.airports
             .read()
             .unwrap()
@@ -49,12 +52,12 @@ impl Earth {
             .cloned()
     }
 
-    pub fn set_airports(&self, airports: Vec<Box<Airport>>) {
+    pub fn set_airports(&self, airports: Vec<Arc<Airport>>) {
         self.airports.write().unwrap().clear();
         self.airports.write().unwrap().extend(airports);
     }
 
-    pub fn get_navaid_by_id_and_name(&self, id: &str, name: &str) -> Option<Box<Navaid>> {
+    pub fn get_navaid_by_id_and_name(&self, id: &str, name: &str) -> Option<Arc<Navaid>> {
         self.navaids
             .read()
             .unwrap()
@@ -63,16 +66,27 @@ impl Earth {
             .cloned()
     }
 
-    pub fn get_navaids(&self) -> &Arc<RwLock<Vec<Box<Navaid>>>> {
+    pub fn get_navaids(&self) -> &Arc<RwLock<Vec<Arc<Navaid>>>> {
         &self.navaids
     }
 
-    pub fn set_navaids(&self, navaids: Vec<Box<Navaid>>) {
+    pub fn set_navaids(&self, navaids: Vec<Arc<Navaid>>) {
         self.navaids.write().unwrap().clear();
         self.navaids.write().unwrap().extend(navaids);
     }
 
-    pub fn get_fix_by_id(&self, id: &str) -> Option<Box<Fix>> {
+    pub fn get_ils(&self) -> &Arc<RwLock<HashMap<String, Vec<(String, f64)>>>> {
+        &self.ils
+    }
+
+    pub fn set_ils(&self, navaids: HashMap<String, Vec<(String, f64)>>) {
+        self.ils.write().unwrap().clear();
+        self.ils.write().unwrap().extend(navaids);
+    }
+
+
+
+    pub fn get_fix_by_id(&self, id: &str) -> Option<Arc<Fix>> {
         self.fixes
             .read()
             .unwrap()
@@ -81,15 +95,23 @@ impl Earth {
             .cloned()
     }
 
-    pub fn get_fixes(&self) -> &Arc<RwLock<Vec<Box<Fix>>>> {
+    pub fn get_fixes(&self) -> &Arc<RwLock<Vec<Arc<Fix>>>> {
         &self.fixes
     }
 
-    pub fn set_fixes(&self, fixes: Vec<Box<Fix>>) {
+    pub fn set_fixes(&self, fixes: Vec<Arc<Fix>>) {
         self.fixes.write().unwrap().clear();
         self.fixes.write().unwrap().extend(fixes);
     }
 
+    pub fn set_runway_offsets(&self, runway_offsets: HashMap<String, usize>) {
+        self.runway_offsets.write().unwrap().clear();
+        self.runway_offsets.write().unwrap().extend(runway_offsets);
+    }
+
+    pub fn get_runway_offsets(&self) -> &Arc<RwLock<HashMap<String, usize>>> {
+        &self.runway_offsets
+    }
 }
 
 pub fn get_earth_model() -> &'static Earth {
@@ -117,13 +139,14 @@ pub fn initialise(transmitter: Sender<Event>) {
 }
 
 fn load_airports(path: &str, transmitter: &Sender<Event>) {
-    let mut airports: Vec<Box<Airport>> = Vec::new();
+    let mut airports: Vec<Arc<Airport>> = Vec::new();
+    let mut runway_offsets = HashMap::with_capacity(25000);
     let file = fs::File::open(path);
     match file {
         Ok(f) => {
             let mut parser = AirportParserFG850::new();
             let mut reader = BufReader::new(f);
-            match parser.load_airports(&mut airports, &mut reader) {
+            match parser.load_airports(&mut airports, &mut runway_offsets, &mut reader) {
                 Ok(()) => (),
                 Err(msg) => panic! {"{}", msg},
             }
@@ -131,29 +154,32 @@ fn load_airports(path: &str, transmitter: &Sender<Event>) {
         Err(_e) => panic!("Unable to open test airport data"),
     }
     get_earth_model().set_airports(airports);
+    get_earth_model().set_runway_offsets(runway_offsets);
     let _ = transmitter.send(Event::AirportsLoaded);
 }
 
 fn load_navaids(path: &str, transmitter: &Sender<Event>) {
-    let mut navaids: Vec<Box<Navaid>>= Vec::new();
+    let mut navaids: Vec<Arc<Navaid>>= Vec::new();
+    let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
     match file {
         Ok(f) => {
             let mut parser = NavaidParserFG {};
             let mut reader = BufReader::new(f);
-            match parser.load_navaids(&mut navaids, &mut reader) {
+            match parser.load_navaids(&mut navaids, &mut ils, &mut reader) {
                 Ok(()) => (),
                 Err(msg) => panic! {"{}", msg},
             }
         }
-        Err(e) => panic!("Unable to open test navaid data"),
+        Err(_) => panic!("Unable to open test navaid data"),
     }
     get_earth_model().set_navaids(navaids);
+    get_earth_model().set_ils(ils);
     let _ = transmitter.send(Event::NavaidsLoaded);
 }
 
 fn load_fixes(path: &str, transmitter: &Sender<Event>) {
-    let mut fixes: Vec<Box<Fix>> = Vec::new();
+    let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
     match file {
         Ok(f) => {
@@ -164,7 +190,7 @@ fn load_fixes(path: &str, transmitter: &Sender<Event>) {
                 Err(msg) => panic! {"{}", msg},
             }
         }
-        Err(e) => panic!("Unable to open test fix data"),
+        Err(_) => panic!("Unable to open test fix data"),
     }
     get_earth_model().set_fixes(fixes);
     let _ = transmitter.send(Event::FixesLoaded);

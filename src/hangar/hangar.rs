@@ -1,18 +1,16 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use app_dirs::*;
-use gtk::prelude::SettingsExtManual;
 use lazy_static::lazy_static;
 use log::{error, warn};
 use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
-use yaml_rust::yaml::{Array, Hash};
+use yaml_rust::yaml::Hash;
 
 use crate::model::aircraft::Aircraft;
 use crate::preference::APP_INFO;
@@ -25,7 +23,7 @@ lazy_static! {
 
 }
 
-static default_aicraft: &str = "---
+static DEFAULT_AICRAFT: &str = "---
 - climb-rate: 5000
   climb-speed: 250
   cruise-altitude: 35000
@@ -97,7 +95,7 @@ pub fn load_hangar() -> Arc<RwLock<Vec<Aircraft>>> {
                 .expect("Unable to read file");
         }
         Err(_) => {
-            contents = default_aicraft.to_string();
+            contents = DEFAULT_AICRAFT.to_string();
         }
     }
     let mut hangar = Vec::new();
@@ -137,7 +135,8 @@ fn get_string(map: &Hash, key: &str) -> String {
     map.get(&Yaml::String(key.to_string())).unwrap_or(&Yaml::String("".to_string())).as_str().unwrap_or("").to_string()
 }
 
-pub fn save_hangar(aircraft: &Arc<RwLock<Vec<Aircraft>>>) {
+#[allow(dead_code)]
+pub fn save_hangar() {
     let path = get_hangar_path();
 
     let hangar = Hangar::get_hangar().get_all();
@@ -182,14 +181,17 @@ pub fn save_hangar(aircraft: &Arc<RwLock<Vec<Aircraft>>>) {
     }
 }
 
+#[allow(dead_code)]
 fn put_bool(map: &mut Hash, key: &str, v: &bool) {
     map.insert(Yaml::String(key.to_string()), Yaml::Boolean(v.clone()));
 }
 
+#[allow(dead_code)]
 fn put_i32(map: &mut Hash, key: &str, v: &i32) {
     map.insert(Yaml::String(key.to_string()), Yaml::Integer(*v as i64));
 }
 
+#[allow(dead_code)]
 fn put_string(map: &mut Hash, key: &str, v: &str) {
     map.insert(Yaml::String(key.to_string()), Yaml::String(v.to_string()));
 }

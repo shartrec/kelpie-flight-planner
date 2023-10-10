@@ -49,19 +49,6 @@
       <attribute name="label" translatable="yes">_Toggle button frame</attribute>
       <attribute name="action">win.button-frame</attribute>
     </item>
-    <section>
-      <attribute name="label" translatable="yes">Orientation</attribute>
-      <item>
-        <attribute name="label" translatable="yes">_Horizontal</attribute>
-        <attribute name="action">win.orientation</attribute>
-        <attribute name="target">Horizontal</attribute>
-      </item>
-      <item>
-        <attribute name="label" translatable="yes">_Vertical</attribute>
-        <attribute name="action">win.orientation</attribute>
-        <attribute name="target">Vertical</attribute>
-      </item>
-    </section>
   </menu>
   <template class="KelpiePlannerWindow" parent="GtkApplicationWindow">
     <property name="title">Kelpie Flight Planner for FlightGear</property>
@@ -120,7 +107,7 @@
                     <property name="hexpand">true</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkNotebook">
+                      <object class="GtkNotebook" id="search_notebook">
                         <property name="vexpand">true</property>
                         <property name="hexpand">true</property>
                         <child>
@@ -128,7 +115,7 @@
                           </object>
                         </child>
                         <child type="tab">
-                          <object class="GtkLabel" id="tab-airports">
+                          <object class="GtkLabel" id="tab_airports">
                             <property name="label" translatable="yes">Airports</property>
                           </object>
                         </child>
@@ -137,7 +124,7 @@
                           </object>
                         </child>
                         <child type="tab">
-                          <object class="GtkLabel" id="tab-navaids">
+                          <object class="GtkLabel" id="tab_navaids">
                             <property name="label" translatable="yes">Navaids</property>
                           </object>
                         </child>
@@ -146,7 +133,7 @@
                           </object>
                         </child>
                         <child type="tab">
-                          <object class="GtkLabel" id="tab-fixes">
+                          <object class="GtkLabel" id="tab_fixes">
                             <property name="label" translatable="yes">Fixes</property>
                           </object>
                         </child>
@@ -158,21 +145,31 @@
             </child>
             <child>
               <object class="GtkBox">
-                <property name="width-request">300</property>
-                <property name="vexpand">True</property>
-                <property name="hexpand">True</property>
+                <property name="vexpand">true</property>
+                <property name="hexpand">true</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkLabel">
-                    <property name="label" translatable="yes">Maps &amp; Stuff</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkButton" id="map_button">
-                    <property name="label">Press me!</property>
-                    <property name="margin-top">12</property>
-                    <property name="margin-bottom">12</property>
-                    <property name="margin-start">12</property>
-                    <property name="margin-end">12</property>
+                  <object class="GtkNotebook" id="map_notebook">
+                    <property name="vexpand">true</property>
+                    <property name="hexpand">true</property>
+                    <child>
+                      <object class="AirportMapView" id="airport_map_view">
+                      </object>
+                    </child>
+                    <child type="tab">
+                      <object class="GtkLabel" id="tab_airport_map">
+                        <property name="label" translatable="yes">Airport Map</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="WorldMapView" id="world_map_view">
+                      </object>
+                    </child>
+                    <child type="tab">
+                      <object class="GtkLabel" id="tab_globe">
+                        <property name="label" translatable="yes">Map</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>

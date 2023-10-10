@@ -68,7 +68,7 @@ impl Coordinate {
         let a = (d_lat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
         let d = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
-        (Self::EARTH_RADIUS * d.abs())
+        Self::EARTH_RADIUS * d.abs()
     }
 
     pub fn get_latitude(&self) -> &f64 {

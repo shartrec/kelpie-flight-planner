@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use gtk::{Application, CssProvider, gio, glib};
 use gtk::gdk::Display;
 use gtk::gio::{File, SimpleAction};
@@ -19,7 +21,6 @@ mod window;
 
 const APP_ID: &str = "com.shartrec.KelpiePlanner";
 
-
 fn main() -> glib::ExitCode {
     init_logger();
 
@@ -33,7 +34,7 @@ fn main() -> glib::ExitCode {
         .flags(gtk::gio::ApplicationFlags::HANDLES_OPEN)
         .build();
 
-    app.connect_startup(|app| {
+    app.connect_startup(|_app| {
         load_css();
     });
 
@@ -78,25 +79,25 @@ fn load_css() {
 fn connect_actions(app: &Application, window: &Window) {
 
     let action = SimpleAction::new("new", None);
-    action.connect_activate(clone!(@weak window => move |action, parameter| {
+    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
        let _ = &window.imp().new_plan();
     }));
     app.add_action(&action);
 
     let action = SimpleAction::new("open", None);
-    action.connect_activate(move |action, parameter| {
+    action.connect_activate(move |_action, _parameter| {
         todo!("Open clicked");
     });
     app.add_action(&action);
 
     let action = SimpleAction::new("save", None);
-    action.connect_activate(move |action, parameter| {
+    action.connect_activate(move |_action, _parameter| {
         todo!("Save clicked");
     });
     app.add_action(&action);
 
     let action = SimpleAction::new("quit", None);
-    action.connect_activate(clone!(@weak app => move |action, parameter| {
+    action.connect_activate(clone!(@weak app => move |_action, _parameter| {
         app.quit()
     }));
     app.add_action(&action);
@@ -110,7 +111,7 @@ fn build_ui(app: &Application) {
     window.present();
 }
 
-fn build_and_open(app: &Application, files: &[File], name: &str) {
+fn build_and_open(app: &Application, files: &[File], _name: &str) {
     // Create new window and present it
     // todo Load plan into window.
     let window = Window::new(app);

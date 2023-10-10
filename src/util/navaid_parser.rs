@@ -1,5 +1,7 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::sync::Arc;
 
 use log::info;
 
@@ -10,7 +12,8 @@ pub struct NavaidParserFG {}
 impl NavaidParserFG {
     pub fn load_navaids(
         &mut self,
-        navaids: &mut Vec<Box<Navaid>>,
+        navaids: &mut Vec<Arc<Navaid>>,
+        ils: &mut HashMap<String, Vec<(String, f64)>>,
         reader: &mut BufReader<File>,
     ) -> Result<(), String> {
         let mut buf = String::new();
@@ -52,38 +55,18 @@ impl NavaidParserFG {
                 if r_type == "2" || r_type == "3" {
                     let navaid_type = NavaidType::type_for(r_type);
 
-                    let latitude = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
-                    let longitude = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
+                    let latitude = token_number::<f64>(tokenizer.next());
+                    let longitude = token_number::<f64>(tokenizer.next());
 
-                    let elevation = tokenizer
-                        .next()
-                        .unwrap_or("0")
-                        .parse::<i32>()
-                        .unwrap_or(0);
+                    let elevation = token_number::<i32>(tokenizer.next());
 
-                    let mut frequency = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
+                    let mut frequency = token_number::<f64>(tokenizer.next());
 
                     if navaid_type.as_ref().unwrap_or(&NavaidType::NDB) == &NavaidType::VOR{
                         frequency /= 100.;
                     }
 
-                    let range = tokenizer
-                        .next()
-                        .unwrap_or("0")
-                        .parse::<i32>()
-                        .unwrap_or(0);
+                    let range = token_number::<i32>(tokenizer.next());
 
                     let mag_var = tokenizer.next().unwrap_or("");
                     let id = tokenizer.next().unwrap_or("");
@@ -106,16 +89,44 @@ impl NavaidParserFG {
                         mag_var.to_string(),
                         name.to_string(),
                     );
-                    navaids.push(Box::new(navaid));
+                    navaids.push(Arc::new(navaid));
+                } else if r_type == "4" || r_type == "5" {
+                    /* latitude */ tokenizer.next();
+                    /* longitude */ tokenizer.next();
+                    /* elevation */ tokenizer.next();
+                    let frequency =  token_number::<f64>(tokenizer.next()) / 100.0;
+                    /* magVar */ tokenizer.next();
+                    tokenizer.next();
+                    tokenizer.next();
+                    if let Some(airport_id) = tokenizer.next() {
+                        if let Some(runway_id) = tokenizer.next() {
+                            match ils.get_mut(airport_id) {
+                                Some(list) => {
+                                    list.push((runway_id.to_string(), frequency));
+                                }
+                                None => {
+                                    let mut list = Vec::new();
+                                    list.push((runway_id.to_string(), frequency));
+                                    ils.insert(airport_id.to_string(), list);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+fn token_number<T: std::str::FromStr + std::default::Default>(t: Option<&str>) -> T {
+    t.unwrap_or("0.0").parse::<T>().unwrap_or( Default::default())
+}
+
 #[cfg(test)]
 mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
+    use std::collections::HashMap;
+    use std::sync::Arc;
 
     use crate::model::location::Location;
     use crate::model::navaid::{Navaid, NavaidType};
@@ -124,7 +135,8 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let mut navaids: Vec<Box<Navaid>> = Vec::new();
+        let mut navaids: Vec<Arc<Navaid>> = Vec::new();
+        let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test/navaids.dat");
@@ -134,7 +146,7 @@ mod tests {
             Ok(f) => {
                 let mut parser = NavaidParserFG {};
                 let mut reader = BufReader::new(f);
-                match parser.load_navaids(&mut navaids, &mut reader) {
+                match parser.load_navaids(&mut navaids, &mut ils, &mut reader) {
                     Ok(()) => (),
                     Err(msg) => panic! {"{}", msg},
                 }

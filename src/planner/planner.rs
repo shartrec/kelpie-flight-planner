@@ -27,8 +27,8 @@ pub struct Planner<'a> {
     plan_type: String,
     add_gps_waypoints: bool,
     add_waypoint_bias: bool,
-    navaids: &'a Arc<RwLock<Vec<Box<Navaid>>>>,
-    fixes: &'a Arc<RwLock<Vec<Box<Fix>>>>,
+    navaids: &'a Arc<RwLock<Vec<Arc<Navaid>>>>,
+    fixes: &'a Arc<RwLock<Vec<Arc<Fix>>>>,
 }
 
 impl Planner<'_> {
@@ -85,7 +85,7 @@ impl Planner<'_> {
                            to: &Waypoint,
                            plan: &mut Vec<Waypoint>) {
         if let Some(arrival_beacon) = self.get_navaid_nearest(&to.get_loc(), ARRIVAL_BEACON_RANGE) {
-            let wp = Waypoint::Navaid { navaid: *arrival_beacon, elevation: Cell::new(0), locked: false };
+            let wp = Waypoint::Navaid { navaid: arrival_beacon.clone(), elevation: Cell::new(0), locked: false };
 
             self.add_navaids_between(from, &wp.clone(), plan);
             plan.push(wp);
@@ -113,7 +113,7 @@ impl Planner<'_> {
         let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
 
         if let Some(mid_nav_aid) = self.get_navaid_nearest_midpoint(&from.get_loc(), &to.get_loc(), &midpoint) {
-            let wp = Waypoint::Navaid { navaid: *mid_nav_aid, elevation: Cell::new(0), locked: false };
+            let wp = Waypoint::Navaid { navaid: mid_nav_aid, elevation: Cell::new(0), locked: false };
             let save_wp = wp.clone();
 
             self.add_navaids_between(from, &wp, plan);
@@ -135,7 +135,7 @@ impl Planner<'_> {
         let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
 
         if let Some(mid_fix_aid) = self.get_fix_nearest_midpoint(&from.get_loc(), &to.get_loc(), &midpoint) {
-            let wp = Waypoint::Fix { fix: *mid_fix_aid, elevation: Cell::new(0), locked: false };
+            let wp = Waypoint::Fix { fix: mid_fix_aid, elevation: Cell::new(0), locked: false };
             let save_wp = wp.clone();
             self.add_fixes_between(from, &wp, plan);
             plan.push(wp);
@@ -149,7 +149,7 @@ impl Planner<'_> {
         from: &Coordinate,
         to: &Coordinate,
         midpoint: &Coordinate,
-    ) -> Option<Box<Navaid>> {
+    ) -> Option<Arc<Navaid>> {
         let leg_distance = from.distance_to(to);
         let heading_from = from.bearing_to_deg(midpoint);
         let heading_to = midpoint.bearing_to_deg(to);
@@ -157,8 +157,8 @@ impl Planner<'_> {
         let range = leg_distance as f64 / 2.0; // - _min_leg_distance;
 
         let near_aids = self.get_navaids_near(self.navaids, midpoint, range);
-        let mut best_loc: Option<Box<Navaid>> = None;
-        let mut best_ndb: Option<Box<Navaid>> = None;
+        let mut best_loc: Option<Arc<Navaid>> = None;
+        let mut best_ndb: Option<Arc<Navaid>> = None;
         let mut nearest = 100000.0;
         let mut nearest_ndb = 100000.0;
 
@@ -200,11 +200,11 @@ impl Planner<'_> {
         best_loc
     }
 
-    fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Box<Navaid>> {
+    fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Navaid>> {
         let near_aids = self.get_navaids_near(&self.navaids, coord, max_range);
 
-        let mut best_loc: Option<Box<Navaid>> = None;
-        let mut best_ndb: Option<Box<Navaid>> = None;
+        let mut best_loc: Option<Arc<Navaid>> = None;
+        let mut best_ndb: Option<Arc<Navaid>> = None;
         let mut nearest = 100000.0;
         let mut nearest_ndb = 100000.0;
 
@@ -237,7 +237,7 @@ impl Planner<'_> {
         from: &Coordinate,
         to: &Coordinate,
         midpoint: &Coordinate,
-    ) -> Option<Box<Fix>> {
+    ) -> Option<Arc<Fix>> {
         let leg_distance = from.distance_to(to);
         let heading_from = from.bearing_to_deg(midpoint);
         let heading_to = midpoint.bearing_to_deg(to);
@@ -245,7 +245,7 @@ impl Planner<'_> {
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
         let near_aids = self.get_fixes_near(self.fixes, midpoint, range);
-        let mut best_loc: Option<Box<Fix>> = None;
+        let mut best_loc: Option<Arc<Fix>> = None;
         let mut nearest = 100000.0;
 
         for fix in near_aids {
@@ -268,10 +268,11 @@ impl Planner<'_> {
         best_loc
     }
 
-    fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Box<Fix>> {
+    #[allow(dead_code)]
+    fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Fix>> {
         let near_aids = self.get_fixes_near(&self.fixes, coord, max_range);
 
-        let mut best_loc: Option<Box<Fix>> = None;
+        let mut best_loc: Option<Arc<Fix>> = None;
         let mut nearest = 100000.0;
 
         for fix in near_aids {
@@ -283,6 +284,7 @@ impl Planner<'_> {
         best_loc
     }
 
+    #[allow(dead_code)]
     fn add_waypoints_between(&self, from: &Waypoint,
                              to: &Waypoint,
                              plan: &mut Vec<Waypoint>) {
@@ -313,7 +315,7 @@ impl Planner<'_> {
             self.max_leg_distance * 1.25
         };
 
-        let mut prev_wp = from.clone();
+        let prev_wp = from.clone();
         if plan.len() > 0 {
             let mut finished = false;
             while !finished {
@@ -337,7 +339,7 @@ impl Planner<'_> {
     }
 
     fn add_waypoints_to_leg(&self, prev_wp: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>, i: usize, leg_length: f64) {
-        let mut additional_points = leg_length as f64 / self.max_leg_distance as f64;
+        let additional_points = leg_length as f64 / self.max_leg_distance as f64;
         let extra_points = if self.add_waypoint_bias && (additional_points.fract() > 0.2) {
             additional_points.ceil()
         } else {
@@ -357,37 +359,37 @@ impl Planner<'_> {
         }
     }
 
-    fn get_navaids_near(&self, locations: &Arc<RwLock<Vec<Box<Navaid>>>>, point: &Coordinate, range: f64)
-                        -> Vec<Box<Navaid>> {
-        let mut near_locations: Vec<Box<Navaid>> = Vec::new();
+    fn get_navaids_near(&self, locations: &Arc<RwLock<Vec<Arc<Navaid>>>>, point: &Coordinate, range: f64)
+                        -> Vec<Arc<Navaid>> {
+        let mut near_locations: Vec<Arc<Navaid>> = Vec::new();
 
         if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range) {
             let guard = locations.read().unwrap();
             let locations = guard.deref();
-            let x: Vec<&Box<Navaid>> = locations.iter().filter(move |loc| {
+            let near_navaids: Vec<&Arc<Navaid>> = locations.iter().filter(move |loc| {
                 filter.filter(&***loc)
             }).collect();
 
-            for l in x {
-                near_locations.push(Box::new(*l.clone()));
+            for navaid in near_navaids {
+                near_locations.push(navaid.clone());
             }
         }
         near_locations
     }
 
-    fn get_fixes_near(&self, locations: &Arc<RwLock<Vec<Box<Fix>>>>, point: &Coordinate, range: f64)
-                      -> Vec<Box<Fix>> {
-        let mut near_locations: Vec<Box<Fix>> = Vec::new();
+    fn get_fixes_near(&self, locations: &Arc<RwLock<Vec<Arc<Fix>>>>, point: &Coordinate, range: f64)
+                      -> Vec<Arc<Fix>> {
+        let mut near_locations: Vec<Arc<Fix>> = Vec::new();
 
         if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range) {
             let guard = locations.read().unwrap();
             let locations = guard.deref();
-            let x: Vec<&Box<Fix>> = locations.iter().filter(move |loc| {
+            let near_fixes: Vec<&Arc<Fix>> = locations.iter().filter(move |loc| {
                 filter.filter(&***loc)
             }).collect();
 
-            for l in x {
-                near_locations.push(Box::new(*l.clone()));
+            for fix in near_fixes {
+                near_locations.push(fix.clone());
             }
         }
         near_locations
@@ -402,7 +404,7 @@ impl Planner<'_> {
         raw_deviation
     }
 
-    pub fn recalc_plan_elevations(&self, mut plan: &Plan) {
+    pub fn recalc_plan_elevations(&self, plan: &Plan) {
         for s_ref in plan.get_sectors().deref() {
             let binding = s_ref.borrow();
             let sector = binding.deref();
@@ -412,7 +414,7 @@ impl Planner<'_> {
 
             // Remove the previous top of climb and beginning of descent
             let mut guard = sector.get_waypoints().write().expect("Can't get read lock on sectors");
-            let mut waypoints = guard.deref_mut();
+            let waypoints = guard.deref_mut();
             waypoints.retain(|wp| {
                 match wp {
                     Waypoint::Toc { .. } | Waypoint::Bod { .. } => {
@@ -653,7 +655,7 @@ mod tests {
 
     #[test]
     fn test_with_gps() {
-        let mut planner = Planner {
+        let planner = Planner {
             max_leg_distance: 100.0,
             min_leg_distance: 25.0,
             max_deviation: 10.0,

@@ -1,0 +1,20 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+
+  <template class="WorldMapView" parent="GtkWidget">
+    <property name="layout-manager">
+      <object class="GtkBoxLayout">
+        <property name="orientation">vertical</property>
+      </object>
+    </property>
+    <child>
+      <object class="GtkDrawingArea">
+      </object>
+    </child>
+    <!--      </object>-->
+    <!--    </child>-->
+  </template>
+</interface>
