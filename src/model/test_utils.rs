@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use super::airport::{Airport, AirportType};
 
+#[cfg(test)]
 pub fn make_airport(id: &str) -> Arc<super::airport::Airport> {
     Arc::new(
         Airport::new(
@@ -18,7 +19,7 @@ pub fn make_airport(id: &str) -> Arc<super::airport::Airport> {
     )
 }
 
-pub fn make_airport_at(id: &str, lat: f64, long: f64) -> Arc<super::airport::Airport> {
+#[cfg(test)]pub fn make_airport_at(id: &str, lat: f64, long: f64) -> Arc<super::airport::Airport> {
     Arc::new(
         Airport::new(
             id.to_string(),

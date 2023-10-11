@@ -17,6 +17,7 @@ use crate::util::fix_parser::FixParserFG;
 use crate::util::navaid_parser::NavaidParserFG;
 
 pub mod coordinate;
+pub mod geomagnetism;
 
 pub const FEET_PER_DEGREE: i32 = 6076 * 60;
 
