@@ -321,22 +321,22 @@ impl Geomagnetism {
     }
 
     /** Initialise the instance and calculate for given location, altitude and date
-    *	@param longitude	Longitude in decimal degrees
     *	@param latitude		Latitude in decimal degrees
+    *	@param longitude	Longitude in decimal degrees
     *	@param altitude		Altitude in metres (with respect to WGS-1984 ellipsoid)
     *	@param calendar		Calendar for date of calculation*/
-    pub fn new(longitude: f64, latitude: f64, altitude: Option<f64>, calendar: Option<DateTime<Utc>>) -> Geomagnetism {
+    pub fn new(latitude: f64, longitude: f64, altitude: Option<f64>, calendar: Option<DateTime<Utc>>) -> Geomagnetism {
         let mut geo = Self::create();
-        geo.calculate(longitude, latitude, altitude, calendar);
+        geo.calculate(latitude, longitude, altitude, calendar);
         geo
     }
 
     /** Calculate for given location, altitude and date
-    *	@param longitude	Longitude in decimal degrees
     *	@param latitude		Latitude in decimal degrees
+    *	@param longitude	Longitude in decimal degrees
     *	@param altitude		Altitude in metres (with respect to WGS-1984 ellipsoid)
     *	@param calendar		Calendar for date of calculation*/
-    fn calculate(&mut self, longitude: f64, latitude: f64, altitude: Option<f64>, calendar: Option<DateTime<Utc>>) {
+    fn calculate(&mut self, latitude: f64, longitude: f64, altitude: Option<f64>, calendar: Option<DateTime<Utc>>) {
 
         let current_date = chrono::Utc::now();
 
@@ -540,15 +540,15 @@ mod tests {
 
     #[test]
     fn test_declination() {
-        let geo = Geomagnetism::new(150.9231, -34.1356, None, None);
+        let geo = Geomagnetism::new(-34.1356, 150.9231, None, None);
         assert_between(geo.declination, 12.75, 12.85);
-        let geo = Geomagnetism::new(0.5, 51.48, None, None);
+        let geo = Geomagnetism::new(51.48, 0.5, None, None);
         assert_between(geo.declination, 0.7, 1.2);
-        let geo = Geomagnetism::new(139.76, 35.55, None, None);
+        let geo = Geomagnetism::new(35.55, 139.76, None, None);
         assert_between(geo.declination, -8.0, -7.8);
-        let geo = Geomagnetism::new(-16.65, 13.24, None, None);
+        let geo = Geomagnetism::new(13.24, -16.65, None, None);
         assert_between(geo.declination, -6.3, -6.1);
-        let geo = Geomagnetism::new(-73.8, 40.6, None, None);
+        let geo = Geomagnetism::new(40.6, -73.8, None, None);
         assert_between(geo.declination, -13.0, -12.5);
     }
 
