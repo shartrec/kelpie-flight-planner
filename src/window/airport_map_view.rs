@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use std::cell::RefCell;
@@ -9,8 +9,8 @@ mod imp {
     use std::thread;
 
     use glib::subclass::InitializingObject;
+    use gtk::glib::{clone, MainContext, PropertySet, PRIORITY_DEFAULT};
     use gtk::{cairo::Context, DrawingArea};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT, PropertySet};
 
     use crate::event::Event;
     use crate::model::airport::Airport;
@@ -29,7 +29,6 @@ mod imp {
 
     impl AirportMapView {
         pub fn set_airport(&self, airport: Arc<Airport>) {
-
             self.airport.set(Some(airport.clone()));
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
 
@@ -55,12 +54,16 @@ mod imp {
 
         pub fn initialise(&self) -> () {}
 
-
         fn draw_function(&self, area: &gtk::DrawingArea, cr: &Context) {
             let maybe_airport = self.airport.clone().into_inner();
             match maybe_airport {
                 Some(airport) => {
-                    let airport_painter = AirportPainter { draw_taxiways: true, draw_runways: true, draw_runway_list: true, draw_compass_rose: true };
+                    let airport_painter = AirportPainter {
+                        draw_taxiways: true,
+                        draw_runways: true,
+                        draw_runway_list: true,
+                        draw_compass_rose: true,
+                    };
                     airport_painter.draw_airport(&airport, area, cr);
                 }
                 _ => {
@@ -91,9 +94,11 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.airport_map_window.set_draw_func(clone!(@weak self as view => move |area, cr, _x, _y| {
-                view.draw_function(&area, cr);
-            }));
+            self.airport_map_window.set_draw_func(
+                clone!(@weak self as view => move |area, cr, _x, _y| {
+                    view.draw_function(&area, cr);
+                }),
+            );
         }
     }
 

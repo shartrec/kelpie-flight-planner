@@ -46,5 +46,7 @@ impl Location for Fix {
         &self.coordinate
     }
 
-    fn get_name(&self) -> &str {&self.get_id()}
+    fn get_name(&self) -> &str {
+        &self.get_id()
+    }
 }

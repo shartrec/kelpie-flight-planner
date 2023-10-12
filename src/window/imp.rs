@@ -48,7 +48,8 @@ impl Window {
     pub(crate) fn new_plan(&self) {
         let view = PlanView::new();
         view.imp().new_plan();
-        self.plan_stack.add_titled(&view, Some("newxx"), &"New Plan");
+        self.plan_stack
+            .add_titled(&view, Some("newxx"), &"New Plan");
         self.plan_stack.set_visible_child(&view);
     }
 
@@ -70,8 +71,6 @@ impl Window {
         pref.put("vertical-split-pos", self.pane_1v.position());
         pref.put("horizontal-split-pos", self.pane_1h.position());
     }
-
-
 }
 
 // The central trait for subclassing a GObject
@@ -93,7 +92,6 @@ impl ObjectSubclass for Window {
 
 // Trait shared by all GObjects
 impl ObjectImpl for Window {
-
     fn constructed(&self) {
         // Call "constructed" on parent
         self.parent_constructed();
@@ -103,7 +101,6 @@ impl ObjectImpl for Window {
         obj.load_window_size();
 
         self.layout_panels();
-
 
         let airport_view = Box::new(self.airport_view.clone());
         let navaid_view = Box::new(self.navaid_view.clone());
@@ -124,7 +121,6 @@ impl ObjectImpl for Window {
             glib::source::Continue(true)
         });
     }
-
 }
 
 // Trait to allow us to add menubars

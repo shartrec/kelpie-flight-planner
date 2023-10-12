@@ -1,11 +1,11 @@
-use std::{fmt, fs};
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
+use std::{fmt, fs};
 
 use log::{error, warn};
 
-use crate::earth::{FEET_PER_DEGREE, get_earth_model};
 use crate::earth::coordinate::Coordinate;
+use crate::earth::{get_earth_model, FEET_PER_DEGREE};
 use crate::util::airport_parser::AirportParserFG850;
 
 use super::location::Location;
@@ -51,11 +51,17 @@ impl Airport {
     }
 
     pub fn add_runway(&self, runway: Runway) {
-        self.runways.write().expect("Can't get airport lock").push(runway);
+        self.runways
+            .write()
+            .expect("Can't get airport lock")
+            .push(runway);
     }
 
     pub fn add_taxiway(&self, taxiway: Taxiway) {
-        self.taxiways.write().expect("Can't get airport lock").push(taxiway);
+        self.taxiways
+            .write()
+            .expect("Can't get airport lock")
+            .push(taxiway);
     }
 
     pub fn get_control_tower(&self) -> bool {
@@ -63,12 +69,20 @@ impl Airport {
     }
 
     pub fn get_runway_count(&self) -> usize {
-        self.get_runways().read().expect("Can't get airport lock").len()
+        self.get_runways()
+            .read()
+            .expect("Can't get airport lock")
+            .len()
     }
 
     pub fn get_runways(&self) -> &Arc<RwLock<Vec<Runway>>> {
         let mut loaded = false;
-        if !self.runways.read().expect("Can't get airport lock").is_empty() {
+        if !self
+            .runways
+            .read()
+            .expect("Can't get airport lock")
+            .is_empty()
+        {
             loaded = true;
         }
         if !loaded {
@@ -80,7 +94,12 @@ impl Airport {
     pub fn get_longest_runway(&self) -> Option<Runway> {
         let mut longest: Option<Runway> = None;
 
-        for runway in self.get_runways().read().expect("Can't get airport lock").iter() {
+        for runway in self
+            .get_runways()
+            .read()
+            .expect("Can't get airport lock")
+            .iter()
+        {
             if longest.is_none() {
                 longest = Some(runway.clone())
             } else {
@@ -99,7 +118,12 @@ impl Airport {
     pub fn get_taxiways(&self) -> &Arc<RwLock<Vec<Taxiway>>> {
         // We check runways here as all airports have a runway, but in FlightGear maybe no Taxiways defined
         let mut loaded = false;
-        if !self.runways.read().expect("Can't get airport lock").is_empty() {
+        if !self
+            .runways
+            .read()
+            .expect("Can't get airport lock")
+            .is_empty()
+        {
             loaded = true;
         }
         if !loaded {
@@ -117,14 +141,13 @@ impl Airport {
 
         let runway_offsets = get_earth_model().get_runway_offsets();
 
-        let file =
-            match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
-                Some(p) => fs::File::open(p),
-                None => {
-                    error!("Path to airports file not found");
-                    return;
-                }
-            };
+        let file = match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
+            Some(p) => fs::File::open(p),
+            None => {
+                error!("Path to airports file not found");
+                return;
+            }
+        };
         match file {
             Ok(f) => {
                 let parser = AirportParserFG850::new();
@@ -132,7 +155,7 @@ impl Airport {
                 let result = parser.load_runways(self, runway_offsets, &mut reader);
                 match result {
                     Err(e) => warn!("{}", e),
-                    _ => ()
+                    _ => (),
                 }
             }
             Err(_e) => warn!("Unable to open airport data"),
@@ -156,7 +179,13 @@ impl Airport {
 
         // for each runway get its extent
         for runway in self.runways.read().expect("Can't get airport lock").iter() {
-            let extent = self.calc_extent(runway.lat, runway.long, runway.heading, runway.length, runway.width);
+            let extent = self.calc_extent(
+                runway.lat,
+                runway.long,
+                runway.heading,
+                runway.length,
+                runway.width,
+            );
             if extent[0] < min_lat {
                 min_lat = extent[0];
             }
@@ -241,7 +270,10 @@ impl Airport {
     }
 
     pub fn get_ils(&self, runway_id: &str) -> Option<f64> {
-        let ils = get_earth_model().get_ils().read().expect("can't get ils lock");
+        let ils = get_earth_model()
+            .get_ils()
+            .read()
+            .expect("can't get ils lock");
         match ils.get(&self.id) {
             Some(list) => {
                 let mut freq = None;
@@ -253,7 +285,7 @@ impl Airport {
                 }
                 freq
             }
-            None => None
+            None => None,
         }
     }
 }
@@ -287,7 +319,9 @@ impl Location for Airport {
         &self.coordinate
     }
 
-    fn get_name(&self) -> &str { self.name.as_str() }
+    fn get_name(&self) -> &str {
+        self.name.as_str()
+    }
 }
 
 impl PartialEq for Airport {
@@ -316,7 +350,6 @@ impl Default for Airport {
         }
     }
 }
-
 
 #[derive(Default, Clone, PartialEq)]
 pub struct Runway {
@@ -380,7 +413,6 @@ impl Runway {
         self.long
     }
 
-
     pub fn get_surface(&self) -> &str {
         &self.surface
     }
@@ -437,12 +469,8 @@ pub struct Taxiway {
 }
 
 impl Taxiway {
-    pub fn new(
-        nodes: Vec<LayoutNode>
-    ) -> Self {
-        Self {
-            nodes
-        }
+    pub fn new(nodes: Vec<LayoutNode>) -> Self {
+        Self { nodes }
     }
 
     pub fn get_nodes(&self) -> &Vec<LayoutNode> {
@@ -460,13 +488,7 @@ pub struct LayoutNode {
 }
 
 impl LayoutNode {
-    pub fn new(
-        _type: String,
-        lat: f64,
-        long: f64,
-        bezier_lat: f64,
-        bezier_long: f64,
-    ) -> Self {
+    pub fn new(_type: String, lat: f64, long: f64, bezier_lat: f64, bezier_long: f64) -> Self {
         Self {
             _type,
             lat,

@@ -2,11 +2,12 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
-
-use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root, ScrolledWindow};
 use gtk::glib::Cast;
-use gtk::prelude::{CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt};
+use gtk::prelude::{
+    CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt,
+};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
+use gtk::{glib, ButtonsType, MessageDialog, MessageType, Root, ScrolledWindow};
 
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -34,7 +35,12 @@ fn entry_disallow(entry: &gtk::Entry, pattern: fn(char) -> bool) {
 
 pub fn show_error_dialog(root: &Option<Root>, message: &str) {
     // Create a new message dialog
-    if let Ok(w) = root.as_ref().expect("Can't get the root window").clone().downcast::<gtk::Window>() {
+    if let Ok(w) = root
+        .as_ref()
+        .expect("Can't get the root window")
+        .clone()
+        .downcast::<gtk::Window>()
+    {
         let dialog = MessageDialog::new(
             Some(&w),
             gtk::DialogFlags::MODAL,
@@ -52,11 +58,13 @@ pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
     match &widget.root() {
         Some(r) => {
             let our_window = r.clone().downcast::<Window>().unwrap();
-            our_window.imp().plan_stack.visible_child().and_downcast::<PlanView>()
+            our_window
+                .imp()
+                .plan_stack
+                .visible_child()
+                .and_downcast::<PlanView>()
         }
-        None => {
-            None
-        }
+        None => None,
     }
 }
 pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
@@ -65,9 +73,7 @@ pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMap
             let our_window = r.clone().downcast::<Window>().unwrap();
             our_window.imp().airport_map_view.try_get()
         }
-        None => {
-            None
-        }
+        None => None,
     }
 }
 pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
@@ -76,9 +82,7 @@ pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
             let our_window = r.clone().downcast::<Window>().unwrap();
             our_window.imp().airport_view.try_get()
         }
-        None => {
-            None
-        }
+        None => None,
     }
 }
 pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
@@ -93,7 +97,7 @@ pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
             }
             ()
         }
-        None => ()
+        None => (),
     }
 }
 pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
@@ -102,9 +106,7 @@ pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
             let our_window = r.clone().downcast::<Window>().unwrap();
             our_window.imp().navaid_view.try_get()
         }
-        None => {
-            None
-        }
+        None => None,
     }
 }
 pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
@@ -119,7 +121,7 @@ pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
             }
             ()
         }
-        None => ()
+        None => (),
     }
 }
 pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
@@ -128,9 +130,7 @@ pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
             let our_window = r.clone().downcast::<Window>().unwrap();
             our_window.imp().fix_view.try_get()
         }
-        None => {
-            None
-        }
+        None => None,
     }
 }
 pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
@@ -145,6 +145,6 @@ pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
             }
             ()
         }
-        None => ()
+        None => (),
     }
 }

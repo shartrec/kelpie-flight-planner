@@ -1,15 +1,15 @@
 use glib::Object;
-use gtk::{Application, gio, glib};
 use gtk::prelude::GtkWindowExt;
+use gtk::{gio, glib, Application};
 
-pub mod imp;
-mod airport_view;
 mod airport_map_view;
-mod navaid_view;
+mod airport_view;
 mod fix_view;
+pub mod imp;
+mod navaid_view;
 mod plan_view;
-mod world_map_view;
 mod util;
+mod world_map_view;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)
@@ -24,9 +24,7 @@ impl Window {
         Object::builder().property("application", app).build()
     }
 
-    fn setup_actions(&self) {
-
-    }
+    fn setup_actions(&self) {}
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
         // Get the size of the window
         let size = self.default_size();
@@ -58,5 +56,4 @@ impl Window {
             }
         }
     }
-
 }

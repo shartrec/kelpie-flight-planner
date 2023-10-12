@@ -62,7 +62,7 @@ impl NavaidParserFG {
 
                     let mut frequency = token_number::<f64>(tokenizer.next());
 
-                    if navaid_type.as_ref().unwrap_or(&NavaidType::NDB) == &NavaidType::VOR{
+                    if navaid_type.as_ref().unwrap_or(&NavaidType::NDB) == &NavaidType::VOR {
                         frequency /= 100.;
                     }
 
@@ -91,11 +91,15 @@ impl NavaidParserFG {
                     );
                     navaids.push(Arc::new(navaid));
                 } else if r_type == "4" || r_type == "5" {
-                    /* latitude */ tokenizer.next();
-                    /* longitude */ tokenizer.next();
-                    /* elevation */ tokenizer.next();
-                    let frequency =  token_number::<f64>(tokenizer.next()) / 100.0;
-                    /* magVar */ tokenizer.next();
+                    /* latitude */
+                    tokenizer.next();
+                    /* longitude */
+                    tokenizer.next();
+                    /* elevation */
+                    tokenizer.next();
+                    let frequency = token_number::<f64>(tokenizer.next()) / 100.0;
+                    /* magVar */
+                    tokenizer.next();
                     tokenizer.next();
                     tokenizer.next();
                     if let Some(airport_id) = tokenizer.next() {
@@ -119,14 +123,16 @@ impl NavaidParserFG {
 }
 
 fn token_number<T: std::str::FromStr + std::default::Default>(t: Option<&str>) -> T {
-    t.unwrap_or("0.0").parse::<T>().unwrap_or( Default::default())
+    t.unwrap_or("0.0")
+        .parse::<T>()
+        .unwrap_or(Default::default())
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
+    use std::{fs, io::BufReader, path::PathBuf};
 
     use crate::model::location::Location;
     use crate::model::navaid::{Navaid, NavaidType};

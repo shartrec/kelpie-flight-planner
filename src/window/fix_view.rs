@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow, ListStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
+    use gtk::{Builder, Button, Entry, ListStore, PopoverMenu, ScrolledWindow, TreeView};
     use log::error;
 
     use crate::earth;
@@ -19,7 +19,10 @@ mod imp {
     use crate::model::waypoint::Waypoint;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, IdFilter, RangeFilter};
-    use crate::window::util::{get_airport_view, get_navaid_view, get_plan_view, show_airport_view, show_error_dialog, show_navaid_view};
+    use crate::window::util::{
+        get_airport_view, get_navaid_view, get_plan_view, show_airport_view, show_error_dialog,
+        show_navaid_view,
+    };
 
     use super::*;
 
@@ -61,7 +64,10 @@ mod imp {
             if !lat.is_empty() || !long.is_empty() {
                 if lat.is_empty() || long.is_empty() {
                     //show message popup
-                    show_error_dialog(&self.obj().root(), "Enter both a Latitude and Longitude for search.");
+                    show_error_dialog(
+                        &self.obj().root(),
+                        "Enter both a Latitude and Longitude for search.",
+                    );
                     return;
                 } else {
                     let lat_as_float;
@@ -92,14 +98,21 @@ mod imp {
                 let fix: &dyn Location = &***a;
                 combined_filter.filter(fix)
             });
-            let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type()]);
+            let store = ListStore::new(&[
+                String::static_type(),
+                String::static_type(),
+                String::static_type(),
+                String::static_type(),
+            ]);
             for fix in searh_result {
                 store.insert_with_values(
-                    None, &[
+                    None,
+                    &[
                         (0, &fix.get_id()),
                         (1, &fix.get_lat_as_string()),
-                        (2, &fix.get_long_as_string())
-                    ]);
+                        (2, &fix.get_long_as_string()),
+                    ],
+                );
             }
             self.fix_list.set_model(Some(&store));
         }
@@ -111,8 +124,12 @@ mod imp {
                     match get_plan_view(&self.fix_window.get()) {
                         Some(view) => {
                             // get the plan
-                            view.imp().add_waypoint_to_plan(Waypoint::Fix {fix: fix.clone(), elevation: Cell::new(0), locked: true});
-                        },
+                            view.imp().add_waypoint_to_plan(Waypoint::Fix {
+                                fix: fix.clone(),
+                                elevation: Cell::new(0),
+                                locked: true,
+                            });
+                        }
                         None => (),
                     }
                 }
@@ -120,12 +137,13 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
-            self.fix_search_lat.set_text(&coordinate.get_latitude_as_string());
-            self.fix_search_long.set_text(&coordinate.get_longitude_as_string());
+            self.fix_search_lat
+                .set_text(&coordinate.get_latitude_as_string());
+            self.fix_search_long
+                .set_text(&coordinate.get_longitude_as_string());
             self.fix_search.activate();
         }
     }
-
 
     #[glib::object_subclass]
     impl ObjectSubclass for FixView {
@@ -148,10 +166,11 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.fix_list.connect_row_activated(clone!(@weak self as view => move |_list_view, _position, _col| {
-                 view.add_selected_to_plan();
-            }));
-
+            self.fix_list.connect_row_activated(
+                clone!(@weak self as view => move |_list_view, _position, _col| {
+                     view.add_selected_to_plan();
+                }),
+            );
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
@@ -174,25 +193,27 @@ mod imp {
             }));
             self.fix_window.add_controller(gesture);
 
-            self.fix_search.connect_clicked(
-                clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
-            self.fix_search_name.connect_activate(
-                clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
-            self.fix_search_lat.connect_activate(
-                clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
-            self.fix_search_long.connect_activate(
-                clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+            self.fix_search
+                .connect_clicked(clone!(@weak self as window => move |_search| {
+                    window.search();
+                }));
+            self.fix_search_name
+                .connect_activate(clone!(@weak self as window => move |_search| {
+                    window.search();
+                }));
+            self.fix_search_lat
+                .connect_activate(clone!(@weak self as window => move |_search| {
+                    window.search();
+                }));
+            self.fix_search_long
+                .connect_activate(clone!(@weak self as window => move |_search| {
+                    window.search();
+                }));
 
             let actions = SimpleActionGroup::new();
-            self.fix_window.get().insert_action_group("fix", Some(&actions));
+            self.fix_window
+                .get()
+                .insert_action_group("fix", Some(&actions));
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                view.fix_list.activate();
@@ -239,7 +260,6 @@ mod imp {
                 view.add_selected_to_plan();
             }));
             actions.add_action(&action);
-
         }
     }
 

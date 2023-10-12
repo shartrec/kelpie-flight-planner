@@ -1,11 +1,11 @@
 #![allow(deprecated)]
 
-use gtk::{Application, CssProvider, gio, glib};
 use gtk::gdk::Display;
 use gtk::gio::{File, SimpleAction};
 use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
+use gtk::{gio, glib, Application, CssProvider};
 use simplelog::*;
 
 use window::Window;
@@ -14,8 +14,8 @@ mod earth;
 mod event;
 mod hangar;
 mod model;
-mod preference;
 mod planner;
+mod preference;
 mod util;
 mod window;
 
@@ -60,7 +60,8 @@ fn init_logger() {
             Config::default(),
             std::fs::File::create("kelpie-planner.log").unwrap(),
         ),
-    ]).expect("Unable to initiate logger.");
+    ])
+    .expect("Unable to initiate logger.");
 }
 
 fn load_css() {
@@ -77,7 +78,6 @@ fn load_css() {
 }
 
 fn connect_actions(app: &Application, window: &Window) {
-
     let action = SimpleAction::new("new", None);
     action.connect_activate(clone!(@weak window => move |_action, _parameter| {
        let _ = &window.imp().new_plan();

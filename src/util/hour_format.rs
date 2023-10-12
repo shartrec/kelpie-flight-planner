@@ -1,10 +1,8 @@
-pub struct HourFormat {
-}
+pub struct HourFormat {}
 
 impl HourFormat {
     pub fn new() -> Self {
-        HourFormat {
-        }
+        HourFormat {}
     }
 
     pub fn format(&self, time: &f64) -> String {

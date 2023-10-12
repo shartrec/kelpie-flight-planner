@@ -85,8 +85,6 @@ impl Earth {
         self.ils.write().unwrap().extend(navaids);
     }
 
-
-
     pub fn get_fix_by_id(&self, id: &str) -> Option<Arc<Fix>> {
         self.fixes
             .read()
@@ -160,7 +158,7 @@ fn load_airports(path: &str, transmitter: &Sender<Event>) {
 }
 
 fn load_navaids(path: &str, transmitter: &Sender<Event>) {
-    let mut navaids: Vec<Arc<Navaid>>= Vec::new();
+    let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
     match file {

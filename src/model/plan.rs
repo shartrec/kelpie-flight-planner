@@ -37,26 +37,33 @@ impl Plan {
         let sector = Sector::new();
         match start {
             Some(s) => sector.set_start(s),
-            None => ()
+            None => (),
         }
         match end {
             Some(e) => sector.set_end(e),
-            None => ()
+            None => (),
         }
         self.sectors.borrow_mut().push(RefCell::new(sector));
     }
 
-    pub fn add_sector_at(&self, pos: usize, start: Option<Arc<Airport>>, end: Option<Arc<Airport>>) {
+    pub fn add_sector_at(
+        &self,
+        pos: usize,
+        start: Option<Arc<Airport>>,
+        end: Option<Arc<Airport>>,
+    ) {
         let sector = Sector::new();
         match start {
             Some(s) => sector.set_start(s),
-            None => ()
+            None => (),
         }
         match end {
             Some(e) => sector.set_end(e),
-            None => ()
+            None => (),
         }
-        self.sectors.borrow_mut().insert(pos as usize, RefCell::new(sector));
+        self.sectors
+            .borrow_mut()
+            .insert(pos as usize, RefCell::new(sector));
     }
 
     pub fn remove_sector_at(&self, pos: usize) {
@@ -79,8 +86,7 @@ impl Plan {
         self.max_altitude.replace(max_altitude.clone());
     }
 
-    pub fn get_max_altitude(&self) -> i32
-    {
+    pub fn get_max_altitude(&self) -> i32 {
         self.max_altitude.borrow().clone()
     }
 
@@ -90,12 +96,13 @@ impl Plan {
                 Some(a) => a.get_cruise_altitude().clone(),
                 None => 0,
             },
-            max => max
+            max => max,
         }
     }
 
     pub fn get_duration(&self) -> f64 {
-        self.sectors.borrow()
+        self.sectors
+            .borrow()
             .iter()
             .map(|s| s.borrow().get_duration(self))
             .sum()
@@ -154,8 +161,9 @@ impl Plan {
                             return Some(start_wp.get_loc().clone());
                         }
                     } else {
-                        return s_borrowed.get_waypoint(s_borrowed.get_waypoint_count() - 1)
-                            .map(|wp| { wp.get_loc().clone() });
+                        return s_borrowed
+                            .get_waypoint(s_borrowed.get_waypoint_count() - 1)
+                            .map(|wp| wp.get_loc().clone());
                     }
                 }
             }
@@ -172,8 +180,9 @@ impl Plan {
                                     return Some(start_wp.get_loc().clone());
                                 }
                             } else {
-                                return s_borrowed.get_waypoint(i - 1)
-                                    .map(|wp| { wp.get_loc().clone() });
+                                return s_borrowed
+                                    .get_waypoint(i - 1)
+                                    .map(|wp| wp.get_loc().clone());
                             }
                         }
                     }
@@ -276,20 +285,20 @@ impl Plan {
                         return 0;
                     }
                 }
-                for wp in s_borrowed.deref().get_waypoints().read().expect("Can't get read lock on sectors").deref() {
+                for wp in s_borrowed
+                    .deref()
+                    .get_waypoints()
+                    .read()
+                    .expect("Can't get read lock on sectors")
+                    .deref()
+                {
                     if compare_wp(wp, waypoint) {
                         return speed;
                     }
                     speed = match wp {
-                        Waypoint::Toc { .. } => {
-                            cruise.clone()
-                        }
-                        Waypoint::Bod { .. } => {
-                            sink.clone()
-                        }
-                        _ => {
-                            speed
-                        }
+                        Waypoint::Toc { .. } => cruise.clone(),
+                        Waypoint::Bod { .. } => sink.clone(),
+                        _ => speed,
                     };
                 }
                 if let Some(end_wp) = s_borrowed.get_end() {

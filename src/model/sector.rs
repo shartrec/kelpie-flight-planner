@@ -1,14 +1,14 @@
+use gtk::glib::PropertySet;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
-use gtk::glib::PropertySet;
 
 use crate::model::plan::Plan;
 
 use super::airport::Airport;
 use super::waypoint::Waypoint;
 
-pub struct Sector<> {
+pub struct Sector {
     airport_start: RefCell<Option<Waypoint>>,
     airport_end: RefCell<Option<Waypoint>>,
     waypoints: Arc<RwLock<Vec<Waypoint>>>,
@@ -117,11 +117,11 @@ impl Sector {
     //todo
     pub fn get_duration(&self, plan: &Plan) -> f64 {
         match self.waypoints.read() {
-            Ok(waypoints) => {
-                waypoints.iter().map(move |wp| {
-                    plan.get_time_to(wp)
-                }).reduce(|acc, t| acc + t).unwrap_or(0.0)
-            }
+            Ok(waypoints) => waypoints
+                .iter()
+                .map(move |wp| plan.get_time_to(wp))
+                .reduce(|acc, t| acc + t)
+                .unwrap_or(0.0),
             _ => 0.0,
         }
     }
@@ -156,14 +156,26 @@ mod tests {
         let s = Sector::new();
         s.set_start(make_airport("YSSY"));
         s.set_end(make_airport("YMLB"));
-        let w1 =
-            Waypoint::Simple { loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false };
-        let w2 =
-            Waypoint::Simple { loc: Coordinate::new(23.0, 121.0), elevation: Cell::new(20), locked: false };
-        let w3 =
-            Waypoint::Simple { loc: Coordinate::new(33.0, 131.0), elevation: Cell::new(30), locked: false };
-        let w4 =
-            Waypoint::Simple { loc: Coordinate::new(43.0, 141.0), elevation: Cell::new(40), locked: false };
+        let w1 = Waypoint::Simple {
+            loc: Coordinate::new(13.0, 111.0),
+            elevation: Cell::new(10),
+            locked: false,
+        };
+        let w2 = Waypoint::Simple {
+            loc: Coordinate::new(23.0, 121.0),
+            elevation: Cell::new(20),
+            locked: false,
+        };
+        let w3 = Waypoint::Simple {
+            loc: Coordinate::new(33.0, 131.0),
+            elevation: Cell::new(30),
+            locked: false,
+        };
+        let w4 = Waypoint::Simple {
+            loc: Coordinate::new(43.0, 141.0),
+            elevation: Cell::new(40),
+            locked: false,
+        };
 
         s.add_waypoint(w1.clone());
         s.add_waypoint(w2.clone());

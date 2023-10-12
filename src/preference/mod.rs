@@ -1,8 +1,11 @@
 #![allow(unused)]
-use std::{str::FromStr, sync::{Arc, RwLock}};
 use lazy_static::lazy_static;
 use log::error;
 use preferences::{AppInfo, Preferences, PreferencesMap};
+use std::{
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 const PREFS_PATH: &str = "planner";
 pub const APP_INFO: AppInfo = AppInfo {
@@ -42,7 +45,6 @@ pub const AUTO_PLAN: &str = "Autoplanner.auto_plan";
 pub const USE_MAGNETIC_HEADINGS: &str = "Plan.useMagneticHeadings";
 pub const FGFS_LINK_ENABLED: &str = "FlightGearLink.enabled";
 pub const FGFS_LINK_HOST: &str = "FlightGearLink.host";
-
 
 lazy_static! {
     static ref MANAGER: PreferenceManager = PreferenceManager {

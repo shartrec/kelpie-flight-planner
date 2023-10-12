@@ -70,8 +70,8 @@ impl FixParserFG {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, io::BufReader, path::PathBuf};
     use std::sync::Arc;
+    use std::{fs, io::BufReader, path::PathBuf};
 
     use crate::model::fix::Fix;
     use crate::model::location::Location;

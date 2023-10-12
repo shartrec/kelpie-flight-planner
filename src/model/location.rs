@@ -1,6 +1,6 @@
 use crate::earth::coordinate::Coordinate;
 
-pub trait Location: {
+pub trait Location {
     fn get_elevation(&self) -> &i32;
     fn get_id(&self) -> &str;
     fn get_lat(&self) -> &f64;

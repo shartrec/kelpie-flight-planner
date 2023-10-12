@@ -77,7 +77,9 @@ impl Location for Navaid {
     fn get_loc(&self) -> &Coordinate {
         &self.coordinate
     }
-    fn get_name(&self) -> &str {self.name.as_str()}
+    fn get_name(&self) -> &str {
+        self.name.as_str()
+    }
 }
 
 #[derive(Clone, PartialEq)]

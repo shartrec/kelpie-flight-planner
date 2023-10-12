@@ -8,173 +8,178 @@ use super::{airport::Airport, fix::Fix, navaid::Navaid};
 
 #[derive(Clone, PartialEq)]
 pub enum Waypoint {
-    Simple {loc: Coordinate, elevation: Cell<i32>, locked: bool },
-    Toc {loc: Coordinate, elevation: Cell<i32>, locked: bool },
-    Bod {loc: Coordinate, elevation: Cell<i32>, locked: bool },
-    Navaid { navaid: Arc<Navaid>, elevation: Cell<i32>, locked: bool },
-    Fix { fix: Arc<Fix>, elevation: Cell<i32>, locked: bool },
-    Airport { airport: Arc<Airport>, locked: bool },
+    Simple {
+        loc: Coordinate,
+        elevation: Cell<i32>,
+        locked: bool,
+    },
+    Toc {
+        loc: Coordinate,
+        elevation: Cell<i32>,
+        locked: bool,
+    },
+    Bod {
+        loc: Coordinate,
+        elevation: Cell<i32>,
+        locked: bool,
+    },
+    Navaid {
+        navaid: Arc<Navaid>,
+        elevation: Cell<i32>,
+        locked: bool,
+    },
+    Fix {
+        fix: Arc<Fix>,
+        elevation: Cell<i32>,
+        locked: bool,
+    },
+    Airport {
+        airport: Arc<Airport>,
+        locked: bool,
+    },
 }
 
 impl Waypoint {
     pub(crate) fn get_id(&self) -> &str {
         match self {
-            Waypoint::Simple { .. } => {
-                "GPS"
-            }
-            Waypoint::Toc{ .. } => {
-                "TOC"
-            }
-            Waypoint::Bod { .. } => {
-                "BOD"
-            }
-            Waypoint::Navaid{navaid, .. } => {
-                &navaid.get_id()
-            }
-            Waypoint::Fix{fix, .. } => {
-                &fix.get_id()
-            }
-            Waypoint::Airport{airport, .. } => {
-                &airport.get_id()
-            }
+            Waypoint::Simple { .. } => "GPS",
+            Waypoint::Toc { .. } => "TOC",
+            Waypoint::Bod { .. } => "BOD",
+            Waypoint::Navaid { navaid, .. } => &navaid.get_id(),
+            Waypoint::Fix { fix, .. } => &fix.get_id(),
+            Waypoint::Airport { airport, .. } => &airport.get_id(),
         }
     }
 
     pub fn get_name(&self) -> &str {
         match self {
-            Waypoint::Simple{..} => {
-                "GPS Waypoint"
-            }
-            Waypoint::Toc{..} => {
-                "Top of climb"
-            }
-            Waypoint::Bod{..} => {
-                "Beginning of descent"
-            }
-            Waypoint::Navaid{navaid, ..} => {
-                &navaid.get_name()
-            }
-            Waypoint::Fix{fix, ..} => {
-                &fix.get_name()
-            }
-            Waypoint::Airport{airport, ..} => {
-                &airport.get_name()
-            }
+            Waypoint::Simple { .. } => "GPS Waypoint",
+            Waypoint::Toc { .. } => "Top of climb",
+            Waypoint::Bod { .. } => "Beginning of descent",
+            Waypoint::Navaid { navaid, .. } => &navaid.get_name(),
+            Waypoint::Fix { fix, .. } => &fix.get_name(),
+            Waypoint::Airport { airport, .. } => &airport.get_name(),
         }
     }
 
     pub(crate) fn get_elevation(&self) -> i32 {
         match self {
-            Waypoint::Simple{loc: _, elevation, ..} => {
-                elevation.get().clone()
-            }
-            Waypoint::Toc{loc: _, elevation, ..} => {
-                elevation.get().clone()
-            }
-            Waypoint::Bod{loc: _, elevation, ..} => {
-                elevation.get().clone()
-            }
-            Waypoint::Navaid{navaid: _, elevation, ..} => {
-                elevation.get().clone()
-            }
-            Waypoint::Fix{fix: _, elevation, ..} => {
-                elevation.get().clone()
-            }
-            Waypoint::Airport{airport, ..} => {
-                airport.get_elevation().clone()
-            }
+            Waypoint::Simple {
+                loc: _, elevation, ..
+            } => elevation.get().clone(),
+            Waypoint::Toc {
+                loc: _, elevation, ..
+            } => elevation.get().clone(),
+            Waypoint::Bod {
+                loc: _, elevation, ..
+            } => elevation.get().clone(),
+            Waypoint::Navaid {
+                navaid: _,
+                elevation,
+                ..
+            } => elevation.get().clone(),
+            Waypoint::Fix {
+                fix: _, elevation, ..
+            } => elevation.get().clone(),
+            Waypoint::Airport { airport, .. } => airport.get_elevation().clone(),
         }
     }
 
-    pub(crate) fn get_loc(&self) -> &Coordinate{
+    pub(crate) fn get_loc(&self) -> &Coordinate {
         match self {
-            Waypoint::Simple{loc, ..} => {
-                &loc
-            }
-            Waypoint::Toc{loc, ..} => {
-                &loc
-            }
-            Waypoint::Bod{loc, ..} => {
-                &loc
-            }
-            Waypoint::Navaid{navaid, ..} => {
-                &navaid.get_loc()
-            }
-            Waypoint::Fix{fix, ..} => {
-                &fix.get_loc()
-            }
-            Waypoint::Airport{airport, ..} => {
-                &airport.get_loc()
-            }
+            Waypoint::Simple { loc, .. } => &loc,
+            Waypoint::Toc { loc, .. } => &loc,
+            Waypoint::Bod { loc, .. } => &loc,
+            Waypoint::Navaid { navaid, .. } => &navaid.get_loc(),
+            Waypoint::Fix { fix, .. } => &fix.get_loc(),
+            Waypoint::Airport { airport, .. } => &airport.get_loc(),
         }
     }
 
-    pub fn get_lat(&self) -> &f64{
+    pub fn get_lat(&self) -> &f64 {
         &self.get_loc().get_latitude()
     }
 
     pub fn get_freq(&self) -> Option<&f64> {
-    None
+        None
     }
-    pub(crate) fn get_lat_as_string(&self) -> String{
+    pub(crate) fn get_lat_as_string(&self) -> String {
         self.get_loc().get_latitude_as_string()
     }
 
-    pub fn get_long(&self) -> &f64{
+    pub fn get_long(&self) -> &f64 {
         &self.get_loc().get_longitude()
     }
 
-    pub(crate) fn get_long_as_string(&self) -> String{
+    pub(crate) fn get_long_as_string(&self) -> String {
         self.get_loc().get_longitude_as_string()
     }
 
     #[allow(dead_code)]
-    fn is_locked(&self) -> &bool{
+    fn is_locked(&self) -> &bool {
         match self {
-            Waypoint::Simple{loc: _, elevation: _, locked} => {
-                &locked
-            }
-            Waypoint::Toc{loc: _, elevation: _, locked} => {
-                &locked
-            }
-            Waypoint::Bod{loc: _, elevation: _, locked} => {
-                &locked
-            }
-            Waypoint::Navaid{navaid: _, elevation: _, locked} => {
-                &locked
-            }
-            Waypoint::Fix{fix: _, elevation: _, locked} => {
-                &locked
-            }
-            Waypoint::Airport{airport: _, locked} => {
-                &locked
-            }
+            Waypoint::Simple {
+                loc: _,
+                elevation: _,
+                locked,
+            } => &locked,
+            Waypoint::Toc {
+                loc: _,
+                elevation: _,
+                locked,
+            } => &locked,
+            Waypoint::Bod {
+                loc: _,
+                elevation: _,
+                locked,
+            } => &locked,
+            Waypoint::Navaid {
+                navaid: _,
+                elevation: _,
+                locked,
+            } => &locked,
+            Waypoint::Fix {
+                fix: _,
+                elevation: _,
+                locked,
+            } => &locked,
+            Waypoint::Airport { airport: _, locked } => &locked,
         }
     }
 
     pub(crate) fn set_elevation(&self, elev: &i32) {
         match self {
-            Waypoint::Simple{loc: _, elevation, ..} => {
+            Waypoint::Simple {
+                loc: _, elevation, ..
+            } => {
                 elevation.set(elev.clone());
             }
-            Waypoint::Toc{loc: _, elevation, ..} => {
+            Waypoint::Toc {
+                loc: _, elevation, ..
+            } => {
                 elevation.set(elev.clone());
             }
-            Waypoint::Bod{loc: _, elevation, ..} => {
+            Waypoint::Bod {
+                loc: _, elevation, ..
+            } => {
                 elevation.set(elev.clone());
             }
-            Waypoint::Navaid{navaid: _, elevation, ..} => {
+            Waypoint::Navaid {
+                navaid: _,
+                elevation,
+                ..
+            } => {
                 elevation.set(elev.clone());
             }
-            Waypoint::Fix{fix: _, elevation, ..} => {
+            Waypoint::Fix {
+                fix: _, elevation, ..
+            } => {
                 elevation.set(elev.clone());
             }
-            Waypoint::Airport{airport: _, ..} => {}
+            Waypoint::Airport { airport: _, .. } => {}
         }
     }
-
 }
-
 
 /*
 #[cfg(test)]

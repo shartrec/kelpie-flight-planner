@@ -157,7 +157,11 @@ mod tests {
     fn assert_between(variable: f64, bottom: f64, top: f64) -> bool {
         let result = variable >= bottom && variable <= top;
         if !result {
-            assert!(result, "Variable {} not between {} and {}", variable, bottom, top);
+            assert!(
+                result,
+                "Variable {} not between {} and {}",
+                variable, bottom, top
+            );
         }
         result
     }

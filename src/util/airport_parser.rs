@@ -9,13 +9,11 @@ use crate::earth::coordinate::Coordinate;
 use crate::model::airport::{Airport, AirportType, LayoutNode, Runway, Taxiway};
 use crate::model::location::Location;
 
-pub struct AirportParserFG850 {
-}
+pub struct AirportParserFG850 {}
 
 impl AirportParserFG850 {
     pub fn new() -> Self {
-        Self {
-        }
+        Self {}
     }
 
     pub fn load_airports(
@@ -56,11 +54,7 @@ impl AirportParserFG850 {
                 // Translate other conditions and logic accordingly
                 if r_type == "1" || r_type == "16" || r_type == "17" {
                     let airport_type = AirportType::type_for(r_type);
-                    let elevation = tokenizer
-                        .next()
-                        .unwrap_or("0")
-                        .parse::<i32>()
-                        .unwrap_or(0);
+                    let elevation = tokenizer.next().unwrap_or("0").parse::<i32>().unwrap_or(0);
                     let tower = tokenizer
                         .next()
                         .unwrap_or("0.0")
@@ -222,16 +216,18 @@ impl AirportParserFG850 {
         runway_offsets: &Arc<RwLock<HashMap<String, usize>>>,
         rdr_airport: &mut BufReader<File>,
     ) -> Result<(), String> {
-
         let mut tokenizer: std::str::SplitWhitespace;
         let mut buf = String::new();
 
-        let offsets = runway_offsets.read().expect("Couldn't get lock on runway offsets");
-        let  offset = offsets.get(airport.get_id());
+        let offsets = runway_offsets
+            .read()
+            .expect("Couldn't get lock on runway offsets");
+        let offset = offsets.get(airport.get_id());
         match offset {
             Some(o) => rdr_airport.seek_relative(*o as i64),
-            _ => Ok(())
-        }.expect("Seek on airport failed");
+            _ => Ok(()),
+        }
+        .expect("Seek on airport failed");
 
         loop {
             buf.clear();
@@ -295,14 +291,14 @@ impl AirportParserFG850 {
                 tokens.next(); // Shoulder surface
                 tokens.next(); // Smoothness
                 tokens.next(); // Centre lights
-                let r_edge_lights = tokens.next().unwrap_or("");  //edge lights
-                tokens.next();  //auto gen dist remaining signs
+                let r_edge_lights = tokens.next().unwrap_or(""); //edge lights
+                tokens.next(); //auto gen dist remaining signs
                 let r_number = tokens.next().unwrap_or("");
                 let r_lat = token_f64(tokens.next());
                 let r_long = token_f64(tokens.next());
                 tokens.next(); // Length displaced threshold
                 tokens.next(); // Length overrun
-                let _markings = tokens.next().unwrap_or("");  //edge lights
+                let _markings = tokens.next().unwrap_or(""); //edge lights
                 tokens.next(); // Approach lights
                 tokens.next(); // TDZ flag
                 tokens.next(); // REIL flag
@@ -313,7 +309,7 @@ impl AirportParserFG850 {
                 let r1_long = token_f64(tokens.next());
 
                 let c1 = Coordinate::new(r_lat, r_long);
-                let c2 = Coordinate::new(r1_lat,r1_long);
+                let c2 = Coordinate::new(r1_lat, r1_long);
 
                 let r_length = (c1.distance_to(&c2) * 6076.0) as i32;
                 let r_hdg = c1.bearing_to(&c2).to_degrees();
@@ -342,7 +338,6 @@ impl AirportParserFG850 {
                         return Err(err_msg);
                     }
                 }
-
             } else if r_type == "110" {
                 // Taxiway processing
                 // We don't care about anything but the nodes that we use to draw it.
@@ -368,13 +363,25 @@ impl AirportParserFG850 {
                     if n_type == "111" || n_type == "113" || n_type == "115" {
                         let r1_lat = token_f64(tokenizer.next());
                         let r1_long = token_f64(tokenizer.next());
-                        nodes.push(LayoutNode::new(n_type.to_string(), r1_lat, r1_long, 0.0, 0.0));
+                        nodes.push(LayoutNode::new(
+                            n_type.to_string(),
+                            r1_lat,
+                            r1_long,
+                            0.0,
+                            0.0,
+                        ));
                     } else if n_type == "112" || n_type == "114" || n_type == "116" {
                         let r1_lat = token_f64(tokenizer.next());
                         let r1_long = token_f64(tokenizer.next());
                         let b1_lat = token_f64(tokenizer.next());
                         let b1_long = token_f64(tokenizer.next());
-                        nodes.push(LayoutNode::new(n_type.to_string(), r1_lat, r1_long, b1_lat, b1_long));
+                        nodes.push(LayoutNode::new(
+                            n_type.to_string(),
+                            r1_lat,
+                            r1_long,
+                            b1_lat,
+                            b1_long,
+                        ));
                     } else {
                         break;
                     }
@@ -403,19 +410,17 @@ impl AirportParserFG850 {
 
         Ok(())
     }
-
 }
 
 fn token_f64(t: Option<&str>) -> f64 {
     t.unwrap_or("0.0").parse::<f64>().unwrap_or(0.0)
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
+    use std::{fs, io::BufReader, path::PathBuf};
 
     use crate::model::airport::Airport;
     use crate::model::location::Location;

@@ -1,16 +1,16 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use std::cell::Cell;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow, ListStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
+    use gtk::{Builder, Button, Entry, ListStore, PopoverMenu, ScrolledWindow, TreeView};
     use log::error;
 
     use crate::earth;
@@ -19,7 +19,10 @@ mod imp {
     use crate::model::waypoint::Waypoint;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
-    use crate::window::util::{get_airport_view, get_fix_view, get_plan_view, show_airport_view, show_error_dialog, show_fix_view};
+    use crate::window::util::{
+        get_airport_view, get_fix_view, get_plan_view, show_airport_view, show_error_dialog,
+        show_fix_view,
+    };
 
     use super::*;
 
@@ -61,7 +64,10 @@ mod imp {
             if !lat.is_empty() || !long.is_empty() {
                 if lat.is_empty() || long.is_empty() {
                     //show message popup
-                    show_error_dialog(&self.obj().root(), "Enter both a Latitude and Longitude for search.");
+                    show_error_dialog(
+                        &self.obj().root(),
+                        "Enter both a Latitude and Longitude for search.",
+                    );
                     return;
                 } else {
                     let lat_as_float;
@@ -93,16 +99,24 @@ mod imp {
                 let navaid: &dyn Location = &***a;
                 combined_filter.filter(navaid)
             });
-            let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type(), i32::static_type()]);
+            let store = ListStore::new(&[
+                String::static_type(),
+                String::static_type(),
+                String::static_type(),
+                String::static_type(),
+                i32::static_type(),
+            ]);
             for navaid in searh_result {
                 store.insert_with_values(
-                    None, &[
+                    None,
+                    &[
                         (0, &navaid.get_id()),
                         (1, &navaid.get_name()),
                         (2, &navaid.get_lat_as_string()),
                         (3, &navaid.get_long_as_string()),
-                        (4, &(navaid.get_elevation()))
-                    ]);
+                        (4, &(navaid.get_elevation())),
+                    ],
+                );
             }
             self.navaid_list.set_model(Some(&store));
         }
@@ -111,12 +125,18 @@ mod imp {
             if let Some((model, iter)) = self.navaid_list.selection().selected() {
                 let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
                 let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
-                if let Some(navaid) = earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str()) {
+                if let Some(navaid) =
+                    earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str())
+                {
                     match get_plan_view(&self.navaid_window.get()) {
                         Some(view) => {
                             // get the plan
-                            view.imp().add_waypoint_to_plan(Waypoint::Navaid {navaid: navaid.clone(), elevation: Cell::new(0), locked: true});
-                        },
+                            view.imp().add_waypoint_to_plan(Waypoint::Navaid {
+                                navaid: navaid.clone(),
+                                elevation: Cell::new(0),
+                                locked: true,
+                            });
+                        }
                         None => (),
                     }
                 }
@@ -124,12 +144,13 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
-            self.navaid_search_lat.set_text(&coordinate.get_latitude_as_string());
-            self.navaid_search_long.set_text(&coordinate.get_longitude_as_string());
+            self.navaid_search_lat
+                .set_text(&coordinate.get_latitude_as_string());
+            self.navaid_search_long
+                .set_text(&coordinate.get_longitude_as_string());
             self.navaid_search.activate();
         }
     }
-
 
     #[glib::object_subclass]
     impl ObjectSubclass for NavaidView {
@@ -152,9 +173,11 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.navaid_list.connect_row_activated(clone!(@weak self as view => move |_list_view, _position, _col| {
-                view.add_selected_to_plan()
-            }));
+            self.navaid_list.connect_row_activated(
+                clone!(@weak self as view => move |_list_view, _position, _col| {
+                    view.add_selected_to_plan()
+                }),
+            );
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
@@ -177,25 +200,30 @@ mod imp {
             }));
             self.navaid_window.add_controller(gesture);
 
-            self.navaid_search.connect_clicked(
-                clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+            self.navaid_search
+                .connect_clicked(clone!(@weak self as window => move |_search| {
+                    window.search();
+                }));
             self.navaid_search_name.connect_activate(
                 clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+                    window.search();
+                }),
+            );
             self.navaid_search_lat.connect_activate(
                 clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+                    window.search();
+                }),
+            );
             self.navaid_search_long.connect_activate(
                 clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+                    window.search();
+                }),
+            );
 
             let actions = SimpleActionGroup::new();
-            self.navaid_window.get().insert_action_group("navaid", Some(&actions));
+            self.navaid_window
+                .get()
+                .insert_action_group("navaid", Some(&actions));
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                view.navaid_list.activate();
@@ -246,7 +274,6 @@ mod imp {
             actions.add_action(&action);
         }
     }
-
 
     impl WidgetImpl for NavaidView {}
 }

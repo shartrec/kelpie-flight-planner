@@ -74,9 +74,7 @@ impl LatLongFormat {
 
         let just_a_number = source.parse::<f64>();
         match just_a_number {
-            Ok(n) => {
-                Ok(n)
-            }
+            Ok(n) => Ok(n),
             Err(_) => {
                 let work = source.trim();
                 let last_char = work.chars().last().unwrap_or(' ');

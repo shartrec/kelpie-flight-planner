@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, CompositeTemplate, glib, subclass::prelude::*};
+use gtk::{self, glib, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use glib::subclass::InitializingObject;
@@ -18,7 +18,6 @@ mod imp {
     impl WorldMapView {
         pub fn initialise(&self) -> () {}
     }
-
 
     #[glib::object_subclass]
     impl ObjectSubclass for WorldMapView {
@@ -41,7 +40,6 @@ mod imp {
             self.parent_constructed();
             self.initialise();
         }
-
     }
 
     impl WidgetImpl for WorldMapView {}

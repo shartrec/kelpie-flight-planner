@@ -1,18 +1,21 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use gtk::gio;
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use std::ops::Deref;
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, DropDown, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{ListStore, MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
+    use gtk::{
+        Builder, Button, DropDown, Label, ListItem, PopoverMenu, ScrolledWindow,
+        SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView,
+    };
     use log::error;
 
     use crate::earth;
@@ -89,7 +92,7 @@ mod imp {
                 String::static_type(),
                 String::static_type(),
                 String::static_type(),
-                String::static_type()
+                String::static_type(),
             ]);
             // Iterate over the plan loading the TreeModel
             let plan = self.plan.read().expect("Can't get plan lock");
@@ -97,44 +100,68 @@ mod imp {
                 let row = tree_store.append(None);
                 let binding = s_ref.borrow();
                 let s = binding.deref();
-                tree_store.set(&row, &[
-                    (0, &s.get_name())
-                ]);
+                tree_store.set(&row, &[(0, &s.get_name())]);
                 if let Some(airport) = s.get_start() {
                     let wp_row = tree_store.append(Some(&row));
-                    tree_store.set(&wp_row, &[
-                        (Col::Name as u32, &airport.get_name()),
-                        (Col::Elev as u32, &(airport.get_elevation())),
-                        (Col::Lat as u32, &airport.get_lat_as_string()),
-                        (Col::Long as u32, &airport.get_long_as_string()),
-                    ]);
+                    tree_store.set(
+                        &wp_row,
+                        &[
+                            (Col::Name as u32, &airport.get_name()),
+                            (Col::Elev as u32, &(airport.get_elevation())),
+                            (Col::Lat as u32, &airport.get_lat_as_string()),
+                            (Col::Long as u32, &airport.get_long_as_string()),
+                        ],
+                    );
                 }
-                for wp in s.get_waypoints().read().expect("Can't get read lock on sectors").deref() {
+                for wp in s
+                    .get_waypoints()
+                    .read()
+                    .expect("Can't get read lock on sectors")
+                    .deref()
+                {
                     let wp_row = tree_store.append(Some(&row));
-                    tree_store.set(&wp_row, &[
-                        (Col::Name as u32, &wp.get_name()),
-                        (Col::Elev as u32, &(wp.get_elevation())),
-                        (Col::Lat as u32, &wp.get_lat_as_string()),
-                        (Col::Long as u32, &wp.get_long_as_string()),
-                        (Col::Freq as u32, &(match wp.get_freq() {
-                            Some(f) => format!("{:>6.2}", f),
-                            None => "".to_string(),
-                        })),
-                        (Col::Hdg as u32, &(format!("{:6.0}", plan.get_leg_heading_to(wp.deref())))),
-                        (Col::Dist as u32, &plan.get_leg_distance_to_as_string(wp.deref())),
-                        (Col::Time as u32, &plan.get_time_to_as_string(wp.deref())),
-                        (Col::Speed as u32, &plan.get_speed_to_as_string(wp.deref())),
-                    ]);
+                    tree_store.set(
+                        &wp_row,
+                        &[
+                            (Col::Name as u32, &wp.get_name()),
+                            (Col::Elev as u32, &(wp.get_elevation())),
+                            (Col::Lat as u32, &wp.get_lat_as_string()),
+                            (Col::Long as u32, &wp.get_long_as_string()),
+                            (
+                                Col::Freq as u32,
+                                &(match wp.get_freq() {
+                                    Some(f) => format!("{:>6.2}", f),
+                                    None => "".to_string(),
+                                }),
+                            ),
+                            (
+                                Col::Hdg as u32,
+                                &(format!("{:6.0}", plan.get_leg_heading_to(wp.deref()))),
+                            ),
+                            (
+                                Col::Dist as u32,
+                                &plan.get_leg_distance_to_as_string(wp.deref()),
+                            ),
+                            (Col::Time as u32, &plan.get_time_to_as_string(wp.deref())),
+                            (Col::Speed as u32, &plan.get_speed_to_as_string(wp.deref())),
+                        ],
+                    );
                 }
                 if let Some(airport) = s.get_end() {
                     let wp_row = tree_store.append(Some(&row));
-                    tree_store.set(&wp_row, &[
-                        (Col::Name as u32, &airport.get_name()),
-                        (Col::Elev as u32, &(airport.get_elevation())),
-                        (Col::Lat as u32, &airport.get_lat_as_string()),
-                        (Col::Long as u32, &airport.get_long_as_string()),
-                        (Col::Dist as u32, &plan.get_leg_distance_to_as_string(&airport)),
-                    ]);
+                    tree_store.set(
+                        &wp_row,
+                        &[
+                            (Col::Name as u32, &airport.get_name()),
+                            (Col::Elev as u32, &(airport.get_elevation())),
+                            (Col::Lat as u32, &airport.get_lat_as_string()),
+                            (Col::Long as u32, &airport.get_long_as_string()),
+                            (
+                                Col::Dist as u32,
+                                &plan.get_leg_distance_to_as_string(&airport),
+                            ),
+                        ],
+                    );
                 }
             }
 
@@ -142,7 +169,8 @@ mod imp {
             self.plan_tree.expand_all();
             if let Some(path) = selection {
                 self.plan_tree.selection().select_path(&path);
-                self.plan_tree.emit_by_name_with_values("cursor-changed", &[]);
+                self.plan_tree
+                    .emit_by_name_with_values("cursor-changed", &[]);
             };
 
             if let Some(stack) = self.obj().parent().and_downcast_ref::<Stack>() {
@@ -197,7 +225,8 @@ mod imp {
                 let path = model.path(&iter).indices();
                 // Sectors are at the top level
                 match path.len() {
-                    1 => { // a Sector only is selected
+                    1 => {
+                        // a Sector only is selected
                         let sector_index = path[0] as usize;
                         let sector = &plan.get_sectors()[sector_index];
                         sector.deref().borrow_mut().add_waypoint(waypoint);
@@ -210,7 +239,10 @@ mod imp {
                             wp_index -= 1;
                         }
                         let sector = &plan.get_sectors()[sector_index];
-                        sector.deref().borrow_mut().insert_waypoint(wp_index, waypoint);
+                        sector
+                            .deref()
+                            .borrow_mut()
+                            .insert_waypoint(wp_index, waypoint);
                     }
                     _ => {
                         // Add to end of last sector
@@ -233,7 +265,6 @@ mod imp {
             let mut prev = false;
             let plan = self.plan.write().expect("Can't get lock on plan");
 
-
             if let Some(prev_sector) = plan.get_sectors().last() {
                 if let Some(wp) = prev_sector.borrow().get_end() {
                     match wp {
@@ -241,14 +272,16 @@ mod imp {
                             prev_airport_id = airport.get_id().to_string().clone();
                             prev = true;
                         }
-                        _ => ()
+                        _ => (),
                     }
                 }
             }
             plan.add_sector(None, None);
 
             if prev {
-                if let Some(airport) = earth::get_earth_model().get_airport_by_id(prev_airport_id.as_str()) {
+                if let Some(airport) =
+                    earth::get_earth_model().get_airport_by_id(prev_airport_id.as_str())
+                {
                     plan.add_airport(airport);
                 }
             }
@@ -272,11 +305,14 @@ mod imp {
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
-                        if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
+                        if wp_index > 1
+                            && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1
+                        {
                             let i = wp_index - 1;
                             if let Some(wp) = &sector.borrow().remove_waypoint(i) {
                                 let _ = &sector.borrow().insert_waypoint(i - 1, wp.clone());
-                                tree_path = Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
+                                tree_path =
+                                    Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
                             }
                         }
                     }
@@ -302,11 +338,16 @@ mod imp {
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
-                        if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
+                        if wp_index > 0
+                            && wp_index < sectors[sector_index].borrow().get_waypoint_count()
+                        {
                             let i = wp_index - 1;
                             if let Some(wp) = &sector.borrow().remove_waypoint(i) {
                                 let _ = &sector.borrow().insert_waypoint(i + 1, wp.clone());
-                                tree_path = Some(TreePath::from_indices(&[sector_index as i32, (i + 2) as i32]));
+                                tree_path = Some(TreePath::from_indices(&[
+                                    sector_index as i32,
+                                    (i + 2) as i32,
+                                ]));
                             }
                         }
                     }
@@ -368,7 +409,7 @@ mod imp {
                         if wp_index == 0 {
                             if let Some(wp) = &sector.borrow().get_start() {
                                 match wp {
-                                    Waypoint::Airport {airport, ..} => {
+                                    Waypoint::Airport { airport, .. } => {
                                         self.view_airport_int(airport.clone());
                                     }
                                     _ => {}
@@ -396,7 +437,7 @@ mod imp {
             match get_airport_map_view(&self.plan_window.get()) {
                 Some(airport_map_view) => {
                     airport_map_view.imp().set_airport(airport);
-                },
+                }
                 None => (),
             }
         }
@@ -466,10 +507,11 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.btn_make_plan.connect_clicked(clone!(@weak self as view => move |_search| {
-                view.make_plan();
-                view.refresh(None);
-            }));
+            self.btn_make_plan
+                .connect_clicked(clone!(@weak self as view => move |_search| {
+                    view.make_plan();
+                    view.refresh(None);
+                }));
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
@@ -492,17 +534,20 @@ mod imp {
             }));
             self.plan_window.add_controller(gesture);
 
-            self.btn_new_sector.connect_clicked(clone!(@weak self as view => move |_| {
-                view.new_sector();
-            }));
+            self.btn_new_sector
+                .connect_clicked(clone!(@weak self as view => move |_| {
+                    view.new_sector();
+                }));
 
-            self.btn_move_up.connect_clicked(clone!(@weak self as view => move |_| {
-                view.move_selected_up();
-            }));
+            self.btn_move_up
+                .connect_clicked(clone!(@weak self as view => move |_| {
+                    view.move_selected_up();
+                }));
 
-            self.btn_move_down.connect_clicked(clone!(@weak self as view => move |_| {
-                view.move_selected_down();
-            }));
+            self.btn_move_down
+                .connect_clicked(clone!(@weak self as view => move |_| {
+                    view.move_selected_down();
+                }));
 
             self.plan_tree.connect_cursor_changed(clone!(@weak self as view => move |tree_view| {
             let plan = view.plan.read().expect("Can't get lock on plan");
@@ -528,7 +573,9 @@ mod imp {
 
             // Set up the popup menu
             let actions = SimpleActionGroup::new();
-            self.plan_window.get().insert_action_group("plan", Some(&actions));
+            self.plan_window
+                .get()
+                .insert_action_group("plan", Some(&actions));
 
             let action = SimpleAction::new("remove", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
@@ -541,7 +588,6 @@ mod imp {
                view.view_airport();
             }));
             actions.add_action(&action);
-
 
             self.setup_aircraft_combo();
 

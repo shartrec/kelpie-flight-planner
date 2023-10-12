@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
+use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 use gtk::{ListStore, TreeView};
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
     use std::boxed::Box;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
+    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
     use log::error;
 
     use crate::earth;
@@ -19,7 +19,10 @@ mod imp {
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
-    use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_error_dialog, show_fix_view, show_navaid_view};
+    use crate::window::util::{
+        get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_error_dialog,
+        show_fix_view, show_navaid_view,
+    };
 
     use super::*;
 
@@ -62,7 +65,10 @@ mod imp {
             if !lat.is_empty() || !long.is_empty() {
                 if lat.is_empty() || long.is_empty() {
                     //show message popup
-                    show_error_dialog(&self.obj().root(), "Enter both a Latitude and Longitude for search.");
+                    show_error_dialog(
+                        &self.obj().root(),
+                        "Enter both a Latitude and Longitude for search.",
+                    );
                     return;
                 } else {
                     let lat_as_float;
@@ -93,17 +99,25 @@ mod imp {
                 let airport: &dyn Location = &***a;
                 combined_filter.filter(airport)
             });
-            let store = ListStore::new(&[String::static_type(), String::static_type(), String::static_type(), String::static_type(), i32::static_type()]);
+            let store = ListStore::new(&[
+                String::static_type(),
+                String::static_type(),
+                String::static_type(),
+                String::static_type(),
+                i32::static_type(),
+            ]);
 
             for airport in searh_result {
                 store.insert_with_values(
-                    None, &[
+                    None,
+                    &[
                         (0, &airport.get_id()),
                         (1, &airport.get_name()),
                         (2, &airport.get_lat_as_string()),
                         (3, &airport.get_long_as_string()),
-                        (4, &(airport.get_elevation()))
-                    ]);
+                        (4, &(airport.get_elevation())),
+                    ],
+                );
             }
             self.airport_list.set_model(Some(&store));
         }
@@ -117,7 +131,7 @@ mod imp {
                             // get the plan
                             plan_view.imp().add_airport_to_plan(airport);
                             ()
-                        },
+                        }
                         None => (),
                     }
                 }
@@ -125,12 +139,13 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
-            self.airport_search_lat.set_text(&coordinate.get_latitude_as_string());
-            self.airport_search_long.set_text(&coordinate.get_longitude_as_string());
+            self.airport_search_lat
+                .set_text(&coordinate.get_latitude_as_string());
+            self.airport_search_long
+                .set_text(&coordinate.get_longitude_as_string());
             self.airport_search.activate();
         }
     }
-
 
     #[glib::object_subclass]
     impl ObjectSubclass for AirportView {
@@ -153,9 +168,11 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.airport_list.connect_row_activated(clone!(@weak self as view => move | _list_view, _position, _col| {
-                view.add_selected_to_plan();
-            }));
+            self.airport_list.connect_row_activated(
+                clone!(@weak self as view => move | _list_view, _position, _col| {
+                    view.add_selected_to_plan();
+                }),
+            );
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
@@ -179,25 +196,30 @@ mod imp {
             self.airport_window.add_controller(gesture);
 
             // If the user clicks search or pressses enter in any of the search fields do the search
-            self.airport_search.connect_clicked(
-                clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+            self.airport_search
+                .connect_clicked(clone!(@weak self as window => move |_search| {
+                    window.search();
+                }));
             self.airport_search_name.connect_activate(
                 clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+                    window.search();
+                }),
+            );
             self.airport_search_lat.connect_activate(
                 clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+                    window.search();
+                }),
+            );
             self.airport_search_long.connect_activate(
                 clone!(@weak self as window => move |_search| {
-                window.search();
-            }));
+                    window.search();
+                }),
+            );
 
             let actions = SimpleActionGroup::new();
-            self.airport_window.get().insert_action_group("airport", Some(&actions));
+            self.airport_window
+                .get()
+                .insert_action_group("airport", Some(&actions));
 
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
@@ -277,4 +299,3 @@ impl Default for AirportView {
         Self::new()
     }
 }
-

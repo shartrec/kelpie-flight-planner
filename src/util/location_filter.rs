@@ -13,7 +13,6 @@ pub trait Filter {
     fn filter(&self, location: &dyn Location) -> bool;
 }
 
-
 pub struct RangeFilter {
     this: Coordinate,
     range: f64,
@@ -29,15 +28,21 @@ impl RangeFilter {
         let x = lat.to_radians().cos();
         let rough_long_sep = if x < 0.01 { 181.0 } else { range / (60.0 * x) };
 
-        Some(Self { this: Coordinate::new(lat, lon), range, rough_lat_sep, rough_long_sep })
+        Some(Self {
+            this: Coordinate::new(lat, lon),
+            range,
+            rough_lat_sep,
+            rough_long_sep,
+        })
     }
 }
 impl Filter for RangeFilter {
     // returns true if the coordinate passes the filter
     fn filter(&self, location: &dyn Location) -> bool {
         let other = location.get_loc();
-        if ((self.this.get_latitude() - other.get_latitude()).abs() < self.rough_lat_sep) &
-            ((self.this.get_longitude() - other.get_longitude()).abs() < self.rough_long_sep)  {
+        if ((self.this.get_latitude() - other.get_latitude()).abs() < self.rough_lat_sep)
+            & ((self.this.get_longitude() - other.get_longitude()).abs() < self.rough_long_sep)
+        {
             self.this.distance_to(other) < self.range
         } else {
             false
@@ -53,19 +58,19 @@ pub struct NameIdFilter {
 impl NameIdFilter {
     pub fn new(term: &str) -> Option<Self> {
         match RegexBuilder::new(term).case_insensitive(true).build() {
-            Ok(regex) => {
-                Some(Self { term: term.to_string(), regex: regex })
-            }
-            Err(_) => {
-                None
-            }
+            Ok(regex) => Some(Self {
+                term: term.to_string(),
+                regex: regex,
+            }),
+            Err(_) => None,
         }
     }
 }
 
 impl Filter for NameIdFilter {
     fn filter(&self, location: &dyn Location) -> bool {
-        location.get_id().eq_ignore_ascii_case(&self.term) || self.regex.is_match(location.get_name())
+        location.get_id().eq_ignore_ascii_case(&self.term)
+            || self.regex.is_match(location.get_name())
     }
 }
 
@@ -75,7 +80,9 @@ pub struct IdFilter {
 
 impl IdFilter {
     pub fn new(term: &str) -> Option<Self> {
-        Some(Self { term: term.to_string()})
+        Some(Self {
+            term: term.to_string(),
+        })
     }
 }
 
@@ -92,10 +99,10 @@ pub struct CombinedFilter {
 impl CombinedFilter {
     pub fn new() -> Self {
         Self {
-            filters: Vec::new()
+            filters: Vec::new(),
         }
     }
-    
+
     pub fn add(&mut self, filter: Box<dyn Filter>) {
         self.filters.push(filter);
     }

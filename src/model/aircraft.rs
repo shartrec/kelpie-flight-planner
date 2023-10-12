@@ -76,7 +76,7 @@ impl Default for Aircraft {
             climb_rate: 500,
             sink_speed: 100,
             sink_rate: 500,
-            is_default: false
+            is_default: false,
         }
     }
 }

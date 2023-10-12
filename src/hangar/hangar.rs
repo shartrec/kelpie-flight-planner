@@ -9,8 +9,8 @@ use std::sync::{Arc, RwLock};
 use app_dirs::*;
 use lazy_static::lazy_static;
 use log::{error, warn};
-use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
 use yaml_rust::yaml::Hash;
+use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
 
 use crate::model::aircraft::Aircraft;
 use crate::preference::APP_INFO;
@@ -20,7 +20,6 @@ lazy_static! {
     static ref HANGAR: Hangar = Hangar {
         aircraft: load_hangar(),
     };
-
 }
 
 static DEFAULT_AICRAFT: &str = "---
@@ -50,14 +49,16 @@ static DEFAULT_AICRAFT: &str = "---
   sink-speed: 100
 ";
 
-
 pub struct Hangar {
     aircraft: Arc<RwLock<Vec<Aircraft>>>,
 }
 
 impl Hangar {
     pub fn get_default_aircraft(&self) -> Option<Aircraft> {
-        let aircraft = self.aircraft.read().expect("Unable to get a lock on the aircraft hangar");
+        let aircraft = self
+            .aircraft
+            .read()
+            .expect("Unable to get a lock on the aircraft hangar");
         for a in aircraft.iter() {
             if *a.is_default() {
                 return Some(a.clone());
@@ -124,15 +125,25 @@ pub fn load_hangar() -> Arc<RwLock<Vec<Aircraft>>> {
 }
 
 fn get_bool(map: &Hash, key: &str) -> bool {
-    map.get(&Yaml::String(key.to_string())).unwrap_or(&Yaml::Boolean(false)).as_bool().unwrap_or(false)
+    map.get(&Yaml::String(key.to_string()))
+        .unwrap_or(&Yaml::Boolean(false))
+        .as_bool()
+        .unwrap_or(false)
 }
 
 fn get_i32(map: &Hash, key: &str) -> i32 {
-    map.get(&Yaml::String(key.to_string())).unwrap_or(&Yaml::Integer(0)).as_i64().unwrap_or(0) as i32
+    map.get(&Yaml::String(key.to_string()))
+        .unwrap_or(&Yaml::Integer(0))
+        .as_i64()
+        .unwrap_or(0) as i32
 }
 
 fn get_string(map: &Hash, key: &str) -> String {
-    map.get(&Yaml::String(key.to_string())).unwrap_or(&Yaml::String("".to_string())).as_str().unwrap_or("").to_string()
+    map.get(&Yaml::String(key.to_string()))
+        .unwrap_or(&Yaml::String("".to_string()))
+        .as_str()
+        .unwrap_or("")
+        .to_string()
 }
 
 #[allow(dead_code)]
@@ -167,14 +178,12 @@ pub fn save_hangar() {
     emitter.dump(&doc).unwrap();
 
     match File::create(path) {
-        Ok(mut f) => {
-            match f.write_all(out_str.as_bytes()) {
-                Ok(_) => {}
-                Err(err) => {
-                    warn!("Unable to save aircraft config : {}", err);
-                }
+        Ok(mut f) => match f.write_all(out_str.as_bytes()) {
+            Ok(_) => {}
+            Err(err) => {
+                warn!("Unable to save aircraft config : {}", err);
             }
-        }
+        },
         Err(err) => {
             error!("Unable to save aircraft config : {}", err);
         }
@@ -197,6 +206,10 @@ fn put_string(map: &mut Hash, key: &str, v: &str) {
 }
 
 pub fn get_hangar_path() -> PathBuf {
-    get_app_dir(app_dirs::AppDataType::UserConfig, &APP_INFO, "aircraft.yaml")
-        .expect("Unable to build path for airport config")
+    get_app_dir(
+        app_dirs::AppDataType::UserConfig,
+        &APP_INFO,
+        "aircraft.yaml",
+    )
+    .expect("Unable to build path for airport config")
 }

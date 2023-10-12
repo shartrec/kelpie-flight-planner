@@ -36,5 +36,3 @@ mod tests {
         assert_eq!(DistanceFormat::new("Km").format(&34.0), "63.0Km");
     }
 }
-
-
