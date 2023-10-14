@@ -136,14 +136,14 @@ mod imp {
                             ),
                             (
                                 Col::Hdg as u32,
-                                &(format!("{:6.0}", plan.get_leg_heading_to(wp.deref()))),
+                                &(format!("{:6.0}", plan.get_leg_heading_to(wp))),
                             ),
                             (
                                 Col::Dist as u32,
-                                &plan.get_leg_distance_to_as_string(wp.deref()),
+                                &plan.get_leg_distance_to_as_string(wp),
                             ),
-                            (Col::Time as u32, &plan.get_time_to_as_string(wp.deref())),
-                            (Col::Speed as u32, &plan.get_speed_to_as_string(wp.deref())),
+                            (Col::Time as u32, &plan.get_time_to_as_string(wp)),
+                            (Col::Speed as u32, &plan.get_speed_to_as_string(wp)),
                         ],
                     );
                 }
@@ -202,10 +202,10 @@ mod imp {
                     let sector_index = path[0] as usize;
                     let sector = &plan.get_sectors()[sector_index];
                     if sector.borrow().get_start() == None {
-                        sector.deref().borrow_mut().set_start(loc.clone());
+                        sector.borrow_mut().set_start(loc.clone());
                         added = true;
                     } else if sector.borrow().get_end() == None {
-                        sector.deref().borrow_mut().set_end(loc.clone());
+                        sector.borrow_mut().set_end(loc.clone());
                         added = true;
                     }
                 }
@@ -229,7 +229,7 @@ mod imp {
                         // a Sector only is selected
                         let sector_index = path[0] as usize;
                         let sector = &plan.get_sectors()[sector_index];
-                        sector.deref().borrow_mut().add_waypoint(waypoint);
+                        sector.borrow_mut().add_waypoint(waypoint);
                     }
                     2 => {
                         let sector_index = path[0] as usize;
@@ -240,7 +240,6 @@ mod imp {
                         }
                         let sector = &plan.get_sectors()[sector_index];
                         sector
-                            .deref()
                             .borrow_mut()
                             .insert_waypoint(wp_index, waypoint);
                     }

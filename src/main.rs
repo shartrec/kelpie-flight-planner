@@ -101,6 +101,12 @@ fn connect_actions(app: &Application, window: &Window) {
         app.quit()
     }));
     app.add_action(&action);
+
+    let action = SimpleAction::new("preferences", None);
+    action.connect_activate(clone!(@weak app => move |_action, _parameter| {
+        // todo : show preference dialog
+    }));
+    app.add_action(&action);
 }
 
 fn build_ui(app: &Application) {

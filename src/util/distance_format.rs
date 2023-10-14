@@ -15,7 +15,7 @@ impl DistanceFormat {
                 "Km" => 1.609 * 6076.0 / 5280.,
                 _ => 1.0,
             },
-            distance_unit: unit.clone().to_string(),
+            distance_unit: unit.to_string(),
         }
     }
 

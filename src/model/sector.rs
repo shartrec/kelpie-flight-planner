@@ -132,7 +132,7 @@ mod tests {
     use std::cell::Cell;
 
     use crate::earth::coordinate::Coordinate;
-    use crate::model::test_utils::make_airport;
+    use crate::model::test_utils::tests::make_airport;
     use crate::model::waypoint::Waypoint;
 
     use super::Sector;

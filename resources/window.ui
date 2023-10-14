@@ -28,16 +28,8 @@
       <attribute name="label">Edit</attribute>
       <section>
         <item>
-          <attribute name="label">Cut</attribute>
-          <attribute name="action">plan.cut</attribute>
-        </item>
-        <item>
-          <attribute name="label">Copy</attribute>
-          <attribute name="action">plan.copy</attribute>
-        </item>
-        <item>
-          <attribute name="label">Paste</attribute>
-          <attribute name="action">plan.paste</attribute>
+          <attribute name="label">Preferences</attribute>
+          <attribute name="action">app.preferences</attribute>
         </item>
       </section>
     </submenu>

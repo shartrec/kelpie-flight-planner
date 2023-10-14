@@ -772,7 +772,7 @@ fn calc_climb_sink_distance(plan: &Plan, from: &Waypoint, to: &Waypoint, altitud
 mod tests {
     use std::sync::{Arc, RwLock};
 
-    use crate::model::test_utils::make_airport_at;
+    use crate::model::test_utils::tests::make_airport_at;
     use crate::model::waypoint::Waypoint;
     use crate::preference::USE_GPS;
 

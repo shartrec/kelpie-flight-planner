@@ -328,7 +328,7 @@ fn compare_wp(a: &Waypoint, b: &Waypoint) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::test_utils::make_airport;
+    use crate::model::test_utils::tests::make_airport;
 
     use super::Plan;
 

@@ -24,6 +24,8 @@ pub const FGFS_USE_DFT_PATH: &str = "Fgfs.UseDefaultPath";
 pub const AIRPORTS_PATH: &str = "Airports.Path";
 pub const NAVAIDS_PATH: &str = "Navaids.Path";
 pub const FIXES_PATH: &str = "Fixes.Path";
+// Shape files for shoreline data
+pub const GSHHG_PATH: &str = "GSHHG.Path";
 pub const AIRCRAFT_TYPE: &str = "Aircraft.type";
 pub const MAX_DEVIATION: &str = "Autoplanner.maxDeviation";
 pub const MAX_LEG_LENGTH: &str = "Autoplanner.maxLegLength";

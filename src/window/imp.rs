@@ -1,11 +1,11 @@
 use std::thread;
 
 use glib::subclass::InitializingObject;
-use gtk::{CompositeTemplate, glib, Notebook, Paned, Stack};
 use gtk::gio::File;
 use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
+use gtk::{glib, CompositeTemplate, Notebook, Paned, Stack};
 
 use crate::event::Event;
 use crate::window::airport_map_view::AirportMapView;
