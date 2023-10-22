@@ -51,6 +51,7 @@ pub fn read_shapes() -> Option<Vec<Polygon>> {
 }
 
 
+#[cfg(test)]
 mod tests {
     use super::read_shapes;
 
@@ -59,7 +60,20 @@ mod tests {
         let v  = read_shapes();
         assert!(&v.is_some());
         let vec = v.unwrap();
-        println!("Num Polylines - {}", vec.len());
         assert!(!vec.is_empty());
+        println!("Num Polylines - {}", vec.len());
+        for poly in vec {
+            println!("Bounds {:?}", poly.bbox());
+            println!("Poly has {} rings", poly.rings().len());
+            for ring in poly.rings() {
+                println!("Ring has {} points", ring.len());
+                for point in ring.points() {
+                    print!("Point - {}", point);
+                    break;
+                }
+                break;
+            }
+            break;
+        }
     }
 }

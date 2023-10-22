@@ -4,17 +4,25 @@
 
 <interface>
 
-  <template class="WorldMapView" parent="GtkWidget">
+  <template class="WorldMapView">
     <property name="layout-manager">
       <object class="GtkBoxLayout">
         <property name="orientation">vertical</property>
       </object>
     </property>
     <child>
-      <object class="GtkDrawingArea">
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="vexpand">true</property>
+        <property name="hexpand">true</property>
+        <child>
+          <object class="GtkGLArea" id="gl_area">
+            <property name="auto-render">true</property>
+            <property name="vexpand">true</property>
+            <property name="hexpand">true</property>
+          </object>
+        </child>
       </object>
     </child>
-    <!--      </object>-->
-    <!--    </child>-->
   </template>
 </interface>

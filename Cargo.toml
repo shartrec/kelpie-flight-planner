@@ -17,6 +17,10 @@ regex = "1.9.0"
 shapefile = "0.5.0"
 simplelog = "^0.12.1"
 yaml-rust = "0.4.5"
+libloading = "0.8.1"
+epoxy = "0.1.0"
+gl = "0.14.0"
+nalgebra-glm = "0.18.0"
 
 [build-dependencies]
 glib-build-tools = "0.17.10"

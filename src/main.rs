@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 
+use std::ptr;
 use gtk::gdk::Display;
 use gtk::gio::{File, SimpleAction};
 use gtk::glib::clone;
@@ -24,6 +25,8 @@ const APP_ID: &str = "com.shartrec.KelpiePlanner";
 fn main() -> glib::ExitCode {
     init_logger();
 
+    init_opengl();
+
     // Register and include resources
     gio::resources_register_include!("kelpie_planner.gresource")
         .expect("Failed to register resources.");
@@ -45,6 +48,28 @@ fn main() -> glib::ExitCode {
 
     // Run the application
     app.run()
+}
+
+fn init_opengl() {
+    #[cfg(target_os = "macos")]
+        let library = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") }.unwrap();
+    #[cfg(all(unix, not(target_os = "macos")))]
+        let library = unsafe { libloading::os::unix::Library::new("libepoxy.so.0") }.unwrap();
+    #[cfg(windows)]
+        let library = libloading::os::windows::Library::open_already_loaded("libepoxy-0.dll")
+        .or_else(|_| libloading::os::windows::Library::open_already_loaded("epoxy-0.dll"))
+        .unwrap();
+
+    epoxy::load_with(|name| {
+        unsafe { library.get::<_>(name.as_bytes()) }
+            .map(|symbol| *symbol)
+            .unwrap_or(ptr::null())
+    });
+
+    gl::load_with(|name| {
+        epoxy::get_proc_addr(name)
+    });
+
 }
 
 fn init_logger() {

@@ -19,10 +19,7 @@ mod imp {
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
-    use crate::window::util::{
-        get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_error_dialog,
-        show_fix_view, show_navaid_view,
-    };
+    use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_error_dialog, show_fix_view, show_navaid_view};
 
     use super::*;
 
@@ -271,6 +268,7 @@ mod imp {
                         match get_airport_map_view(&view.airport_window.get()) {
                             Some(airport_map_view) => {
                                 airport_map_view.imp().set_airport(airport);
+                                show_airport_map_view(&view.airport_window.get());
                             },
                             None => (),
                         }

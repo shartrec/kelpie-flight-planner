@@ -19,6 +19,7 @@ use crate::util::navaid_parser::NavaidParserFG;
 pub mod coordinate;
 pub mod geomagnetism;
 pub(crate) mod shapefile;
+pub(crate) mod spherical_projector;
 
 pub const FEET_PER_DEGREE: i32 = 6076 * 60;
 

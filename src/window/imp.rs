@@ -2,7 +2,7 @@ use std::thread;
 
 use glib::subclass::InitializingObject;
 use gtk::gio::File;
-use gtk::glib::{MainContext, PRIORITY_DEFAULT};
+use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 use gtk::{glib, CompositeTemplate, Notebook, Paned, Stack};
@@ -25,6 +25,8 @@ pub struct Window {
     pub pane_1h: TemplateChild<Paned>,
     #[template_child]
     pub search_notebook: TemplateChild<Notebook>,
+    #[template_child]
+    pub map_notebook: TemplateChild<Notebook>,
     #[template_child]
     pub airport_view: TemplateChild<AirportView>,
     #[template_child]
@@ -95,6 +97,7 @@ impl ObjectImpl for Window {
     fn constructed(&self) {
         // Call "constructed" on parent
         self.parent_constructed();
+        self.layout_panels();
 
         let obj = self.obj();
         obj.setup_actions();
@@ -127,7 +130,26 @@ impl ObjectImpl for Window {
 impl BuildableImpl for Window {}
 
 // Trait shared by all widgets
-impl WidgetImpl for Window {}
+impl WidgetImpl for Window {
+    fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
+
+        let old_height = self.pane_1h.height() as f32;
+        let h_div = self.pane_1h.position() as f32 / old_height;
+        let old_width = self.pane_1v.width() as f32;
+        let v_div = self.pane_1v.position() as f32 / old_width;
+
+        self.parent_size_allocate(width, height, baseline);
+
+        // If the size = 0, the window probably isn't yet rendered so we don't want to adjust anything
+        if old_height > 1.0 {
+            let new_h_div = self.pane_1h.height() as f32 * h_div;
+            let new_v_div = self.pane_1v.width() as f32 * v_div;
+
+            self.pane_1v.set_position(new_v_div.round() as i32);
+            self.pane_1h.set_position(new_h_div.round() as i32);
+        }
+    }
+}
 
 // Trait shared by all windows
 impl WindowImpl for Window {

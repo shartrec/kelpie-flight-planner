@@ -76,6 +76,22 @@ pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMap
         None => None,
     }
 }
+pub(crate) fn show_airport_map_view(widget: &ScrolledWindow) {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            if let Some(notebook) = our_window.imp().map_notebook.try_get() {
+                if let Some(view) = our_window.imp().airport_map_view.try_get() {
+                    let page_num = notebook.page_num(&view);
+                    notebook.set_current_page(page_num);
+                }
+            }
+            ()
+        }
+        None => (),
+    }
+}
+
 pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
     match &widget.root() {
         Some(r) => {

@@ -5,11 +5,16 @@ use gtk::{gio, glib, Application};
 mod airport_map_view;
 mod airport_view;
 mod fix_view;
-pub mod imp;
+pub(crate) mod imp;
 mod navaid_view;
 mod plan_view;
 mod util;
 mod world_map_view;
+pub(crate) mod map_utils;
+pub(crate) mod render_gl;
+mod sphere_renderer;
+mod shoreline_renderer;
+mod airport_renderer;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)
@@ -56,4 +61,5 @@ impl Window {
             }
         }
     }
+
 }
