@@ -4,17 +4,23 @@
 extern crate nalgebra_glm as glm;
 
 use std;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::ffi::{CStr, CString};
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 
 use gl;
-use gtk::GLArea;
-use gtk::prelude::WidgetExt;
 use glm::{*};
-use log::error;
-use crate::earth::coordinate::Coordinate;
-use crate::window::airport_renderer::AirportRenderer;
+use gtk::{GLArea, glib};
+use gtk::glib::timeout_add_local;
+use gtk::prelude::WidgetExt;
 
+use crate::earth::coordinate::Coordinate;
+use crate::earth::spherical_projector::SphericalProjector;
+use crate::model::plan::Plan;
+use crate::window::airport_renderer::AirportRenderer;
+use crate::window::navaid_renderer::NavaidRenderer;
+use crate::window::plan_renderer::PlanRenderer;
 use crate::window::shoreline_renderer::ShorelineRenderer;
 use crate::window::sphere_renderer::SphereRenderer;
 
@@ -164,10 +170,13 @@ pub struct Renderer {
     shader_program: Program,
     sphere_renderer: SphereRenderer,
     shore_line_renderer: ShorelineRenderer,
-    airport_renderer: AirportRenderer,
+    airport_renderer: RefCell<AirportRenderer>,
+    navaid_renderer: RefCell<NavaidRenderer>,
+    plan_renderer: RefCell<Option<PlanRenderer>>,
 
-    zoom_level: RefCell<f32>,
+    zoom_level: Cell<f32>,
     map_centre: RefCell<Coordinate>,
+    last_map_centre: RefCell<Coordinate>,
 }
 
 impl Renderer {
@@ -188,32 +197,55 @@ impl Renderer {
         let sphere_renderer = SphereRenderer::new();
         let shore_line_renderer = ShorelineRenderer::new();
         let airport_renderer = AirportRenderer::new();
+        let navaid_renderer = NavaidRenderer::new();
 
         Renderer {
             shader_program,
             sphere_renderer,
             shore_line_renderer,
-            airport_renderer,
-            zoom_level: RefCell::new(1.0),
+            airport_renderer: RefCell::new(airport_renderer),
+            navaid_renderer: RefCell::new(navaid_renderer),
+            plan_renderer: RefCell::new(None),
+            zoom_level: Cell::new(1.0),
             map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
+            last_map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
         }
+    }
+
+    pub fn airports_loaded(&self) {
+        self.airport_renderer.replace(AirportRenderer::new());
+    }
+    pub fn navaids_loaded(&self) {
+        self.navaid_renderer.replace(NavaidRenderer::new());
+    }
+
+    pub fn set_plan(&self, plan: Arc<RwLock<Plan>>) {
+        self.plan_renderer.replace(Some(PlanRenderer::new(plan)));
     }
 
     pub fn set_zoom_level(&self, zoom: f32) {
         self.zoom_level.replace(zoom);
     }
 
-    pub fn get_map_centre(&self) -> Coordinate{
+    pub fn zoom(&self, z_factor: f32) {
+        let mut zoom = self.zoom_level.get() * z_factor;
+        zoom = zoom.min(12.);
+        self.set_zoom_level(zoom);
+    }
+
+    pub fn get_map_centre(&self) -> Coordinate {
         self.map_centre.borrow().clone()
     }
 
-    pub fn set_map_centre(&self, centre: Coordinate) {
-        self.map_centre.replace(centre);
+    pub fn set_map_centre(&self, centre: Coordinate, fast: bool) {
+        self.map_centre.replace(centre.clone());
+        if fast {
+            self.last_map_centre.replace(centre.clone());
+        }
     }
 
 
-    pub fn draw(&self, area: &GLArea) {
-
+    pub fn draw(&self, area: &GLArea, with_airports: bool, with_navaids: bool) {
         unsafe {
             gl::Enable(gl::POINT_SIZE);
             gl::Enable(gl::DEPTH_TEST);
@@ -233,103 +265,119 @@ impl Renderer {
         } else {
             [1.0, width as f32 / height as f32]
         };
+        let zoom = self.zoom_level.get().clone();
 
+        let true_centre = self.increment_to_centre();
         let trans = self.build_matrix(aspect_ratio);
 
         self.shader_program.gl_use();
 
         unsafe {
             let mat = gl::GetUniformLocation(self.shader_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const  gl::types::GLfloat);
+            gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
         }
 
-        let color = vec!(0.75, 1.0, 1.0f32);
+        let color = vec!(0.90, 1.0, 1.0f32);
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
         }
         self.sphere_renderer.draw(area);
 
-        let color = vec!(0.3, 0.0, 0.0f32);
+        let color = vec!(0.0, 0.4, 0.0f32);
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
         }
         self.shore_line_renderer.draw(area);
 
-        let color = vec!(1.0, 0.0, 0.0f32);
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        if with_airports {
+            let color = vec!(1.0, 0.0, 0.0f32);
+            unsafe {
+                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            }
+            self.airport_renderer.borrow().draw(area, zoom > 3.0, zoom > 6.0);
         }
-        //tod0 set which airports to show based on zoom level
-        self.airport_renderer.draw(area, false, false);
+
+        if with_navaids {
+            let color = vec!(0.8, 0.8, 1.0f32);
+            unsafe {
+                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            }
+            self.navaid_renderer.borrow().draw(area, zoom > 3.0);
+        }
+
+        if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
+            let color = vec!(0.0, 0.0, 0.0f32);
+            unsafe {
+                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            }
+            plan_renderer.draw(area);
+        }
+
+        if !true_centre {
+            let my_area = area.clone();
+            timeout_add_local(Duration::from_millis(20), move || {
+                my_area.queue_draw();
+                glib::Continue(false)
+            });
+
+        }
     }
 
-    fn build_matrix(&self, aspect_ratio: [f32; 2]) -> Mat4 {
+    fn build_matrix(&self, aspect_ratio: [f32; 2]) -> TMat4<f32> {
         let mut trans = mat4(1.0, 0.0, 0.0, 0.0,
                              0.0, 1.0, 0.0, 0.0,
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0);
 
         trans = scale(&trans, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
-        trans = rotate(&trans, self.map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1., 0., 0.));
-        trans = rotate(&trans, self.map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
+        trans = rotate(&trans, -(self.last_map_centre.borrow().get_latitude().to_radians()) as f32, &vec3(1., 0., 0.));
+        trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
         trans
     }
 
     pub fn drop_buffers(&self) {
         self.sphere_renderer.drop_buffers();
         self.shore_line_renderer.drop_buffers();
-        self.airport_renderer.drop_buffers();
+        self.airport_renderer.borrow().drop_buffers();
+        self.navaid_renderer.borrow().drop_buffers();
+        if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
+            plan_renderer.drop_buffers();
+        }
     }
 
-    pub fn get_glPoint_from_win(&self, area: &GLArea, x: f64, y: f64) {
+    pub fn get_glpoint_from_win(&self, area: &GLArea, x: f32, y: f32) -> Result<[f32; 2], String> {
         // We need to calculate the Z depth where the point meets the earth
-// Get the earth radius
-        let height = area.height() as f64;
-        let width = area.width() as f64;
+        // Get the earth radius
+        let height = area.height() as f32;
+        let width = area.width() as f32;
         let side = width.min(height);
-        let earth_radius = (side as f64 / self.zoom_level.borrow().ceil() as f64 ) / 2.0;
+        let earth_radius = side / 2.0;
+
+        let x_offset = (width - side) /2.;
+        let y_offset = (height - side) /2.;
 
         let depth = earth_radius;
 
-        let mut v_scroll = 0.0;
-        let mut h_scroll = 0.0;
+        let v_scroll = 0.0;
+        let h_scroll = 0.0;
 
-        let win_x = x;
-        let win_y = height - y - 1.0;
+        // Get the true projected x, y coordinates
+        let x1 = earth_radius as i32 - ((x-x_offset) + h_scroll) as i32;
+        let y1 = earth_radius as i32 - ((y-y_offset) + v_scroll) as i32;
 
-// Adjust x, y for scroll
-//         if zoom < 1.0 {
-//             let sb = canvas.get_vertical_bar();
-//             let v_range_scroll = sb.get_maximum() - sb.get_thumb();
-//             if v_range_scroll > 0 {
-//                 let v_range_px = earth_radius * 2.0 - bounds.height as f64;
-//                 v_scroll = sb.get_selection() as f64 / v_range_scroll as f64 * v_range_px;
-//             }
-//
-//             let sb = canvas.get_horizontal_bar();
-//             let h_range_scroll = sb.get_maximum() - sb.get_thumb();
-//             if h_range_scroll > 0 {
-//                 let h_range_px = earth_radius * 2.0 - bounds.width as f64;
-//                 h_scroll = sb.get_selection() as f64 / h_range_scroll as f64 * h_range_px;
-//             }
-//         }
-
-// Get the true projected x, y coordinates
-        let x1 = earth_radius as i32 - (x as f64 + h_scroll) as i32;
-        let y1 = earth_radius as i32 - (y as f64 + v_scroll) as i32;
-
-        let r_squared = (x1 * x1 + y1 * y1) as f64;
-        let earth_r_squared = (earth_radius * earth_radius) as f64;
+        let r_squared = (x1 * x1 + y1 * y1) as f32;
+        let earth_r_squared = (earth_radius * earth_radius) as f32;
         if r_squared > earth_r_squared {
-            // You might want to define and use a custom NotInMapException here.
-            error!("NotInMapException");
+            return Err("not in map".to_string());
         }
         let z = (earth_r_squared - r_squared).sqrt();
         // This is the Z-depth of the clicked point.
-        let normal_z = (depth - z) / earth_radius;
+        let normal_z = 1. - (depth - z) / earth_radius;
 
         // Now we need to transform this into model coordinates.
         // get_matrix_and_unwind();
@@ -338,12 +386,76 @@ impl Renderer {
         } else {
             [1.0, width as f32 / height as f32]
         };
-        let mat = &self.build_matrix(aspect_ratio);
+        let mat = self.build_matrix(aspect_ratio);
 
-
-
+        match mat.try_inverse() {
+            Some(transform) => {
+                let pt = TVec4::new(
+                    2. * x as f32 / width - 1.,
+                    -(2. * y as f32 / height - 1.),
+                    -normal_z,
+                    1.,
+                );
+                let result = transform * pt;
+                let vertex = result.fixed_rows::<3>(0) / result.w;
+                let projector = SphericalProjector::new(1.0);
+                projector.un_project(vertex.x, vertex.y, vertex.z)
+            }
+            None => {
+                Err("not in map".to_string())
+            }
+        }
     }
+    fn increment_to_centre(&self) -> bool {
+        // This updates the last_centre position which is where we actually draw
+        // and returns true if we have reached the true centre as requested
 
+        let req_lat = self.map_centre.borrow().get_latitude().clone();
+        let mut last_lat = self.last_map_centre.borrow().get_latitude().clone();
+        let mut r_lat_inc = (req_lat - last_lat) / 20.0;
 
+        let req_long = self.map_centre.borrow().get_longitude().clone();
+        let mut last_long = self.last_map_centre.borrow().get_longitude().clone();
 
+        let mut r_long_inc = req_long - last_long;
+        if r_long_inc < -180.0 {
+            r_long_inc += 360.0;
+        }
+        if r_long_inc > 180.0 {
+            r_long_inc -= 360.0;
+        }
+        r_long_inc /= 20.0;
+
+        if r_lat_inc.abs() < 0.001 && r_long_inc.abs() < 0.001 {
+            true
+        } else {
+            if r_lat_inc.abs() < 2. && r_long_inc.abs() < 2. {
+                let max_inc = r_lat_inc.abs().max(r_long_inc.abs());
+                let rescale = 2. / max_inc;
+                r_lat_inc *= rescale;
+                r_long_inc *= rescale;
+            }
+            let lat_inc = r_lat_inc * self.zoom_level.get().sqrt() as f64;
+            let long_inc = r_long_inc * self.zoom_level.get().sqrt() as f64;
+
+            if (req_lat - last_lat).abs() > lat_inc.abs() {
+                last_lat += lat_inc;
+            } else {
+                last_lat = req_lat.clone();
+            }
+            if (req_long - last_long).abs() > long_inc.abs() {
+                last_long += long_inc;
+            } else {
+                last_long = req_long.clone();
+            }
+            if last_long < -180.0 {
+                last_long += 360.0;
+            }
+            if last_long > 180.0 {
+                last_long -= 360.0;
+            }
+            self.last_map_centre.replace(Coordinate::new(last_lat, last_long));
+            false
+        }
+    }
 }

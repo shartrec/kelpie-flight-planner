@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
     use std::cell::RefCell;
@@ -9,8 +9,8 @@ mod imp {
     use std::thread;
 
     use glib::subclass::InitializingObject;
-    use gtk::glib::{clone, MainContext, PropertySet, PRIORITY_DEFAULT};
     use gtk::{cairo::Context, DrawingArea};
+    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT, PropertySet};
 
     use crate::event::Event;
     use crate::model::airport::Airport;

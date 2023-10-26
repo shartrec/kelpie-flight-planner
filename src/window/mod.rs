@@ -1,6 +1,6 @@
 use glib::Object;
+use gtk::{Application, gio, glib};
 use gtk::prelude::GtkWindowExt;
-use gtk::{gio, glib, Application};
 
 mod airport_map_view;
 mod airport_view;
@@ -15,6 +15,8 @@ pub(crate) mod render_gl;
 mod sphere_renderer;
 mod shoreline_renderer;
 mod airport_renderer;
+mod navaid_renderer;
+mod plan_renderer;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)

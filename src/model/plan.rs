@@ -133,6 +133,7 @@ impl Plan {
                 }
                 return String::from("new_plan.fpl");
             }
+            return String::from("new_plan.fpl");
         }
 
         let f = std::path::PathBuf::from(&self.path.borrow().clone().unwrap_or("".to_string()));

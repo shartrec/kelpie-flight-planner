@@ -1,11 +1,13 @@
 #![allow(unused)]
-use lazy_static::lazy_static;
-use log::error;
-use preferences::{AppInfo, Preferences, PreferencesMap};
+
 use std::{
     str::FromStr,
     sync::{Arc, RwLock},
 };
+
+use lazy_static::lazy_static;
+use log::error;
+use preferences::{AppInfo, Preferences, PreferencesMap};
 
 const PREFS_PATH: &str = "planner";
 pub const APP_INFO: AppInfo = AppInfo {

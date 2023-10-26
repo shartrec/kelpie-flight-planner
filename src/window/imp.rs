@@ -1,11 +1,11 @@
 use std::thread;
 
 use glib::subclass::InitializingObject;
+use gtk::{CompositeTemplate, glib, Notebook, Paned, Stack};
 use gtk::gio::File;
-use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+use gtk::glib::{MainContext, PRIORITY_DEFAULT};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
-use gtk::{glib, CompositeTemplate, Notebook, Paned, Stack};
 
 use crate::event::Event;
 use crate::window::airport_map_view::AirportMapView;
@@ -108,6 +108,7 @@ impl ObjectImpl for Window {
         let airport_view = Box::new(self.airport_view.clone());
         let navaid_view = Box::new(self.navaid_view.clone());
         let fix_view = Box::new(self.fix_view.clone());
+        let world_map_view = Box::new(self.world_map_view.clone());
 
         let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
         let transmitter = tx.clone();
@@ -117,8 +118,14 @@ impl ObjectImpl for Window {
         });
         rx.attach(None, move |ev: Event| {
             match ev {
-                Event::AirportsLoaded => airport_view.imp().airports_loaded(),
-                Event::NavaidsLoaded => navaid_view.imp().navaids_loaded(),
+                Event::AirportsLoaded => {
+                    airport_view.imp().airports_loaded();
+                    world_map_view.imp().airports_loaded();
+                },
+                Event::NavaidsLoaded => {
+                    navaid_view.imp().navaids_loaded();
+                    world_map_view.imp().navaids_loaded();
+                },
                 Event::FixesLoaded => fix_view.imp().fixes_loaded(),
             }
             glib::source::Continue(true)

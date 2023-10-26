@@ -16,10 +16,81 @@
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkGLArea" id="gl_area">
-            <property name="auto-render">true</property>
+          <object class="GtkBox">
+            <property name="margin-start">5</property>
+            <property name="margin-top">5</property>
+            <property name="margin-bottom">5</property>
+            <property name="spacing">5</property>
+            <property name="halign">end</property>
+            <child>
+              <object class="GtkToggleButton" id="btn_show_airports">
+                <property name="tooltip_text">Show Airports</property>
+                <property name="active">true</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="resource">/com/shartrec/kelpie_planner/images/airport.gif</property>
+                    <property name="icon_size">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkToggleButton" id="btn_show_navaids">
+                <property name="tooltip_text">Show Navaids</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="resource">/com/shartrec/kelpie_planner/images/navaid.gif</property>
+                    <property name="icon_size">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_zoom_in">
+                <property name="tooltip_text">Zoom in</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="resource">/com/shartrec/kelpie_planner/images/plus.gif</property>
+                    <property name="icon_size">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="btn_zoom_out">
+                <property name="tooltip_text">Zoom out</property>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="resource">/com/shartrec/kelpie_planner/images/minus.gif</property>
+                    <property name="icon_size">1</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="GtkScrolledWindow" id="map_window">
+            <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
+            <property name="vscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
+            <property name="propagate-natural-width">true</property>
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
+            <child>
+              <object class="GtkGLArea" id="gl_area">
+                <property name="auto-render">true</property>
+                <property name="vexpand">true</property>
+                <property name="hexpand">true</property>
+              </object>
+            </child>
           </object>
         </child>
       </object>

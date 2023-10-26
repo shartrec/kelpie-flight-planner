@@ -2,12 +2,12 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
+use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root, ScrolledWindow};
 use gtk::glib::Cast;
 use gtk::prelude::{
     CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt,
 };
 use gtk::subclass::prelude::ObjectSubclassIsExt;
-use gtk::{glib, ButtonsType, MessageDialog, MessageType, Root, ScrolledWindow};
 
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -15,6 +15,7 @@ use crate::window::fix_view::FixView;
 use crate::window::navaid_view::NavaidView;
 use crate::window::plan_view::PlanView;
 use crate::window::Window;
+use crate::window::world_map_view::WorldMapView;
 
 // The following allows us to test an entry field for numeric only chgaracters
 // To use it
@@ -67,7 +68,30 @@ pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
         None => None,
     }
 }
-pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
+pub(crate) fn get_world_map_view(widget: &ScrolledWindow) -> Option<WorldMapView> {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            our_window.imp().world_map_view.try_get()
+        }
+        None => None,
+    }
+}
+pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
+    match &widget.root() {
+        Some(r) => {
+            let our_window = r.clone().downcast::<Window>().unwrap();
+            if let Some(notebook) = our_window.imp().map_notebook.try_get() {
+                if let Some(view) = our_window.imp().world_map_view.try_get() {
+                    let page_num = notebook.page_num(&view);
+                    notebook.set_current_page(page_num);
+                }
+            }
+            ()
+        }
+        None => (),
+    }
+}pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
     match &widget.root() {
         Some(r) => {
             let our_window = r.clone().downcast::<Window>().unwrap();

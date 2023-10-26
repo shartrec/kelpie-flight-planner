@@ -1,15 +1,11 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-
-use std::ffi::CString;
-
 use gl::types::GLuint;
 use gtk::GLArea;
 
-use crate::window::{map_utils, render_gl};
+use crate::window::map_utils;
 use crate::window::map_utils::Vertex;
-use crate::window::render_gl::Program;
 
 pub struct SphereRenderer {
     sphere_vertex_buffer: GLuint,
@@ -53,19 +49,6 @@ impl SphereRenderer {
 
         }
 
-
-        let sphere_vert_shader = render_gl::Shader::from_vert_source(
-            &CString::new(include_str!("program.vert")).unwrap()
-        ).unwrap();
-
-        let sphere_frag_shader = render_gl::Shader::from_frag_source(
-            &CString::new(include_str!("program.frag")).unwrap()
-        ).unwrap();
-
-        let sphere_shader_program = render_gl::Program::from_shaders(
-            &[sphere_vert_shader, sphere_frag_shader]
-        ).unwrap();
-
         SphereRenderer {
             sphere_vertex_buffer,
             sphere_vertex_arrays,
@@ -74,7 +57,7 @@ impl SphereRenderer {
         }
     }
 
-    pub fn draw(&self, area: &GLArea) {
+    pub fn draw(&self, _area: &GLArea) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.sphere_vertex_buffer);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.sphere_index_buffer);

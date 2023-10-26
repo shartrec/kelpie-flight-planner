@@ -130,9 +130,9 @@ fn token_number<T: std::str::FromStr + std::default::Default>(t: Option<&str>) -
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
-    use std::{fs, io::BufReader, path::PathBuf};
 
     use crate::model::location::Location;
     use crate::model::navaid::{Navaid, NavaidType};

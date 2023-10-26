@@ -2,9 +2,9 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 use log::error;
-use shapefile::ShapeReader;
-use shapefile::Shape;
 use shapefile::Polygon;
+use shapefile::Shape;
+use shapefile::ShapeReader;
 
 // Read shape file into a Vector of shapes for the shorelines of the world.
 

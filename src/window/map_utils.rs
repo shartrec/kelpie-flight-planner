@@ -76,11 +76,11 @@ impl GLSphereBuilder {
             let v1 = self.vdata[self.tindices[i][0]];
             let v2 = self.vdata[self.tindices[i][1]];
             let v3 = self.vdata[self.tindices[i][2]];
-            vertices.push(Vertex { position: v1});
+            vertices.push(Vertex { position: self.scale(&v1, &radius)});
             let i1 = vertices.len() - 1;
-            vertices.push(Vertex { position: v2});
+            vertices.push(Vertex { position: self.scale(&v2, &radius)});
             let i2 = vertices.len() - 1;
-            vertices.push(Vertex { position: v3});
+            vertices.push(Vertex { position: self.scale(&v3, &radius)});
             let i3 = vertices.len() - 1;
 
             self.subdivide(
@@ -103,7 +103,7 @@ impl GLSphereBuilder {
         let mut v31: [f32; 3] = [0.0; 3];
 
         if depth == 0 {
-            self.draw_triangle(vertices, indices, i1, i2, i3);
+            self.draw_triangle(indices, i1, i2, i3);
             return;
         }
         let v1 = &vertices.get(i1).unwrap().position;
@@ -141,14 +141,14 @@ impl GLSphereBuilder {
         }
     }
 
-    fn draw_triangle(&mut self, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize) {
+    fn draw_triangle(&mut self, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize) {
         indices.push(i1 as u32);
         indices.push(i2 as u32);
         indices.push(i3 as u32);
     }
 
-    fn scale(&self, v1: &[f32; 3], radius: &f32) -> [f32; 3]{
-        [v1[0] * radius, v1[1] * radius, v1[2]*radius]
+    fn scale(&self, v: &[f32; 3], radius: &f32) -> [f32; 3]{
+        [v[0] * radius, v[1] * radius, v[2]*radius]
     }
 
 
@@ -161,7 +161,6 @@ pub(super) struct GLShorelineBuilder {
 
 impl GLShorelineBuilder {
     pub fn new() -> Self {
-        let shoreline = crate::earth::shapefile::read_shapes();
         Self {
             shoreline: crate::earth::shapefile::read_shapes(),
             projector: SphericalProjector::new(1.000),

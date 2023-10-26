@@ -1,12 +1,13 @@
 #![allow(deprecated)]
 
 use std::ptr;
+
+use gtk::{Application, CssProvider, gio, glib};
 use gtk::gdk::Display;
 use gtk::gio::{File, SimpleAction};
 use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
-use gtk::{gio, glib, Application, CssProvider};
 use simplelog::*;
 
 use window::Window;

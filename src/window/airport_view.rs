@@ -1,17 +1,17 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
+use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use gtk::{ListStore, TreeView};
 
 mod imp {
     use std::boxed::Box;
 
     use glib::subclass::InitializingObject;
+    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
-    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
     use log::error;
 
     use crate::earth;
@@ -19,7 +19,7 @@ mod imp {
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
-    use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_error_dialog, show_fix_view, show_navaid_view};
+    use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_error_dialog, show_fix_view, show_navaid_view};
 
     use super::*;
 

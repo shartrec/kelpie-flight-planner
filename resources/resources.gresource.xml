@@ -19,6 +19,9 @@
     <file>images/up.gif</file>
     <file>images/down.gif</file>
     <file>images/plus.gif</file>
+    <file>images/minus.gif</file>
+    <file>images/airport.gif</file>
+    <file>images/navaid.gif</file>
 
     <!--CSS-->
     <file compressed="true">style.css</file>

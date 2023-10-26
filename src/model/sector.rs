@@ -1,7 +1,8 @@
-use gtk::glib::PropertySet;
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
+
+use gtk::glib::PropertySet;
 
 use crate::model::plan::Plan;
 

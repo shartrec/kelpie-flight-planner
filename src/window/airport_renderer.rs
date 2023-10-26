@@ -2,7 +2,6 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
-use std::ffi::CString;
 use std::sync::{Arc, RwLockReadGuard};
 
 use gl::types::GLuint;
@@ -12,7 +11,6 @@ use crate::earth;
 use crate::earth::spherical_projector::SphericalProjector;
 use crate::model::airport::Airport;
 use crate::model::location::Location;
-use crate::window::render_gl;
 use crate::window::map_utils::Vertex;
 
 pub struct AirportRenderer {
@@ -81,19 +79,6 @@ impl AirportRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
 
-
-        let airport_vert_shader = render_gl::Shader::from_vert_source(
-            &CString::new(include_str!("program.vert")).unwrap()
-        ).unwrap();
-
-        let airport_frag_shader = render_gl::Shader::from_frag_source(
-            &CString::new(include_str!("program.frag")).unwrap()
-        ).unwrap();
-
-        let airport_shader_program = render_gl::Program::from_shaders(
-            &[airport_vert_shader, airport_frag_shader]
-        ).unwrap();
-
         AirportRenderer {
             airport_vertex_buffer,
             airport_vertex_arrays,
@@ -106,7 +91,7 @@ impl AirportRenderer {
         }
     }
 
-    pub fn draw(&self, area: &GLArea, medium: bool, small: bool) {
+    pub fn draw(&self, _area: &GLArea, medium: bool, small: bool) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.airport_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
@@ -187,9 +172,9 @@ impl AirportRenderer {
             vertices.push(Vertex { position: position });
 
             // Now indices
-            if (airport.get_max_runway_length() > 10000) {
+            if airport.get_max_runway_length() > 10000 {
                 indices_large.push(vertices.len() as u32 - 1);
-            } else if (airport.get_max_runway_length() > 5000) {
+            } else if airport.get_max_runway_length() > 5000 {
                 indices_medium.push(vertices.len() as u32 - 1);
             } else {
                 indices_small.push(vertices.len() as u32 - 1);

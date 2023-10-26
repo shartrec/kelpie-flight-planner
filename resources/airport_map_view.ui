@@ -16,7 +16,5 @@
         <property name="hexpand">true</property>
       </object>
     </child>
-    <!--      </object>-->
-    <!--    </child>-->
   </template>
 </interface>

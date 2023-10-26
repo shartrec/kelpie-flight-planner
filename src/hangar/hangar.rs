@@ -9,8 +9,8 @@ use std::sync::{Arc, RwLock};
 use app_dirs::*;
 use lazy_static::lazy_static;
 use log::{error, warn};
-use yaml_rust::yaml::Hash;
 use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
+use yaml_rust::yaml::Hash;
 
 use crate::model::aircraft::Aircraft;
 use crate::preference::APP_INFO;

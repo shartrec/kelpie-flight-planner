@@ -1,21 +1,21 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
+use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use gtk::gio;
-use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
     use std::ops::Deref;
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::gdk::Rectangle;
-    use gtk::gio::{ListStore, MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::clone;
     use gtk::{
         Builder, Button, DropDown, Label, ListItem, PopoverMenu, ScrolledWindow,
         SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView,
     };
+    use gtk::gdk::Rectangle;
+    use gtk::gio::{ListStore, MenuModel, SimpleAction, SimpleActionGroup};
+    use gtk::glib::clone;
     use log::error;
 
     use crate::earth;
@@ -26,7 +26,7 @@ mod imp {
     use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
     use crate::preference::AUTO_PLAN;
-    use crate::window::util::get_airport_map_view;
+    use crate::window::util::{get_airport_map_view, get_world_map_view};
 
     use super::*;
 
@@ -187,6 +187,9 @@ mod imp {
                 planner.recalc_plan_elevations(&plan);
             }
             drop(plan);
+            if let Some(map_view) = get_world_map_view(&self.plan_window) {
+                map_view.imp().set_plan(self.get_plan());
+            }
         }
 
         pub fn initialise(&self) -> () {}

@@ -418,9 +418,9 @@ fn token_f64(t: Option<&str>) -> f64 {
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
-    use std::{fs, io::BufReader, path::PathBuf};
 
     use crate::model::airport::Airport;
     use crate::model::location::Location;

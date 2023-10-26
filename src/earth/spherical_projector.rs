@@ -39,7 +39,7 @@ impl SphericalProjector {
     }
 
     pub fn  un_project(&self,  x: f32,  y: f32,  z: f32) -> Result<[f32; 2], String>  {
-        let mut y1: f32;
+        let y1: f32;
         if y > self.r {
             y1 = self.r;
         } else if y < -self.r {
@@ -48,7 +48,7 @@ impl SphericalProjector {
             y1 = y;
         }
         let lat: f32 = self._90rad - (y1 / self.r).acos();
-        let lon: f32 = x.atan2(z);
+        let lon: f32 = x.atan2(-z);
         if lat.is_nan() || lon.is_nan() {
             //$NON-NLS-1$
             Err("Not in map".to_string())

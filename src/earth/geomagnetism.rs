@@ -9,7 +9,7 @@
 
 use std::str::SplitWhitespace;
 
-use chrono::{DateTime, Datelike, Utc};
+use chrono::{Datelike, DateTime, Utc};
 
 /**    The input string array which contains each line of input for the wmm.cof input file.
 *	The columns in this file are as follows:	n,	m,	gnm,	hnm,	dgnm,	dhnm*/

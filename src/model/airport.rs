@@ -1,11 +1,11 @@
+use std::{fmt, fs};
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
-use std::{fmt, fs};
 
 use log::{error, warn};
 
+use crate::earth::{FEET_PER_DEGREE, get_earth_model};
 use crate::earth::coordinate::Coordinate;
-use crate::earth::{get_earth_model, FEET_PER_DEGREE};
 use crate::util::airport_parser::AirportParserFG850;
 
 use super::location::Location;

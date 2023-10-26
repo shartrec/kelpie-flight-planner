@@ -2,14 +2,11 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
-use std::ffi::CString;
-
 use gl::types::{GLint, GLuint};
 use gtk::GLArea;
 
-use crate::window::{map_utils, render_gl};
+use crate::window::map_utils;
 use crate::window::map_utils::Vertex;
-use crate::window::render_gl::Program;
 
 pub struct ShorelineRenderer {
     shoreline_vertex_buffer: GLuint,
@@ -37,25 +34,13 @@ impl ShorelineRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
         }
 
-        let shoreline_vert_shader = render_gl::Shader::from_vert_source(
-            &CString::new(include_str!("program.vert")).unwrap()
-        ).unwrap();
-
-        let shoreline_frag_shader = render_gl::Shader::from_frag_source(
-            &CString::new(include_str!("program.frag")).unwrap()
-        ).unwrap();
-
-        let shoreline_shader_program = render_gl::Program::from_shaders(
-            &[shoreline_vert_shader, shoreline_frag_shader]
-        ).unwrap();
-
         ShorelineRenderer {
             shoreline_vertex_buffer,
             shoreline_rings: rings,
         }
     }
 
-    pub fn draw(&self, area: &GLArea) {
+    pub fn draw(&self, _area: &GLArea) {
 
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.shoreline_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
