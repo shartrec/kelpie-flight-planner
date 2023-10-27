@@ -4,3 +4,16 @@ box.search-box {
   border-color: lightgray;
   padding: 5px;
 }
+
+grid.preference-page {
+  border-style: none;
+  border-width: 1px;
+  border-color: lightgray;
+  padding: 5px;
+}
+
+label.preference-page-heading {
+  font-weight: bold;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}

@@ -8,6 +8,7 @@
     <file compressed="true" preprocess="xml-stripblanks">fix_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">navaid_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">navaid_popover.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">preference.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">plan_view.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">plan_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>

@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 
+use std::ops::Deref;
 use std::ptr;
 
 use gtk::{Application, CssProvider, gio, glib};
@@ -10,7 +11,7 @@ use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use simplelog::*;
 
-use window::Window;
+use window::{Window, preferences::PreferenceDialog};
 
 mod earth;
 mod event;
@@ -129,8 +130,10 @@ fn connect_actions(app: &Application, window: &Window) {
     app.add_action(&action);
 
     let action = SimpleAction::new("preferences", None);
-    action.connect_activate(clone!(@weak app => move |_action, _parameter| {
-        // todo : show preference dialog
+    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+        let pref_dialog = PreferenceDialog::new();
+        pref_dialog.set_transient_for(Some(&window));
+        pref_dialog.show();
     }));
     app.add_action(&action);
 }

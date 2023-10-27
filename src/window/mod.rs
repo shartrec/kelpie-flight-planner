@@ -17,6 +17,7 @@ mod shoreline_renderer;
 mod airport_renderer;
 mod navaid_renderer;
 mod plan_renderer;
+pub(crate) mod preferences;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)
