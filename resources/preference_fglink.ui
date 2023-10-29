@@ -1,0 +1,77 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+  <template class="PreferenceFgLinkPage" parent="GtkWidget">
+    <property name="layout-manager">
+      <object class="GtkBoxLayout">
+        <property name="orientation">vertical</property>
+      </object>
+    </property>
+    <property name="halign">start</property>
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">Defines a link to FlightGear web server</property>
+        <style>
+          <class name="preference-page-heading"/>
+        </style>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_fglink_enabled">
+        <property name="label" translatable="yes">Enabled</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkGrid">
+        <property name="hexpand">true</property>
+        <property name="row-spacing">8</property>
+        <property name="column-spacing">5</property>
+        <style>
+          <class name="preference-page"/>
+        </style>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">FlightGear HTTP server host name</property>
+            <property name="halign">start</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="fg_host">
+            <property name="width-request">300</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">0</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">FlightGear HTTP server port</property>
+            <property name="halign">start</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="fg_port">
+            <property name="width-request">100</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

@@ -1,0 +1,209 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+  <template class="PreferenceGeneralPage" parent="GtkWidget">
+    <property name="layout-manager">
+      <object class="GtkBoxLayout">
+        <property name="orientation">vertical</property>
+      </object>
+    </property>
+    <property name="halign">start</property>
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
+    <child>
+      <object class="GtkGrid">
+        <property name="vexpand">true</property>
+        <property name="hexpand">true</property>
+        <property name="row-spacing">8</property>
+        <property name="column-spacing">5</property>
+        <style>
+          <class name="preference-page"/>
+        </style>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Airport and Navaid database locations</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+              <property name="column-span">3</property>
+            </layout>
+            <style>
+              <class name="preference-page-heading"/>
+            </style>
+            <property name="halign">start</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Flightgear Directory</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="fg_path">
+            <property name="hexpand">true</property>
+            <property name="width-request">400</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="fg_browse">
+            <property name="label" translatable="yes">Browse...</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="btn_use_dft_paths">
+            <property name="label" translatable="yes">Use Default paths</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">2</property>
+              <property name="column-span">2</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Airport database</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="apt_path">
+            <property name="hexpand">true</property>
+            <property name="width-request">400</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="apt_browse">
+            <property name="label" translatable="yes">Browse...</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Navaid database</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="nav_path">
+            <property name="hexpand">true</property>
+            <property name="width-request">400</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="nav_browse">
+            <property name="label" translatable="yes">Browse...</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Fix database</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">5</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="fix_path">
+            <property name="hexpand">true</property>
+            <property name="width-request">400</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">5</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="fix_browse">
+            <property name="label" translatable="yes">Browse...</property>
+            <layout>
+              <property name="column">2</property>
+              <property name="row">5</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">Headings</property>
+        <property name="halign">start</property>
+        <style>
+          <class name="preference-page-heading"/>
+        </style>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_use_mag_hdg">
+        <property name="label" translatable="yes">Use magnetic headings (rather than true headings)
+        </property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">Distance Units</property>
+        <property name="halign">start</property>
+        <style>
+          <class name="preference-page-heading"/>
+        </style>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_dist_nm">
+        <property name="label" translatable="yes">Nautical Miles</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_dist_mi">
+        <property name="label" translatable="yes">Statute Miles</property>
+        <property name="group">btn_dist_nm</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_dist_km">
+        <property name="label" translatable="yes">Kilometers</property>
+        <property name="group">btn_dist_nm</property>
+      </object>
+    </child>
+
+  </template>
+</interface>

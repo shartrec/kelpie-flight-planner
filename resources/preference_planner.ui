@@ -1,0 +1,138 @@
+<!--
+  Copyright (c) 2003-2023. Trevor Campbell and others.
+  -->
+
+<interface>
+  <template class="PreferencePlannerPage" parent="GtkWidget">
+    <property name="layout-manager">
+      <object class="GtkBoxLayout">
+        <property name="orientation">vertical</property>
+      </object>
+    </property>
+    <property name="halign">start</property>
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
+    <child>
+      <object class="GtkGrid">
+        <property name="hexpand">true</property>
+        <property name="row-spacing">8</property>
+        <property name="column-spacing">5</property>
+        <style>
+          <class name="preference-page"/>
+        </style>
+        <child type="tab">
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Flight plan</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">0</property>
+              <property name="column-span">2</property>
+            </layout>
+            <style>
+              <class name="preference-page-heading"/>
+            </style>
+            <property name="halign">start</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Preferred maximum leg length</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="planner_max_leg">
+            <property name="width-request">50</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">1</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Minimum leg length</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="planner_min_leg">
+            <property name="width-request">50</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="label" translatable="yes">Maximum flight path deviation</property>
+            <property name="halign">end</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="GtkEntry" id="planner_deviation">
+            <property name="width-request">50</property>
+            <layout>
+              <property name="column">1</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkLabel">
+        <property name="label" translatable="yes">Build plan using</property>
+        <property name="halign">start</property>
+        <style>
+          <class name="preference-page-heading"/>
+        </style>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_use_radios">
+        <property name="label" translatable="yes">Radio beacons</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_use_fixes">
+        <property name="label" translatable="yes">Fixes</property>
+        <property name="group">btn_use_radios</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_use_gps">
+        <property name="label" translatable="yes">GPS</property>
+        <property name="group">btn_use_radios</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_vor_only">
+        <property name="label" translatable="yes">Include only VORs</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_vor_preferred">
+        <property name="label" translatable="yes">Prefer VORs over NDBs</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkCheckButton" id="btn_add_gps">
+        <property name="label" translatable="yes">Add GPS waypoints on long legs</property>
+      </object>
+    </child>
+  </template>
+</interface>

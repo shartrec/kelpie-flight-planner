@@ -9,17 +9,17 @@ mod imp {
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     #[derive(CompositeTemplate, Default)]
-    #[template(resource = "/com/shartrec/kelpie_planner/preference.ui")]
-    pub struct PreferenceDialog {
+    #[template(resource = "/com/shartrec/kelpie_planner/preference_fglink.ui")]
+    pub struct PreferenceFgLinkPage {
     }
 
-    impl PreferenceDialog {}
+    impl PreferenceFgLinkPage {}
 
     #[glib::object_subclass]
-    impl ObjectSubclass for PreferenceDialog {
-        const NAME: &'static str = "PreferenceDialog";
-        type Type = super::PreferenceDialog;
-        type ParentType = gtk::Window;
+    impl ObjectSubclass for PreferenceFgLinkPage {
+        const NAME: &'static str = "PreferenceFgLinkPage";
+        type Type = super::PreferenceFgLinkPage;
+        type ParentType = gtk::Widget;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -33,22 +33,25 @@ mod imp {
     }
 
 
-    impl ObjectImpl for PreferenceDialog {}
+    impl ObjectImpl for PreferenceFgLinkPage {}
 
-    impl WidgetImpl for PreferenceDialog {}
-    impl WindowImpl for PreferenceDialog {}
+    impl WidgetImpl for PreferenceFgLinkPage {}
 
 }
 
 glib::wrapper! {
-    pub struct PreferenceDialog(ObjectSubclass<imp::PreferenceDialog>)
-        @extends gtk::Window, gtk::Widget,
-        @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable,
-                    gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
+    pub struct PreferenceFgLinkPage(ObjectSubclass<imp::PreferenceFgLinkPage>)
+        @extends gtk::Widget;
 }
 
-impl PreferenceDialog {
+impl PreferenceFgLinkPage {
     pub fn new() -> Self {
-        glib::Object::new::<PreferenceDialog>()
+        glib::Object::new::<PreferenceFgLinkPage>()
+    }
+}
+
+impl Default for PreferenceFgLinkPage {
+    fn default() -> Self {
+        Self::new()
     }
 }
