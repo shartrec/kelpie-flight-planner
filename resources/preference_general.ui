@@ -3,7 +3,7 @@
   -->
 
 <interface>
-  <template class="PreferenceGeneralPage" parent="GtkWidget">
+  <template class="PreferenceGeneralPage" parent="GtkBox">
     <property name="layout-manager">
       <object class="GtkBoxLayout">
         <property name="orientation">vertical</property>

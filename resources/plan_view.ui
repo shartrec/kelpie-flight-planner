@@ -4,12 +4,10 @@
 
 <interface>
 
-  <template class="PlanView" parent="GtkWidget">
-    <property name="layout-manager">
-      <object class="GtkBoxLayout">
-        <property name="orientation">vertical</property>
-      </object>
-    </property>
+  <template class="PlanView" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
     <child>
       <object class="GtkBox">
         <property name="margin-start">5</property>
@@ -211,7 +209,5 @@
         </child>
       </object>
     </child>
-    <!--      </object>-->
-    <!--    </child>-->
   </template>
 </interface>

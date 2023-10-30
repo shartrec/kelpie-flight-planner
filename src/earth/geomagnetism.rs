@@ -194,6 +194,7 @@ pub struct Geomagnetism {
     st: f64,
 }
 
+#[allow(dead_code)]
 impl Geomagnetism {
     /** Initialise the instance without calculations*/
     fn create() -> Geomagnetism {

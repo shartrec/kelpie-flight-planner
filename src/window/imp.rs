@@ -127,6 +127,7 @@ impl ObjectImpl for Window {
                     world_map_view.imp().navaids_loaded();
                 },
                 Event::FixesLoaded => fix_view.imp().fixes_loaded(),
+                _ => (),
             }
             glib::source::Continue(true)
         });

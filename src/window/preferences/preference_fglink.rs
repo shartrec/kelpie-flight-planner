@@ -1,11 +1,9 @@
-use glib::Object;
-use gtk::{self, gio, glib, prelude::*, subclass::prelude::*, Window};
-use gtk::prelude::GtkWindowExt;
+use gtk::{self, glib};
 
 mod imp {
     use gtk::{CompositeTemplate, glib};
     use gtk::glib::subclass::InitializingObject;
-    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, ObjectSubclassType, WidgetClassSubclassExt, WindowImpl};
+    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassSubclassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     #[derive(CompositeTemplate, Default)]
@@ -19,7 +17,7 @@ mod imp {
     impl ObjectSubclass for PreferenceFgLinkPage {
         const NAME: &'static str = "PreferenceFgLinkPage";
         type Type = super::PreferenceFgLinkPage;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -35,13 +33,15 @@ mod imp {
 
     impl ObjectImpl for PreferenceFgLinkPage {}
 
+    impl BoxImpl for PreferenceFgLinkPage {
+    }
     impl WidgetImpl for PreferenceFgLinkPage {}
 
 }
 
 glib::wrapper! {
     pub struct PreferenceFgLinkPage(ObjectSubclass<imp::PreferenceFgLinkPage>)
-        @extends gtk::Widget;
+        @extends gtk::Box, gtk::Widget;
 }
 
 impl PreferenceFgLinkPage {

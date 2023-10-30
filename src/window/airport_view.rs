@@ -148,7 +148,7 @@ mod imp {
     impl ObjectSubclass for AirportView {
         const NAME: &'static str = "AirportView";
         type Type = super::AirportView;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -279,11 +279,12 @@ mod imp {
         }
     }
 
+    impl BoxImpl for AirportView {}
     impl WidgetImpl for AirportView {}
 }
 
 glib::wrapper! {
-    pub struct AirportView(ObjectSubclass<imp::AirportView>) @extends gtk::Widget;
+    pub struct AirportView(ObjectSubclass<imp::AirportView>) @extends gtk::Widget, gtk::Box;
 }
 
 impl AirportView {

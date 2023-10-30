@@ -5,6 +5,7 @@ use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 use gtk::gio;
 
 mod imp {
+    use std::cell::RefCell;
     use std::ops::Deref;
     use std::sync::{Arc, RwLock};
 
@@ -15,17 +16,18 @@ mod imp {
     };
     use gtk::gdk::Rectangle;
     use gtk::gio::{ListStore, MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::clone;
+    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use log::error;
 
-    use crate::earth;
+    use crate::{earth, event};
+    use crate::event::Event;
     use crate::hangar::hangar::Hangar;
     use crate::model::airport::Airport;
     use crate::model::location::Location;
     use crate::model::plan::Plan;
     use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
-    use crate::preference::AUTO_PLAN;
+    use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
     use crate::window::util::{get_airport_map_view, get_world_map_view};
 
     use super::*;
@@ -49,6 +51,8 @@ mod imp {
         pub btn_move_down: TemplateChild<Button>,
 
         pub plan: Arc<RwLock<Plan>>,
+
+        my_listener_id: RefCell<usize>,
     }
 
     enum Col {
@@ -83,6 +87,17 @@ mod imp {
         }
 
         fn refresh(&self, selection: Option<TreePath>) {
+            // update the heading if required for Mag vs True Hdg
+            let pref = crate::preference::manager();
+            let col_hdg = if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
+                "Hdg(mag)"
+            } else {
+                "Hdg(true)"
+            };
+            if let Some(col) = self.plan_tree.column(5) {
+                col.set_title(col_hdg);
+            }
+
             let tree_store = TreeStore::new(&[
                 String::static_type(),
                 i32::static_type(),
@@ -192,7 +207,22 @@ mod imp {
             }
         }
 
-        pub fn initialise(&self) -> () {}
+        pub fn initialise(&self) -> () {
+            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let index = event::manager().register_listener(tx);
+            rx.attach(None,clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
+                match ev {
+                    Event::PreferencesChanged => {
+                        view.refresh(None);
+                    },
+                    _ => (),
+                }
+                glib::source::Continue(true)
+            }));
+            // self.my_listener.replace(Some(rx));
+            self.my_listener_id.replace(index);
+
+        }
 
         pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {
             let mut added = false;
@@ -493,7 +523,7 @@ mod imp {
     impl ObjectSubclass for PlanView {
         const NAME: &'static str = "PlanView";
         type Type = super::PlanView;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -595,13 +625,19 @@ mod imp {
 
             self.initialise();
         }
+
+        fn dispose(&self) {
+            event::manager().unregister_listener(self.my_listener_id.borrow().deref());
+        }
     }
+
+    impl BoxImpl for PlanView {}
 
     impl WidgetImpl for PlanView {}
 }
 
 glib::wrapper! {
-    pub struct PlanView(ObjectSubclass<imp::PlanView>) @extends gtk::Widget,
+    pub struct PlanView(ObjectSubclass<imp::PlanView>) @extends gtk::Widget, gtk::Box,
         @implements gio::ActionGroup, gio::ActionMap;
 }
 

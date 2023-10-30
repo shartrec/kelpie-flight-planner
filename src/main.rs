@@ -1,6 +1,5 @@
 #![allow(deprecated)]
 
-use std::ops::Deref;
 use std::ptr;
 
 use gtk::{Application, CssProvider, gio, glib};
@@ -11,7 +10,7 @@ use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use simplelog::*;
 
-use window::{Window, preferences::PreferenceDialog};
+use window::{preferences::PreferenceDialog, Window};
 
 mod earth;
 mod event;

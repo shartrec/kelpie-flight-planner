@@ -9,6 +9,9 @@ use lazy_static::lazy_static;
 use log::error;
 use preferences::{AppInfo, Preferences, PreferencesMap};
 
+use crate::event;
+use crate::event::Event;
+
 const PREFS_PATH: &str = "planner";
 pub const APP_INFO: AppInfo = AppInfo {
     name: "kelpie-flight-planner",
@@ -20,6 +23,9 @@ pub const INITIALIZED: &str = "Initialized";
 pub const ANIMATE_MAP: &str = "AnimateMap";
 pub const SHOW_MAP_IN_BROWSER: &str = "ShowMapInBrowser";
 pub const UNITS: &str = "Units";
+pub const UNITS_NM: &str = "Nm";
+pub const UNITS_KM: &str = "Km";
+pub const UNITS_MI: &str = "Mi";
 pub const NAVIGATION_DATA: &str = "NavigationData.Type";
 pub const FGFS_DIR: &str = "Fgfs.Dir";
 pub const FGFS_USE_DFT_PATH: &str = "Fgfs.UseDefaultPath";
@@ -86,6 +92,7 @@ impl PreferenceManager {
             prefs.insert(key.to_string(), value.to_string());
         }
         self.store();
+        event::manager().notify_listeners(Event::PreferencesChanged);
         ()
     }
 

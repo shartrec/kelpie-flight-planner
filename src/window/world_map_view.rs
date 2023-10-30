@@ -74,29 +74,31 @@ mod imp {
         }
 
         fn zoom(&self, z_factor: f32) {
-            // Save the old scrollbar height & Width
-            let old_ha_upper = self.map_window.hadjustment().upper();
-            let old_va_upper = self.map_window.vadjustment().upper();
-            let old_ha_value = self.map_window.hadjustment().value();
-            let old_va_value = self.map_window.vadjustment().value();
+            if self.renderer.borrow().as_ref().unwrap().zoom(z_factor) {
 
-            let h = self.gl_area.height();
-            let w = self.gl_area.width();
-            self.gl_area.set_width_request((w as f32 * z_factor) as i32);
-            self.gl_area.set_height_request((h as f32 * z_factor) as i32);
-            self.gl_area.queue_draw();
+                // Save the old scrollbar height & Width
+                let old_ha_upper = self.map_window.hadjustment().upper();
+                let old_va_upper = self.map_window.vadjustment().upper();
+                let old_ha_value = self.map_window.hadjustment().value();
+                let old_va_value = self.map_window.vadjustment().value();
 
-            // adjust scroll position
-            self.map_window.hadjustment().set_upper(old_ha_upper * z_factor as f64);
-            self.map_window.vadjustment().set_upper(old_va_upper * z_factor as f64);
-            let ha_upper = self.map_window.hadjustment().upper();
-            let va_upper = self.map_window.vadjustment().upper();
-            let ha_value = (old_ha_value + (ha_upper - old_ha_upper) / 2.0).max(0.0);
-            let va_value = (old_va_value + (va_upper - old_va_upper) / 2.0).max(0.0);
-            self.map_window.hadjustment().set_value(ha_value);
-            self.map_window.vadjustment().set_value(va_value);
+                let h = self.gl_area.height();
+                let w = self.gl_area.width();
+                self.gl_area.set_width_request((w as f32 * z_factor) as i32);
+                self.gl_area.set_height_request((h as f32 * z_factor) as i32);
+                self.gl_area.queue_draw();
 
-            self.renderer.borrow().as_ref().unwrap().zoom(z_factor);
+                // adjust scroll position
+                self.map_window.hadjustment().set_upper(old_ha_upper * z_factor as f64);
+                self.map_window.vadjustment().set_upper(old_va_upper * z_factor as f64);
+                let ha_upper = self.map_window.hadjustment().upper();
+                let va_upper = self.map_window.vadjustment().upper();
+                let ha_value = (old_ha_value + (ha_upper - old_ha_upper) / 2.0).max(0.0);
+                let va_value = (old_va_value + (va_upper - old_va_upper) / 2.0).max(0.0);
+                self.map_window.hadjustment().set_value(ha_value);
+                self.map_window.vadjustment().set_value(va_value);
+            }
+
         }
     }
 
@@ -104,7 +106,7 @@ mod imp {
     impl ObjectSubclass for WorldMapView {
         const NAME: &'static str = "WorldMapView";
         type Type = super::WorldMapView;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -242,15 +244,16 @@ mod imp {
                     view.zoom(z_factor);
                 }));
         }
+
     }
 
     impl WidgetImpl for WorldMapView {}
 
-    impl GLAreaImpl for WorldMapView {}
+    impl BoxImpl for WorldMapView {}
 }
 
 glib::wrapper! {
-    pub struct WorldMapView(ObjectSubclass<imp::WorldMapView>) @extends gtk::Widget;
+    pub struct WorldMapView(ObjectSubclass<imp::WorldMapView>) @extends gtk::Widget, gtk::Box;
 }
 
 impl WorldMapView {

@@ -1,16 +1,16 @@
+use gtk::{self, gio, glib};
+
 mod preference_general;
 mod preference_fglink;
 mod preference_planner;
 mod preference_aircraft;
 
-use gtk::{self, gio, glib, prelude::*, subclass::prelude::*, Window};
-use gtk::prelude::GtkWindowExt;
-
 mod imp {
     use gtk::{CompositeTemplate, glib, TemplateChild};
     use gtk::glib::subclass::InitializingObject;
-    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, ObjectSubclassType, WidgetClassSubclassExt, WindowImpl};
+    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassSubclassExt, WindowImpl};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
+
     use crate::window::preferences::preference_aircraft::PreferenceAircraftPage;
     use crate::window::preferences::preference_fglink::PreferenceFgLinkPage;
     use crate::window::preferences::preference_general::PreferenceGeneralPage;

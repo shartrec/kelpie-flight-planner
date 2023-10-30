@@ -4,7 +4,7 @@
 
 <interface>
 
-  <template class="AirportMapView" parent="GtkWidget">
+  <template class="AirportMapView" parent="GtkBox">
     <property name="layout-manager">
       <object class="GtkBoxLayout">
         <property name="orientation">vertical</property>

@@ -1,11 +1,9 @@
-use glib::Object;
-use gtk::{self, gio, glib, prelude::*, subclass::prelude::*, Window};
-use gtk::prelude::GtkWindowExt;
+use gtk::{self, glib};
 
 mod imp {
     use gtk::{CompositeTemplate, glib};
     use gtk::glib::subclass::InitializingObject;
-    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, ObjectSubclassType, WidgetClassSubclassExt, WindowImpl};
+    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassSubclassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     #[derive(CompositeTemplate, Default)]
@@ -19,7 +17,7 @@ mod imp {
     impl ObjectSubclass for PreferencePlannerPage {
         const NAME: &'static str = "PreferencePlannerPage";
         type Type = super::PreferencePlannerPage;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -35,13 +33,15 @@ mod imp {
 
     impl ObjectImpl for PreferencePlannerPage {}
 
+    impl BoxImpl for PreferencePlannerPage {
+    }
     impl WidgetImpl for PreferencePlannerPage {}
 
 }
 
 glib::wrapper! {
     pub struct PreferencePlannerPage(ObjectSubclass<imp::PreferencePlannerPage>)
-        @extends gtk::Widget;
+        @extends gtk::Box, gtk::Widget;
 }
 
 impl PreferencePlannerPage {

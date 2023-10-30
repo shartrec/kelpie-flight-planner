@@ -1,3 +1,5 @@
+use crate::preference::{UNITS_NM, UNITS_MI, UNITS_KM};
+
 pub struct SpeedFormat {
     conversion_factor: f64,
     speed_unit: String,
@@ -8,13 +10,13 @@ impl SpeedFormat {
         let conversion_factor: f64;
         let speed_unit: &str;
 
-        if unit == "Nm" {
+        if unit == UNITS_NM {
             conversion_factor = 1.0;
             speed_unit = "Kts";
-        } else if unit == "Mi" {
+        } else if unit == UNITS_MI {
             conversion_factor = 6076.0 / 5280.0;
             speed_unit = "Mph";
-        } else if unit == "Km" {
+        } else if unit == UNITS_KM {
             conversion_factor = 1.609 * 6076.0 / 5280.0;
             speed_unit = "Kph";
         } else {

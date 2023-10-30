@@ -4,147 +4,138 @@
 
 <interface>
 
-  <template class="NavaidView" parent="GtkWidget">
-    <property name="layout-manager">
-      <object class="GtkBoxLayout">
-        <property name="orientation">vertical</property>
-      </object>
-    </property>
+  <template class="NavaidView" parent="GtkBox">
+    <property name="orientation">vertical</property>
+    <property name="vexpand">true</property>
+    <property name="hexpand">true</property>
     <child>
-      <object class="GtkBox">
-        <property name="orientation">vertical</property>
+      <object class="GtkScrolledWindow" id="navaid_window">
+        <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
+        <property name="vscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
+        <property name="propagate-natural-width">true</property>
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkScrolledWindow" id="navaid_window">
-            <property name="hscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
-            <property name="vscrollbar-policy">GTK_POLICY_AUTOMATIC</property>
-            <property name="propagate-natural-width">true</property>
+          <object class="GtkTreeView" id="navaid_list">
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
             <child>
-              <object class="GtkTreeView" id="navaid_list">
-                <property name="vexpand">true</property>
-                <property name="hexpand">true</property>
+              <object class="GtkTreeViewColumn">
+                <property name="title" translatable="yes">ID</property>
                 <child>
-                  <object class="GtkTreeViewColumn">
-                    <property name="title" translatable="yes">ID</property>
-                    <child>
-                      <object class="GtkCellRendererText" id="a-id-renderer"/>
-                      <attributes>
-                        <attribute name="text">0</attribute>
-                      </attributes>
-                    </child>
-                  </object>
+                  <object class="GtkCellRendererText" id="a-id-renderer"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
                 </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn">
+                <property name="title" translatable="yes">Name</property>
+                <property name="expand">true</property>
                 <child>
-                  <object class="GtkTreeViewColumn">
-                    <property name="title" translatable="yes">Name</property>
-                    <property name="expand">true</property>
-                    <child>
-                      <object class="GtkCellRendererText" id="a-name-renderer"/>
-                      <attributes>
-                        <attribute name="text">1</attribute>
-                      </attributes>
-                    </child>
-                  </object>
+                  <object class="GtkCellRendererText" id="a-name-renderer"/>
+                  <attributes>
+                    <attribute name="text">1</attribute>
+                  </attributes>
                 </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn">
+                <property name="title" translatable="yes">Latitude</property>
                 <child>
-                  <object class="GtkTreeViewColumn">
-                    <property name="title" translatable="yes">Latitude</property>
-                    <child>
-                      <object class="GtkCellRendererText" id="a-lat-renderer"/>
-                      <attributes>
-                        <attribute name="text">2</attribute>
-                      </attributes>
-                    </child>
-                  </object>
+                  <object class="GtkCellRendererText" id="a-lat-renderer"/>
+                  <attributes>
+                    <attribute name="text">2</attribute>
+                  </attributes>
                 </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn">
+                <property name="title" translatable="yes">Longitude</property>
                 <child>
-                  <object class="GtkTreeViewColumn">
-                    <property name="title" translatable="yes">Longitude</property>
-                    <child>
-                      <object class="GtkCellRendererText" id="a-lon-renderer"/>
-                      <attributes>
-                        <attribute name="text">3</attribute>
-                      </attributes>
-                    </child>
-                  </object>
+                  <object class="GtkCellRendererText" id="a-lon-renderer"/>
+                  <attributes>
+                    <attribute name="text">3</attribute>
+                  </attributes>
                 </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn">
+                <property name="title" translatable="yes">Elevation</property>
                 <child>
-                  <object class="GtkTreeViewColumn">
-                    <property name="title" translatable="yes">Elevation</property>
-                    <child>
-                      <object class="GtkCellRendererText" id="a-elev-renderer">
-                        <property name="xalign">1.0</property>
-                      </object>
-                      <attributes>
-                        <attribute name="text">4</attribute>
-                      </attributes>
-                    </child>
+                  <object class="GtkCellRendererText" id="a-elev-renderer">
+                    <property name="xalign">1.0</property>
                   </object>
+                  <attributes>
+                    <attribute name="text">4</attribute>
+                  </attributes>
                 </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkBox">
+        <property name="orientation">vertical</property>
+        <property name="spacing">10</property>
+        <style>
+          <class name="search-box"/>
+        </style>
+        <child>
+          <object class="GtkBox">
+            <property name="spacing">10</property>
+            <child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">Id or Name</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="navaid_search_name">
+                <property name="max-length">20</property>
+                <property name="height-request">1</property>
               </object>
             </child>
           </object>
         </child>
         <child>
           <object class="GtkBox">
-            <property name="orientation">vertical</property>
+            <property name="vexpand">false</property>
+            <property name="hexpand">true</property>
             <property name="spacing">10</property>
-            <style>
-              <class name="search-box"/>
-            </style>
             <child>
-              <object class="GtkBox">
-                <property name="spacing">10</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="label" translatable="yes">Id or Name</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="navaid_search_name">
-                    <property name="max-length">20</property>
-                    <property name="height-request">1</property>
-                  </object>
-                </child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">or near Lat</property>
               </object>
             </child>
             <child>
-              <object class="GtkBox">
-                <property name="vexpand">false</property>
-                <property name="hexpand">true</property>
-                <property name="spacing">10</property>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="label" translatable="yes">or near Lat</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="navaid_search_lat">
-                    <property name="max-length">10</property>
-                    <property name="height-request">1</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkLabel">
-                    <property name="label" translatable="yes">Long</property>
-                    <property name="can-focus">false</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkEntry" id="navaid_search_long">
-                    <property name="max-length">10</property>
-                    <property name="height-request">1</property>
-                  </object>
-                </child>
-                <child>
-                  <object class="GtkButton" id="navaid_search">
-                    <property name="label">Search</property>
-                    <property name="sensitive">false</property>
-                  </object>
-                </child>
+              <object class="GtkEntry" id="navaid_search_lat">
+                <property name="max-length">10</property>
+                <property name="height-request">1</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="label" translatable="yes">Long</property>
+                <property name="can-focus">false</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkEntry" id="navaid_search_long">
+                <property name="max-length">10</property>
+                <property name="height-request">1</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkButton" id="navaid_search">
+                <property name="label">Search</property>
+                <property name="sensitive">false</property>
               </object>
             </child>
           </object>

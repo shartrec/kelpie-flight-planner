@@ -3,7 +3,7 @@
   -->
 
 <interface>
-  <template class="PreferenceAircraftPage" parent="GtkWidget">
+  <template class="PreferenceAircraftPage" parent="GtkBox">
     <property name="layout-manager">
       <object class="GtkBoxLayout">
         <property name="orientation">horizontal</property>

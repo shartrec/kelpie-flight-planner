@@ -149,7 +149,7 @@ mod imp {
     impl ObjectSubclass for FixView {
         const NAME: &'static str = "FixView";
         type Type = super::FixView;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -264,10 +264,12 @@ mod imp {
     }
 
     impl WidgetImpl for FixView {}
+
+    impl BoxImpl for FixView {}
 }
 
 glib::wrapper! {
-    pub struct FixView(ObjectSubclass<imp::FixView>) @extends gtk::Widget;
+    pub struct FixView(ObjectSubclass<imp::FixView>) @extends gtk::Widget, gtk::Box;
 }
 
 impl FixView {

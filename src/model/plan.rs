@@ -3,6 +3,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use crate::earth::coordinate::Coordinate;
+use crate::earth::geomagnetism::Geomagnetism;
 use crate::model::waypoint::Waypoint;
 use crate::preference::{UNITS, USE_MAGNETIC_HEADINGS};
 use crate::util::distance_format::DistanceFormat;
@@ -219,12 +220,8 @@ impl Plan {
         if let Some(prev) = self.get_previous_location(wp) {
             heading = prev.bearing_to_deg(&wp.get_loc());
             if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
-                todo!();
-                // convert to magnetic: This library returns POSITIVE for East variation, so we SUBTRACT it
-                // Geomagnetism
-                // magnetism = new
-                // Geomagnetism(loc.getLong(), loc.getLat(), loc.getElevation());
-                // heading -= magnetism.getDeclination();
+                let geo = Geomagnetism::new(*wp.get_lat(), *wp.get_long(), None, None);
+                heading -= geo.get_declination()
             }
             if heading < 0.0 {
                 heading += 360.0;

@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
+use crate::preference::{UNITS_NM, UNITS_MI, UNITS_KM};
+
 pub struct DistanceFormat {
     conversion_factor: f64,
     distance_unit: String,
@@ -10,9 +12,9 @@ impl DistanceFormat {
     pub fn new(unit: &str) -> Self {
         Self {
             conversion_factor: match unit {
-                "Nm" => 1.0,
-                "Mi" => 6076.0 / 5280.00,
-                "Km" => 1.609 * 6076.0 / 5280.,
+                UNITS_NM => 1.0,
+                UNITS_MI => 6076.0 / 5280.00,
+                UNITS_KM => 1.609 * 6076.0 / 5280.,
                 _ => 1.0,
             },
             distance_unit: unit.to_string(),

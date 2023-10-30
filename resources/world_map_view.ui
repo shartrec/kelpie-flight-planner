@@ -4,14 +4,7 @@
 
 <interface>
 
-  <template class="WorldMapView">
-    <property name="layout-manager">
-      <object class="GtkBoxLayout">
-        <property name="orientation">vertical</property>
-      </object>
-    </property>
-    <child>
-      <object class="GtkBox">
+  <template class="WorldMapView" parent="GtkBox">
         <property name="orientation">vertical</property>
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
@@ -93,7 +86,5 @@
             </child>
           </object>
         </child>
-      </object>
-    </child>
   </template>
 </interface>

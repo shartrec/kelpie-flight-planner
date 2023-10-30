@@ -156,7 +156,7 @@ mod imp {
     impl ObjectSubclass for NavaidView {
         const NAME: &'static str = "NavaidView";
         type Type = super::NavaidView;
-        type ParentType = gtk::Widget;
+        type ParentType = gtk::Box;
 
         fn class_init(klass: &mut Self::Class) {
             Self::bind_template(klass);
@@ -275,11 +275,13 @@ mod imp {
         }
     }
 
+    impl BoxImpl for NavaidView {}
+
     impl WidgetImpl for NavaidView {}
 }
 
 glib::wrapper! {
-    pub struct NavaidView(ObjectSubclass<imp::NavaidView>) @extends gtk::Widget;
+    pub struct NavaidView(ObjectSubclass<imp::NavaidView>) @extends gtk::Widget, gtk::Box;
 }
 
 impl NavaidView {

@@ -111,14 +111,6 @@ impl Shader {
     }
 }
 
-impl Drop for Shader {
-    fn drop(&mut self) {
-        unsafe {
-            gl::DeleteShader(self.id);
-        }
-    }
-}
-
 fn shader_from_source(
     source: &CStr,
     kind: gl::types::GLenum,
@@ -227,10 +219,14 @@ impl Renderer {
         self.zoom_level.replace(zoom);
     }
 
-    pub fn zoom(&self, z_factor: f32) {
-        let mut zoom = self.zoom_level.get() * z_factor;
-        zoom = zoom.min(12.);
-        self.set_zoom_level(zoom);
+    pub fn zoom(&self, z_factor: f32) -> bool {
+        let zoom = self.zoom_level.get() * z_factor;
+        if zoom < 12. && zoom > 1. {
+            self.set_zoom_level(zoom);
+            true
+        } else {
+            false
+        }
     }
 
     pub fn get_map_centre(&self) -> Coordinate {
@@ -341,6 +337,9 @@ impl Renderer {
     }
 
     pub fn drop_buffers(&self) {
+        unsafe {
+            gl::DeleteProgram(self.shader_program.id);
+        }
         self.sphere_renderer.drop_buffers();
         self.shore_line_renderer.drop_buffers();
         self.airport_renderer.borrow().drop_buffers();
