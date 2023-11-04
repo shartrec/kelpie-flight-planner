@@ -55,6 +55,7 @@ pub const AUTO_PLAN: &str = "Autoplanner.auto_plan";
 pub const USE_MAGNETIC_HEADINGS: &str = "Plan.useMagneticHeadings";
 pub const FGFS_LINK_ENABLED: &str = "FlightGearLink.enabled";
 pub const FGFS_LINK_HOST: &str = "FlightGearLink.host";
+pub const FGFS_LINK_PORT: &str = "FlightGearLink.port";
 
 lazy_static! {
     static ref MANAGER: PreferenceManager = PreferenceManager {

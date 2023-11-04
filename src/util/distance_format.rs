@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
-use crate::preference::{UNITS_NM, UNITS_MI, UNITS_KM};
+use crate::preference::{UNITS_KM, UNITS_MI, UNITS_NM};
 
 pub struct DistanceFormat {
     conversion_factor: f64,

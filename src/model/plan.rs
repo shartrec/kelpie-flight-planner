@@ -19,7 +19,7 @@ pub struct Plan {
     dirty: RefCell<bool>,
     path: RefCell<Option<String>>,
     sectors: RefCell<Vec<RefCell<Sector>>>,
-    aircraft: RefCell<Option<Aircraft>>,
+    aircraft: RefCell<Option<Arc<Aircraft>>>,
     max_altitude: RefCell<i32>,
 }
 
@@ -75,11 +75,11 @@ impl Plan {
         self.sectors.borrow()
     }
 
-    pub fn get_aircraft(&self) -> Ref<Option<Aircraft>> {
+    pub fn get_aircraft(&self) -> Ref<Option<Arc<Aircraft>>> {
         self.aircraft.borrow()
     }
 
-    pub fn set_aircraft(&self, aircraft: &Option<Aircraft>) {
+    pub fn set_aircraft(&self, aircraft: &Option<Arc<Aircraft>>) {
         self.aircraft.replace(aircraft.clone());
     }
 

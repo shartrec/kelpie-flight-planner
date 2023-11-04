@@ -19,21 +19,9 @@
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkTreeView" id="aircraft_list">
+          <object class="GtkListView" id="aircraft_list">
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
-            <child>
-              <object class="GtkTreeViewColumn">
-                <property name="title" translatable="yes">Aircraft</property>
-                <property name="expand">true</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-name-renderer"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
-                </child>
-              </object>
-            </child>
           </object>
         </child>
       </object>

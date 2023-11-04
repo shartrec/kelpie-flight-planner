@@ -18,6 +18,7 @@
     <file compressed="true" preprocess="xml-stripblanks">preference_planner.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">preference_fglink.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">preference_aircraft.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">preference_aircraft_dialog.ui</file>
 
     <!-- Icon images follow -->
     <file>images/generate_plan.gif</file>

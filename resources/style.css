@@ -5,6 +5,10 @@ box.search-box {
   padding: 5px;
 }
 
+box.world-map-box {
+  background-color: rgb(66,48,79);
+}
+
 grid.preference-page {
   border-style: none;
   border-width: 1px;

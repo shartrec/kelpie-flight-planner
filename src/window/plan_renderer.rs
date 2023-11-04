@@ -57,6 +57,7 @@ impl PlanRenderer {
 
     pub fn draw(&self, _area: &GLArea) {
         unsafe {
+            gl::LineWidth(2.0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.plan_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
             gl::VertexAttribPointer(
@@ -68,8 +69,7 @@ impl PlanRenderer {
                 std::ptr::null(), // offset of the first component
             );
 
-            let point_size = 4.0;
-            gl::PointSize(point_size);
+            gl::PointSize(4.0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.plan_index_buffer);
             gl::BindVertexArray(self.plan_index_buffer);
             gl::DrawElements(
@@ -80,6 +80,8 @@ impl PlanRenderer {
             );
 
             gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints - 1) as GLint);
+            gl::PointSize(1.0);
+            gl::LineWidth(1.0);
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0); //Bind GL_ARRAY_BUFFER to our handle
             gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader

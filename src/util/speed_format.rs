@@ -1,4 +1,4 @@
-use crate::preference::{UNITS_NM, UNITS_MI, UNITS_KM};
+use crate::preference::{UNITS_KM, UNITS_MI, UNITS_NM};
 
 pub struct SpeedFormat {
     conversion_factor: f64,

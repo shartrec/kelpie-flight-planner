@@ -3,10 +3,10 @@ use std::fs;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
 
-use gtk::glib::Sender;
 use lazy_static::lazy_static;
 use log::info;
 
+use crate::event;
 use crate::event::Event;
 use crate::model::airport::Airport;
 use crate::model::fix::Fix;
@@ -119,27 +119,27 @@ pub fn get_earth_model() -> &'static Earth {
     &EARTH
 }
 
-pub fn initialise(transmitter: Sender<Event>) {
+pub fn initialise() {
     let timer = std::time::Instant::now();
     let pref = crate::preference::manager();
     match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
-        Some(p) => load_airports(&p, &transmitter),
+        Some(p) => load_airports(&p),
         None => (),
     }
     info!("Airports loaded in {:?}", timer.elapsed());
     match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
-        Some(p) => load_navaids(&p, &transmitter),
+        Some(p) => load_navaids(&p),
         None => (),
     }
     info!("Navaids loaded in {:?}", timer.elapsed());
     match pref.get::<String>(crate::preference::FIXES_PATH) {
-        Some(p) => load_fixes(&p, &transmitter),
+        Some(p) => load_fixes(&p),
         None => (),
     }
     info!("Fixes loaded in {:?}", timer.elapsed());
 }
 
-fn load_airports(path: &str, transmitter: &Sender<Event>) {
+fn load_airports(path: &str) {
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
     let file = fs::File::open(path);
@@ -156,10 +156,10 @@ fn load_airports(path: &str, transmitter: &Sender<Event>) {
     }
     get_earth_model().set_airports(airports);
     get_earth_model().set_runway_offsets(runway_offsets);
-    let _ = transmitter.send(Event::AirportsLoaded);
+    event::manager().notify_listeners(Event::AirportsLoaded);
 }
 
-fn load_navaids(path: &str, transmitter: &Sender<Event>) {
+fn load_navaids(path: &str) {
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
@@ -176,10 +176,10 @@ fn load_navaids(path: &str, transmitter: &Sender<Event>) {
     }
     get_earth_model().set_navaids(navaids);
     get_earth_model().set_ils(ils);
-    let _ = transmitter.send(Event::NavaidsLoaded);
+    event::manager().notify_listeners(Event::NavaidsLoaded);
 }
 
-fn load_fixes(path: &str, transmitter: &Sender<Event>) {
+fn load_fixes(path: &str) {
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
     match file {
@@ -194,5 +194,5 @@ fn load_fixes(path: &str, transmitter: &Sender<Event>) {
         Err(_) => panic!("Unable to open test fix data"),
     }
     get_earth_model().set_fixes(fixes);
-    let _ = transmitter.send(Event::FixesLoaded);
+    event::manager().notify_listeners(Event::FixesLoaded);
 }

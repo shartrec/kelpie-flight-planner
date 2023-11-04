@@ -219,16 +219,6 @@ impl Renderer {
         self.zoom_level.replace(zoom);
     }
 
-    pub fn zoom(&self, z_factor: f32) -> bool {
-        let zoom = self.zoom_level.get() * z_factor;
-        if zoom < 12. && zoom > 1. {
-            self.set_zoom_level(zoom);
-            true
-        } else {
-            false
-        }
-    }
-
     pub fn get_map_centre(&self) -> Coordinate {
         self.map_centre.borrow().clone()
     }
@@ -261,7 +251,7 @@ impl Renderer {
         } else {
             [1.0, width as f32 / height as f32]
         };
-        let zoom = self.zoom_level.get().clone();
+        let zoom = self.zoom_level.get();
 
         let true_centre = self.increment_to_centre();
         let trans = self.build_matrix(aspect_ratio);

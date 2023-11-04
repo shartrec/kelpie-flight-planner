@@ -1,9 +1,14 @@
-use gtk::{self, gio, glib};
+use std::path::Path;
+
+use gtk::{self, Button, Entry, FileDialog, FileFilter, gio, glib, Window};
+use gtk::gio::{Cancellable, File, ListStore};
+use gtk::prelude::{Cast, EditableExt, FileExt, StaticType, WidgetExt};
 
 mod preference_general;
 mod preference_fglink;
 mod preference_planner;
 mod preference_aircraft;
+mod preference_edit_aircraft;
 
 mod imp {
     use gtk::{CompositeTemplate, glib, TemplateChild};
@@ -66,5 +71,58 @@ glib::wrapper! {
 impl PreferenceDialog {
     pub fn new() -> Self {
         glib::Object::new::<PreferenceDialog>()
+    }
+}
+
+
+pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder: bool) {
+
+    let text = field.text();
+    let path = Path::new(&text);
+    let f = File::for_path(path);
+
+
+
+    let dialog = FileDialog::new();
+    dialog.set_initial_file(Some(&f));
+    dialog.set_modal(true);
+    dialog.set_title(title);
+    if !is_folder {
+        let store = ListStore::new(FileFilter::static_type());
+        let filter = FileFilter::new();
+        filter.add_suffix("dat");
+        store.append(&filter);
+        let filter = FileFilter::new();
+        filter.add_pattern("*");
+        store.append(&filter);
+        dialog.set_filters(&store);
+    }
+    let win = match &button.root() {
+        Some(r) => {
+            let window = r.clone().downcast::<Window>().unwrap().clone();
+            Some(window)
+        }
+        None => None,
+    };
+
+    let closure = move | result: Result<File, _>| {
+        match result {
+            Ok(file) => {
+                if let Some(path) = file.path() {
+                    let s = path.to_str();
+                    {
+                        if let Some(s) = s {
+                            field.set_text(s);
+                        };
+                    }
+                }
+            }
+            _ => (),
+        }
+    };
+    if is_folder {
+        dialog.select_folder(win.as_ref(), Some(&Cancellable::default()), closure);
+    } else {
+        dialog.open(win.as_ref(), Some(&Cancellable::default()), closure);
     }
 }

@@ -4,9 +4,10 @@
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use app_dirs::*;
+use gtk::{gio, glib, subclass::prelude::*};
 use lazy_static::lazy_static;
 use log::{error, warn};
 use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
@@ -17,9 +18,7 @@ use crate::preference::APP_INFO;
 
 // This is where all the planes live.
 lazy_static! {
-    static ref HANGAR: Hangar = Hangar {
-        aircraft: load_hangar(),
-    };
+    static ref HANGAR: Hangar = Hangar::new();
 }
 
 static DEFAULT_AICRAFT: &str = "---
@@ -48,34 +47,107 @@ static DEFAULT_AICRAFT: &str = "---
   sink-rate: 500
   sink-speed: 100
 ";
-
-pub struct Hangar {
-    aircraft: Arc<RwLock<Vec<Aircraft>>>,
+// To use the Hangar as a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
+// Public part of the Model type.
+glib::wrapper! {
+    pub struct Hangar(ObjectSubclass<imp::Hangar>) @implements gio::ListModel;
 }
 
 impl Hangar {
-    pub fn get_default_aircraft(&self) -> Option<Aircraft> {
-        let aircraft = self
-            .aircraft
-            .read()
-            .expect("Unable to get a lock on the aircraft hangar");
-        for a in aircraft.iter() {
-            if *a.is_default() {
-                return Some(a.clone());
-            }
-        }
-        None
-    }
-
-    pub fn get_all(&self) -> Arc<RwLock<Vec<Aircraft>>> {
-        self.aircraft.clone()
-    }
-
-    pub fn get_hangar() -> &'static Hangar {
-        &HANGAR
+    pub fn new() -> Hangar {
+        glib::Object::new()
     }
 }
 
+impl Default for Hangar{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+mod imp {
+    use std::sync::{Arc, RwLock};
+
+    use gtk::{gio, glib, StringObject};
+    use gtk::prelude::StaticType;
+    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectSubclass};
+
+    use crate::hangar::hangar::load_hangar;
+    use crate::model::aircraft::Aircraft;
+
+    #[derive(Default)]
+    pub struct Hangar {
+        pub aircraft: Arc<RwLock<Vec<Arc<Aircraft>>>>,
+    }
+
+    impl Hangar {
+        pub fn get_default_aircraft(&self) -> Option<Arc<Aircraft>> {
+            let aircraft = self
+                .aircraft
+                .read()
+                .expect("Unable to get a lock on the aircraft hangar");
+            for a in aircraft.iter() {
+                if *a.is_default() {
+                    return Some(a.clone());
+                }
+            }
+            None
+        }
+
+        pub fn get_all(&self) -> Arc<RwLock<Vec<Arc<Aircraft>>>> {
+            self.aircraft.clone()
+        }
+
+        pub fn get(&self, name: &str) -> Option<Arc<Aircraft>> {
+            for aircraft in self.aircraft.read().expect("Can't get aiscraft lock").iter() {
+                if aircraft.get_name() == name {
+                    return Some(aircraft.clone());
+                }
+            }
+            None
+        }
+
+    }
+
+    /// Basic declaration of our type for the GObject type system
+    #[glib::object_subclass]
+    impl ObjectSubclass for Hangar {
+        const NAME: &'static str = "Hangar";
+        type Type = super::Hangar;
+        type Interfaces = (gio::ListModel,);
+    }
+
+    impl ObjectImpl for Hangar {
+        fn constructed(&self) {
+            let mut aircraft = self.aircraft.write().expect("Can't get lock on aircraft");
+            aircraft.append(&mut load_hangar());
+        }
+    }
+
+    impl ListModelImpl for Hangar {
+        fn item_type(&self) -> glib::Type {
+            StringObject::static_type()
+        }
+
+        fn n_items(&self) -> u32 {
+            let aircraft = self
+                .aircraft
+                .read()
+                .expect("Unable to get a lock on the aircraft hangar");
+            aircraft.len() as u32
+        }
+
+        fn item(&self, position: u32) -> Option<glib::Object> {
+            let aircraft = self
+                .aircraft
+                .read()
+                .expect("Unable to get a lock on the aircraft hangar");
+            let name = aircraft[position as usize].get_name();
+            Some(glib::Object::from(StringObject::new(name)))
+        }
+    }
+
+}
 const KEY_NAME: &'static str = "name";
 const KEY_CRUISE_SPEED: &'static str = "cruise-speed";
 const KEY_CRUISE_ALTITUDE: &'static str = "cruise-altitude";
@@ -85,8 +157,12 @@ const KEY_SINK_SPEED: &'static str = "sink-speed";
 const KEY_SINK_RATE: &'static str = "sink-rate";
 const KEY_IS_DEFAULT: &'static str = "is-default";
 
+pub fn get_hangar() -> &'static Hangar {
+    &HANGAR
+}
+
 // Load aircraft from yaml file
-pub fn load_hangar() -> Arc<RwLock<Vec<Aircraft>>> {
+pub fn load_hangar() -> Vec<Arc<Aircraft>> {
     let path = get_hangar_path();
 
     let mut contents = String::new();
@@ -99,7 +175,7 @@ pub fn load_hangar() -> Arc<RwLock<Vec<Aircraft>>> {
             contents = DEFAULT_AICRAFT.to_string();
         }
     }
-    let mut hangar = Vec::new();
+    let mut hangar: Vec<Arc<Aircraft>> = Vec::new();
 
     let docs = YamlLoader::load_from_str(&contents).unwrap();
     for doc in docs {
@@ -116,12 +192,12 @@ pub fn load_hangar() -> Arc<RwLock<Vec<Aircraft>>> {
                         get_i32(map, KEY_SINK_RATE),
                         get_bool(map, KEY_IS_DEFAULT),
                     );
-                    hangar.push(aircraft);
+                    hangar.push(Arc::new(aircraft));
                 }
             }
         }
     }
-    Arc::new(RwLock::new(hangar))
+    hangar
 }
 
 fn get_bool(map: &Hash, key: &str) -> bool {
@@ -150,7 +226,7 @@ fn get_string(map: &Hash, key: &str) -> String {
 pub fn save_hangar() {
     let path = get_hangar_path();
 
-    let hangar = Hangar::get_hangar().get_all();
+    let hangar = get_hangar().imp().get_all();
     let all = hangar.read().expect("Unable to get read lock on hangar");
 
     let mut vec = Vec::new();

@@ -6,16 +6,19 @@ use gtk::{ListStore, TreeView};
 
 mod imp {
     use std::boxed::Box;
+    use std::cell::RefCell;
+    use std::ops::Deref;
 
     use glib::subclass::InitializingObject;
     use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::clone;
+    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use log::error;
 
-    use crate::earth;
+    use crate::{earth, event};
     use crate::earth::coordinate::Coordinate;
+    use crate::event::Event;
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
     use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
@@ -38,13 +41,28 @@ mod imp {
         pub airport_search_long: TemplateChild<Entry>,
         #[template_child]
         pub airport_search: TemplateChild<Button>,
+
+        popover: RefCell<Option<PopoverMenu>>,
+        my_listener_id: RefCell<usize>,
+
     }
 
     impl AirportView {
-        pub fn initialise(&self) -> () {}
+        pub fn initialise(&self) -> () {
+            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let index = event::manager().register_listener(tx);
+            rx.attach(None,clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
+                match ev {
+                    Event::AirportsLoaded => {
+                        view.airport_search.set_sensitive(true);
+                    },
+                    _ => (),
+                }
+                glib::source::Continue(true)
+            }));
+            // self.my_listener.replace(Some(rx));
+            self.my_listener_id.replace(index);
 
-        pub fn airports_loaded(&self) {
-            self.airport_search.set_sensitive(true);
         }
 
         pub fn search(&self) {
@@ -171,24 +189,29 @@ mod imp {
                 }),
             );
 
+            // build popover menu
+            let builder = Builder::from_resource("/com/shartrec/kelpie_planner/airport_popover.ui");
+            let menu = builder.object::<MenuModel>("airports-menu");
+            match menu {
+                Some(popover) => {
+                    let popover = PopoverMenu::builder()
+                        .menu_model(&popover)
+                        .build();
+                    popover.set_parent(&self.airport_window.get());
+                    let _ = self.popover.replace(Some(popover));
+                }
+                None => error!(" Not a popover"),
+            }
+
+
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
             gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
-
-                let builder = Builder::from_resource("/com/shartrec/kelpie_planner/airport_popover.ui");
-                let menu = builder.object::<MenuModel>("airports-menu");
-                match menu {
-                    Some(popover) => {
-                        let popover = PopoverMenu::builder()
-                            .menu_model(&popover)
-                            .pointing_to(&Rectangle::new(x as i32, y as i32, 1, 1))
-                            .build();
-                        popover.set_parent(&view.airport_window.get());
+                if let Some(popover) = view.popover.borrow().as_ref() {
+                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
                         popover.popup();
-                    }
-                    None => error!(" Not a popover"),
-                }
+                };
             }));
             self.airport_window.add_controller(gesture);
 
@@ -276,6 +299,13 @@ mod imp {
                }
             }));
             actions.add_action(&action);
+        }
+
+        fn dispose(&self) {
+            if let Some(popover) = self.popover.borrow().as_ref() {
+                popover.unparent();
+            };
+            event::manager().unregister_listener(self.my_listener_id.borrow().deref());
         }
     }
 

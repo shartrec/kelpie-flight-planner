@@ -5,16 +5,20 @@ use gtk::{self, Adjustment, CompositeTemplate, glib};
 use gtk::prelude::AdjustmentExt;
 
 mod imp {
-    use std::cell::RefCell;
+    use std::cell::{Cell, RefCell};
+    use std::cmp::Ordering::Equal;
     use std::sync::{Arc, RwLock};
 
-    use gtk::{Button, GLArea, glib, Inhibit, ScrolledWindow, ToggleButton};
+    use gtk::{Button, EventControllerMotion, GLArea, glib, Inhibit, ScrolledWindow, ToggleButton};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::*;
     use gtk::subclass::prelude::*;
 
+    use crate::earth;
     use crate::earth::coordinate::Coordinate;
+    use crate::model::airport::{Airport, AirportType};
+    use crate::model::location::Location;
     use crate::model::plan::Plan;
     use crate::window::render_gl::Renderer;
 
@@ -39,10 +43,14 @@ mod imp {
         renderer: RefCell<Option<Renderer>>,
         drag_start: RefCell<Option<[f64; 2]>>,
         drag_last: RefCell<Option<[f64; 2]>>,
+        zoom_level: Cell<f32>,
+
     }
 
     impl WorldMapView {
-        pub fn initialise(&self) -> () {}
+        pub fn initialise(&self) -> () {
+            self.zoom_level.replace(1.0);
+        }
 
         pub fn airports_loaded(&self) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
@@ -74,7 +82,10 @@ mod imp {
         }
 
         fn zoom(&self, z_factor: f32) {
-            if self.renderer.borrow().as_ref().unwrap().zoom(z_factor) {
+            let zoom = self.zoom_level.get() * z_factor;
+            if zoom < 12. && zoom > 1. {
+                self.zoom_level.replace(zoom);
+                self.renderer.borrow().as_ref().unwrap().set_zoom_level(zoom);
 
                 // Save the old scrollbar height & Width
                 let old_ha_upper = self.map_window.hadjustment().upper();
@@ -98,7 +109,40 @@ mod imp {
                 self.map_window.hadjustment().set_value(ha_value);
                 self.map_window.vadjustment().set_value(va_value);
             }
+        }
 
+        fn find_location_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
+            let zoom = self.zoom_level.get();
+            let range = 2.0 / zoom;
+
+            // Collect any visible airport in a 2-degree radius and then sort them, returning the nearest
+            if self.btn_show_airports.is_active() {
+                let rwl = if zoom > 8.0 {
+                    0
+                } else if zoom > 3.0 {
+                    5000
+                } else {
+                    10000
+                };
+                let inc_heli = zoom > 6.0;
+
+                let airports = earth::get_earth_model().get_airports().read().unwrap();
+                let airport = airports.iter().filter(|a| {
+                    (f64::abs(pos.get_latitude() - a.get_lat()) < range as f64)
+                        && (f64::abs(pos.get_longitude() - a.get_long()) < range as f64)
+                        && (a.get_max_runway_length() > rwl || (inc_heli && a.get_type().unwrap() != AirportType::HELIPORT))
+                })
+                    .min_by(|a, b| {
+                        a.get_loc().distance_to(&pos)
+                            .partial_cmp(&b.get_loc().distance_to(&pos))
+                            .unwrap_or(Equal)
+                    });
+                if let Some(airport) = airport {
+                    return Some(airport.clone());
+                }
+            }
+
+            None
         }
     }
 
@@ -128,6 +172,10 @@ mod imp {
             self.gl_area.connect_realize(clone!(@weak self as window => move |area| {
                 if let Some(context) = area.context() {
                     context.make_current();
+                    if let Some(error) = area.error() {
+                        println!("{:?}", error);
+                    }
+
                     let renderer = Renderer::new();
                     renderer.set_zoom_level(1.0);
                     window.renderer.replace(Some(renderer));
@@ -226,6 +274,24 @@ mod imp {
             }));
             self.gl_area.add_controller(gesture);
 
+            let ec = EventControllerMotion::new();
+            ec.connect_motion(clone!(@weak self as view => move | gesture, x, y | {
+                match view.unproject(x,y) {
+                    Ok(pos) => {
+                        if let Some(airport) = view.find_location_for_point(pos) {
+                            gesture.widget().set_tooltip_text(Some(airport.get_name()));
+                        } else {
+                            gesture.widget().set_tooltip_text(None);
+                        }
+                    }
+                    Err(_) => {
+                        gesture.widget().set_tooltip_text(None);
+                    }
+                };
+            }));
+            self.gl_area.add_controller(ec);
+
+
             self.btn_show_airports.connect_clicked(clone!(@weak self as view => move |_| {
                     view.gl_area.queue_draw();
                 }));
@@ -244,7 +310,6 @@ mod imp {
                     view.zoom(z_factor);
                 }));
         }
-
     }
 
     impl WidgetImpl for WorldMapView {}

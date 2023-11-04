@@ -15,13 +15,13 @@ mod imp {
         SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView,
     };
     use gtk::gdk::Rectangle;
-    use gtk::gio::{ListStore, MenuModel, SimpleAction, SimpleActionGroup};
+    use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use log::error;
 
     use crate::{earth, event};
     use crate::event::Event;
-    use crate::hangar::hangar::Hangar;
+    use crate::hangar::hangar::get_hangar;
     use crate::model::airport::Airport;
     use crate::model::location::Location;
     use crate::model::plan::Plan;
@@ -52,6 +52,7 @@ mod imp {
 
         pub plan: Arc<RwLock<Plan>>,
 
+        popover: RefCell<Option<PopoverMenu>>,
         my_listener_id: RefCell<usize>,
     }
 
@@ -71,7 +72,7 @@ mod imp {
         pub(crate) fn new_plan(&self) {
             let guard = self.plan.write().expect("Should always have a plan");
             guard.add_sector(None, None);
-            guard.set_aircraft(&Hangar::get_hangar().get_default_aircraft());
+            guard.set_aircraft(&get_hangar().imp().get_default_aircraft());
         }
 
         pub fn get_plan(&self) -> Arc<RwLock<Plan>> {
@@ -475,12 +476,6 @@ mod imp {
         }
 
         fn setup_aircraft_combo(&self) {
-            let store = ListStore::new(StringObject::static_type());
-            if let Ok(aircraft) = Hangar::get_hangar().get_all().read() {
-                for a in aircraft.iter() {
-                    store.append(&StringObject::new(&a.get_name()));
-                }
-            }
 
             let factory = SignalListItemFactory::new();
             factory.connect_setup(move |_, list_item| {
@@ -491,7 +486,7 @@ mod imp {
                     .set_child(Some(&label));
             });
 
-            let selection_model = SingleSelection::new(Some(store));
+            let selection_model = SingleSelection::new(Some(get_hangar().clone()));
             self.aircraft_combo.set_factory(Some(&factory));
             self.aircraft_combo.set_model(Some(&selection_model));
 
@@ -545,24 +540,28 @@ mod imp {
                     view.refresh(None);
                 }));
 
+            let builder = Builder::from_resource("/com/shartrec/kelpie_planner/plan_popover.ui");
+            let menu = builder.object::<MenuModel>("plan-menu");
+            match menu {
+                Some(popover) => {
+                    let popover = PopoverMenu::builder()
+                        .menu_model(&popover)
+                        .build();
+                    popover.set_parent(&self.plan_window.get());
+                    let _ = self.popover.replace(Some(popover));
+                }
+                None => error!(" Not a popover"),
+            }
+
+
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
             gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
-
-                let builder = Builder::from_resource("/com/shartrec/kelpie_planner/plan_popover.ui");
-                let menu = builder.object::<MenuModel>("plan-menu");
-                match menu {
-                    Some(popover) => {
-                        let popover = PopoverMenu::builder()
-                            .menu_model(&popover)
-                            .pointing_to(&Rectangle::new(x as i32, y as i32, 1, 1))
-                            .build();
-                        popover.set_parent(&view.plan_window.get());
+                if let Some(popover) = view.popover.borrow().as_ref() {
+                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
                         popover.popup();
-                    }
-                    None => error!(" Not a popover"),
-                }
+                };
             }));
             self.plan_window.add_controller(gesture);
 
@@ -628,6 +627,9 @@ mod imp {
 
         fn dispose(&self) {
             event::manager().unregister_listener(self.my_listener_id.borrow().deref());
+            if let Some(popover) = self.popover.borrow().as_ref() {
+                popover.unparent();
+            };
         }
     }
 

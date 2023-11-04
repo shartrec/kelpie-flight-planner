@@ -72,9 +72,7 @@ impl Planner<'_> {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
                 } else {
-                    if self.add_gps_waypoints {
-                        self.add_waypoints(&from, &to, &mut plan);
-                    }
+                    self.add_waypoints(&from, &to, &mut plan);
                 }
             }
         }
@@ -327,21 +325,17 @@ impl Planner<'_> {
             self.max_leg_distance * 1.25
         };
 
-        let prev_wp = from.clone();
-        if plan.len() > 0 {
-            let mut finished = false;
-            while !finished {
-                for i in 0..plan.len() {
-                    let wp = &plan[i];
-                    let leg_length = prev_wp.get_loc().distance_to(&wp.get_loc());
-                    if leg_length >= max_leg_interval {
-                        // The following changes the structure of the plan so we need to get out and start over
-                        self.add_waypoints_to_leg(&prev_wp, to, plan, i, leg_length);
-                        break;
-                    }
-                    finished = true;
-                }
+        // Make a copy of the waypoints in the old plan
+        let mut prev_wp = from.clone();
+        let mut extra: usize = 0;
+        let orig_len = plan.len();
+        for i in 0..orig_len {
+            let wp = plan[i+extra].clone();
+            let leg_length = prev_wp.get_loc().distance_to(&wp.get_loc());
+            if leg_length >= max_leg_interval {
+                extra += self.add_waypoints_to_leg(&prev_wp, &wp, plan, i+extra, leg_length);
             }
+            prev_wp = wp;
         }
         // Try for the final leg
         let leg_length = prev_wp.get_loc().distance_to(&to.get_loc());
@@ -357,18 +351,19 @@ impl Planner<'_> {
         plan: &mut Vec<Waypoint>,
         i: usize,
         leg_length: f64,
-    ) {
+    ) -> usize {
         let additional_points = leg_length as f64 / self.max_leg_distance as f64;
-        let extra_points = if self.add_waypoint_bias && (additional_points.fract() > 0.2) {
+        let new_leg_count = if self.add_waypoint_bias && (additional_points.fract() > 0.2) {
             additional_points.ceil()
         } else {
             additional_points.floor()
-        } as i32;
-        let interval = leg_length / extra_points as f64;
+        } as usize;
+        let interval = leg_length / new_leg_count as f64;
 
         let mut last_wp = prev_wp.clone();
 
-        for a_pos in 0..extra_points - 1 {
+        let extra_points = new_leg_count - 1;
+        for a_pos in 0..extra_points {
             let heading = last_wp.get_loc().bearing_to_deg(&to.get_loc());
             let x_loc = last_wp.get_loc().coordinate_at(interval, heading);
             let wp = Waypoint::Simple {
@@ -380,6 +375,7 @@ impl Planner<'_> {
             plan.insert(i + a_pos as usize, wp);
             last_wp = save_wp;
         }
+        extra_points
     }
 
     fn get_navaids_near(

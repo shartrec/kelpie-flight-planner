@@ -4,11 +4,12 @@ mod imp {
     use gtk::{Button, CheckButton, CompositeTemplate, Entry, glib, TemplateChild};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
-    use gtk::prelude::{CheckButtonExt, EditableExt};
+    use gtk::prelude::{ButtonExt, CheckButtonExt, EditableExt};
     use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassSubclassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::preference::*;
+    use crate::window::preferences::process_file_browse;
 
     #[derive(CompositeTemplate, Default)]
     #[template(resource = "/com/shartrec/kelpie_planner/preference_general.ui")]
@@ -88,26 +89,50 @@ mod imp {
 
             self.initialise();
 
-            self.btn_use_dft_paths.connect_toggled(clone!(@weak self as view => move |_| {
-                    crate::preference::manager().put(FGFS_USE_DFT_PATH, view.btn_use_mag_hdg.is_active());
-            }));
-            self.btn_use_mag_hdg.connect_toggled(clone!(@weak self as view => move |_| {
-                    crate::preference::manager().put(USE_MAGNETIC_HEADINGS, view.btn_use_mag_hdg.is_active());
-            }));
-            self.btn_dist_nm.connect_toggled(clone!(@weak self as view => move |_| {
-                if view.btn_dist_nm.is_active() {
+            self.btn_use_dft_paths.connect_toggled(| button| {
+                    crate::preference::manager().put(FGFS_USE_DFT_PATH, button.is_active());
+            });
+            self.btn_use_mag_hdg.connect_toggled(|button| {
+                    crate::preference::manager().put(USE_MAGNETIC_HEADINGS, button.is_active());
+            });
+            self.btn_dist_nm.connect_toggled(| button | {
+                if button.is_active() {
                     crate::preference::manager().put(UNITS, UNITS_NM);
                 }
-            }));
-            self.btn_dist_mi.connect_toggled(clone!(@weak self as view => move |_| {
-                if view.btn_dist_mi.is_active() {
+            });
+            self.btn_dist_mi.connect_toggled(| button | {
+                if button.is_active() {
                     crate::preference::manager().put(UNITS, UNITS_MI);
                 }
-            }));
-            self.btn_dist_km.connect_toggled(clone!(@weak self as view => move |_| {
-                if view.btn_dist_km.is_active() {
+            });
+            self.btn_dist_km.connect_toggled( | button| {
+                if button.is_active() {
                     crate::preference::manager().put(UNITS, UNITS_KM);
                 }
+            });
+            self.fg_path.connect_changed(| editable | {
+                crate::preference::manager().put(FGFS_DIR, editable.text());
+            });
+            self.apt_path.connect_changed(| editable | {
+                crate::preference::manager().put(AIRPORTS_PATH, editable.text());
+            });
+            self.nav_path.connect_changed(| editable | {
+                crate::preference::manager().put(NAVAIDS_PATH, editable.text());
+            });
+            self.fix_path.connect_changed(| editable | {
+                crate::preference::manager().put(FIXES_PATH, editable.text());
+            });
+            self.fg_browse.connect_clicked(clone!(@weak self as view => move | button | {
+                process_file_browse(view.fg_path.clone(), button.clone(), "Flightgear data directory", true);
+            }));
+            self.apt_browse.connect_clicked(clone!(@weak self as view => move | button | {
+                process_file_browse(view.apt_path.clone(), button.clone(), "Location for Flightgear airport data", false);
+            }));
+            self.nav_browse.connect_clicked(clone!(@weak self as view => move | button | {
+                process_file_browse(view.nav_path.clone(), button.clone(), "Location for Flightgear navaid data", false);
+            }));
+            self.fix_browse.connect_clicked(clone!(@weak self as view => move | button | {
+                process_file_browse(view.fix_path.clone(), button.clone(), "Location for Flightgear fix data", false);
             }));
         }
     }
