@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek};
+use std::io::{BufRead, BufReader, Error};
 use std::sync::{Arc, RwLock};
+use flate2::read::GzDecoder;
 
-use log::info;
+use log::{error, warn};
 
 use crate::earth::coordinate::Coordinate;
 use crate::model::airport::{Airport, AirportType, LayoutNode, Runway, Taxiway};
@@ -20,7 +21,7 @@ impl AirportParserFG850 {
         &mut self,
         airports: &mut Vec<Arc<Airport>>,
         runway_offsets: &mut HashMap<String, usize>,
-        reader: &mut BufReader<File>,
+        reader: &mut BufReader<GzDecoder<File>>,
     ) -> Result<(), String> {
         // Skip header rows
         let mut offset: usize = 0;
@@ -28,20 +29,15 @@ impl AirportParserFG850 {
         let mut buf = String::new();
         for _i in 0..3 {
             buf.clear();
-            offset = reader.stream_position().unwrap() as usize;
-            match reader.read_line(&mut buf) {
+            // rather than read a line we need to read the non UTF-8 lines and decode ourselves
+            match Self::read_ascii_line(reader, &mut buf) {
                 Ok(0) => return Ok(()), // EOF
-                Ok(_bytes) => (),
+                Ok(_bytes) => {
+                    offset += 1;
+                }
                 Err(msg) => {
-                    match msg.kind() {
-                        std::io::ErrorKind::InvalidData => (),
-                        _ => {
-                            let err_msg = format!("{}", msg).to_string();
-                            return Err(err_msg);
-                        }
-                    }
-                    info!("{}", msg.kind());
-                    () // We ignore the error on the first two rows - NOT UTF-8
+                    error!("{}", msg.to_string());
+                    ()
                 }
             }
         }
@@ -86,13 +82,14 @@ impl AirportParserFG850 {
                     let mut buf2 = String::new();
 
                     buf2.clear();
-                    offset = reader.stream_position().unwrap() as usize;
-                    match reader.read_line(&mut buf2) {
+                    match Self::read_ascii_line(reader, &mut buf2) {
                         Ok(0) => return Ok(()), // EOF
-                        Ok(_bytes) => (),
+                        Ok(_bytes) => {
+                            offset += 1;
+                        }
                         Err(msg) => {
-                            let err_msg = format!("{}", msg).to_string();
-                            return Err(err_msg);
+                            error!("{}", msg.to_string());
+                            ()
                         }
                     }
                     loop {
@@ -159,13 +156,14 @@ impl AirportParserFG850 {
                                 }
                             }
                             buf2.clear();
-                            offset = reader.stream_position().unwrap() as usize;
-                            match reader.read_line(&mut buf2) {
-                                Ok(0) => return Ok(()), // EOF
-                                Ok(_bytes) => (),
+                            match Self::read_ascii_line(reader, &mut buf2) {
+                                Ok(0) => break, // EOF
+                                Ok(_bytes) => {
+                                    offset += 1;
+                                }
                                 Err(msg) => {
-                                    let err_msg = format!("{}", msg).to_string();
-                                    return Err(err_msg);
+                                    error!("{}", msg.to_string());
+                                    ()
                                 }
                             }
                         }
@@ -186,27 +184,41 @@ impl AirportParserFG850 {
                     buf.push_str(buf2.as_str());
                 } else {
                     buf.clear();
-                    match reader.read_line(&mut buf) {
+                    match Self::read_ascii_line(reader, &mut buf) {
                         Ok(0) => return Ok(()), // EOF
                         Ok(_bytes) => (),
                         Err(msg) => {
-                            let err_msg = format!("{}", msg).to_string();
-                            return Err(err_msg);
+                            error!("{}", msg.to_string());
+                            ()
                         }
                     }
                 }
             } else {
                 buf.clear();
-                offset = reader.stream_position().unwrap() as usize;
-                match reader.read_line(&mut buf) {
+                match Self::read_ascii_line(reader, &mut buf) {
                     Ok(0) => return Ok(()), // EOF
-                    Ok(_bytes) => (),
+                    Ok(_bytes) => {
+                        offset += 1;
+                    }
                     Err(msg) => {
-                        let err_msg = format!("{}", msg).to_string();
-                        return Err(err_msg);
+                        error!("{}", msg.to_string());
+                        ()
                     }
                 }
             }
+        }
+    }
+
+    fn read_ascii_line(reader: &mut BufReader<GzDecoder<File>>, buf: &mut String) -> Result<usize, Error> {
+        let mut byte_buf = Vec::<u8>::new();
+        match reader.read_until(b'\n', &mut byte_buf) {
+            Ok(0) => return Ok(0), // EOF
+            Ok(bytes) => unsafe {
+                let ccc = std::str::from_utf8_unchecked(&byte_buf);
+                buf.push_str(ccc);
+                Ok(bytes)
+            }
+            Err(e) => Err(e)
         }
     }
 
@@ -214,7 +226,7 @@ impl AirportParserFG850 {
         &self,
         airport: &Airport,
         runway_offsets: &Arc<RwLock<HashMap<String, usize>>>,
-        rdr_airport: &mut BufReader<File>,
+        reader: &mut BufReader<GzDecoder<File>>,
     ) -> Result<(), String> {
         let mut tokenizer: std::str::SplitWhitespace;
         let mut buf = String::new();
@@ -223,15 +235,30 @@ impl AirportParserFG850 {
             .read()
             .expect("Couldn't get lock on runway offsets");
         let offset = offsets.get(airport.get_id());
+
         match offset {
-            Some(o) => rdr_airport.seek_relative(*o as i64),
-            _ => Ok(()),
+            Some(o) => {
+                // We want to quickly read upto the airport we want
+                let mut byte_buf = Vec::<u8>::new();
+                for _ in 0..o - 2 {
+                    buf.clear();
+                    match reader.read_until(b'\n', &mut byte_buf) {
+                        Ok(0) => return Ok(()), // EOF
+                        Ok(_bytes) => (),
+                        Err(_) => {
+                            warn!("Seeking for airport runways failed");
+                            return Ok(())
+                        }
+                    }
+                }
+            },
+            _ => (),
         }
-        .expect("Seek on airport failed");
+
 
         loop {
             buf.clear();
-            match rdr_airport.read_line(&mut buf) {
+            match Self::read_ascii_line(reader, &mut buf)  {
                 Ok(0) => return Ok(()), // EOF
                 Ok(_) => (),
                 Err(msg) => {
@@ -249,7 +276,7 @@ impl AirportParserFG850 {
                         tokenizer.next();
                         let id = tokenizer.next().unwrap_or("");
                         if airport.get_id() == id {
-                            self.load_runways_for_airport(&airport, rdr_airport)?;
+                            self.load_runways_for_airport(&airport, reader)?;
                             return Ok(());
                         }
                     }
@@ -261,13 +288,13 @@ impl AirportParserFG850 {
     fn load_runways_for_airport(
         &self,
         airport: &Airport,
-        rdr_airport: &mut BufReader<File>,
+        reader: &mut BufReader<GzDecoder<File>>,
     ) -> Result<(), String> {
         let mut tokenizer;
         let mut match_found = true;
 
         let mut buf = String::new();
-        match rdr_airport.read_line(&mut buf) {
+        match Self::read_ascii_line(reader, &mut buf)  {
             Ok(0) => return Ok(()), // EOF
             Ok(_bytes) => (),
             Err(msg) => {
@@ -331,7 +358,7 @@ impl AirportParserFG850 {
 
                 airport.add_runway(runway);
                 buf.clear();
-                match rdr_airport.read_line(&mut buf) {
+                match Self::read_ascii_line(reader, &mut buf)  {
                     Ok(_bytes) => (),
                     Err(msg) => {
                         let err_msg = format!("{}", msg).to_string();
@@ -345,7 +372,7 @@ impl AirportParserFG850 {
 
                 loop {
                     buf.clear();
-                    match rdr_airport.read_line(&mut buf) {
+                    match Self::read_ascii_line(reader, &mut buf)  {
                         Ok(_bytes) => (),
                         Err(msg) => {
                             let err_msg = format!("{}", msg).to_string();
@@ -394,7 +421,7 @@ impl AirportParserFG850 {
                 match_found = false;
             } else {
                 buf.clear();
-                match rdr_airport.read_line(&mut buf) {
+                match Self::read_ascii_line(reader, &mut buf)  {
                     Ok(_bytes) => (),
                     Err(msg) => {
                         let err_msg = format!("{}", msg).to_string();
@@ -421,6 +448,7 @@ mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
+    use flate2::read;
 
     use crate::model::airport::Airport;
     use crate::model::location::Location;
@@ -433,13 +461,14 @@ mod tests {
         let mut runway_offsets: HashMap<String, usize> = HashMap::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test/airports.dat");
+        path.push("resources/test/airports.dat.gz");
         let file = fs::File::open(path);
 
         match file {
-            Ok(f) => {
+            Ok(input) => {
                 let mut parser = AirportParserFG850::new();
-                let mut reader = BufReader::new(f);
+                let decoder = read::GzDecoder::new(input);
+                let mut reader = BufReader::new(decoder);
                 match parser.load_airports(&mut airports, &mut runway_offsets, &mut reader) {
                     Ok(()) => (),
                     Err(msg) => panic! {"{}", msg},
@@ -448,7 +477,7 @@ mod tests {
             Err(_e) => panic!("Unable to open test airport data"),
         }
 
-        assert_eq!(airports.len(), 22);
+        assert_eq!(airports.len(), 23);
         assert_eq!(airports[21].get_id(), "RKSG");
         assert_eq!(airports[21].get_max_runway_length(), 8217);
     }

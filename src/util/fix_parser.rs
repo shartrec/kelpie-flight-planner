@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
+use flate2::read::GzDecoder;
 
 use log::info;
 
@@ -12,7 +13,7 @@ impl FixParserFG {
     pub fn load_fixes(
         &mut self,
         fixes: &mut Vec<Arc<Fix>>,
-        reader: &mut BufReader<File>,
+        reader: &mut BufReader<GzDecoder<File>>,
     ) -> Result<(), String> {
         let mut buf = String::new();
 
@@ -72,6 +73,7 @@ impl FixParserFG {
 mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
     use std::sync::Arc;
+    use flate2::read;
 
     use crate::model::fix::Fix;
     use crate::model::location::Location;
@@ -87,9 +89,10 @@ mod tests {
         let file = fs::File::open(path);
 
         match file {
-            Ok(f) => {
+            Ok(input) => {
                 let mut parser = FixParserFG {};
-                let mut reader = BufReader::new(f);
+                let decoder = read::GzDecoder::new(input);
+                let mut reader = BufReader::new(decoder);
                 match parser.load_fixes(&mut fixs, &mut reader) {
                     Ok(()) => (),
                     Err(msg) => panic! {"{}", msg},

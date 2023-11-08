@@ -1,6 +1,7 @@
 use std::{fmt, fs};
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
+use flate2::read;
 
 use log::{error, warn};
 
@@ -149,9 +150,10 @@ impl Airport {
             }
         };
         match file {
-            Ok(f) => {
+            Ok(input) => {
                 let parser = AirportParserFG850::new();
-                let mut reader = BufReader::new(f);
+                let decoder = read::GzDecoder::new(input);
+                let mut reader = BufReader::new(decoder);
                 let result = parser.load_runways(self, runway_offsets, &mut reader);
                 match result {
                     Err(e) => warn!("{}", e),

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
+use flate2::read::GzDecoder;
 
 use log::info;
 
@@ -14,7 +15,7 @@ impl NavaidParserFG {
         &mut self,
         navaids: &mut Vec<Arc<Navaid>>,
         ils: &mut HashMap<String, Vec<(String, f64)>>,
-        reader: &mut BufReader<File>,
+        reader: &mut BufReader<GzDecoder<File>>,
     ) -> Result<(), String> {
         let mut buf = String::new();
 
@@ -133,6 +134,7 @@ mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
+    use flate2::read;
 
     use crate::model::location::Location;
     use crate::model::navaid::{Navaid, NavaidType};
@@ -149,9 +151,10 @@ mod tests {
         let file = fs::File::open(path);
 
         match file {
-            Ok(f) => {
+            Ok(input) => {
                 let mut parser = NavaidParserFG {};
-                let mut reader = BufReader::new(f);
+                let decoder = read::GzDecoder::new(input);
+                let mut reader = BufReader::new(decoder);
                 match parser.load_navaids(&mut navaids, &mut ils, &mut reader) {
                     Ok(()) => (),
                     Err(msg) => panic! {"{}", msg},
