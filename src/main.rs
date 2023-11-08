@@ -141,8 +141,8 @@ fn build_ui(app: &Application) {
     // Create new window and present it
     let window = Window::new(app);
     connect_actions(app, &window);
-    window.imp().new_plan();
     window.present();
+    window.imp().new_plan();
 }
 
 fn build_and_open(app: &Application, files: &[File], _name: &str) {
@@ -150,6 +150,6 @@ fn build_and_open(app: &Application, files: &[File], _name: &str) {
     // todo Load plan into window.
     let window = Window::new(app);
     connect_actions(app, &window);
-    window.imp().load_plan_from_files(files);
     window.present();
+    window.imp().load_plan_from_files(files);
 }

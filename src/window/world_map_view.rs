@@ -9,7 +9,7 @@ mod imp {
     use std::cmp::Ordering::Equal;
     use std::sync::{Arc, RwLock};
 
-    use gtk::{Button, EventControllerMotion, GLArea, glib, Inhibit, ScrolledWindow, ToggleButton};
+    use gtk::{Button, GLArea, glib, Inhibit, ScrolledWindow, ToggleButton};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::*;
@@ -168,6 +168,8 @@ mod imp {
             self.initialise();
 
             self.gl_area.set_has_depth_buffer(true);
+            self.gl_area.set_has_tooltip(true);
+
 
             self.gl_area.connect_realize(clone!(@weak self as window => move |area| {
                 if let Some(context) = area.context() {
@@ -212,6 +214,7 @@ mod imp {
             }));
             self.gl_area.add_controller(gesture);
 
+            // Set Gesture to drag the map about
             let gesture = gtk::GestureDrag::new();
             gesture.set_button(1);
             gesture.connect_drag_begin(clone!(@weak self as view => move | _gesture, x, y| {
@@ -274,23 +277,23 @@ mod imp {
             }));
             self.gl_area.add_controller(gesture);
 
-            let ec = EventControllerMotion::new();
-            ec.connect_motion(clone!(@weak self as view => move | gesture, x, y | {
-                match view.unproject(x,y) {
+            self.gl_area.connect_query_tooltip(clone!(@weak self as view => @default-return false, move | _glarea, x, y, _kbm, tooltip | {
+                match view.unproject(x as f64,y as f64) {
                     Ok(pos) => {
                         if let Some(airport) = view.find_location_for_point(pos) {
-                            gesture.widget().set_tooltip_text(Some(airport.get_name()));
+                            tooltip.set_text(Some(airport.get_name()));
+                                true
                         } else {
-                            gesture.widget().set_tooltip_text(None);
+                            tooltip.set_text(None);
+                            false
                         }
                     }
                     Err(_) => {
-                        gesture.widget().set_tooltip_text(None);
+                        tooltip.set_text(None);
+                        false
                     }
-                };
+                }
             }));
-            self.gl_area.add_controller(ec);
-
 
             self.btn_show_airports.connect_clicked(clone!(@weak self as view => move |_| {
                     view.gl_area.queue_draw();

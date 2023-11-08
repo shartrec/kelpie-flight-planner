@@ -64,6 +64,7 @@ impl Aircraft {
     pub fn is_default(&self) -> &bool {
         &self.is_default
     }
+
 }
 
 impl Default for Aircraft {

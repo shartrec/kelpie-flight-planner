@@ -178,7 +178,7 @@
             </object>
           </child>
           <child>
-            <object class="GtkButton" id="Ok">
+            <object class="GtkButton" id="btn_ok">
               <property name="label">Ok</property>
             </object>
           </child>

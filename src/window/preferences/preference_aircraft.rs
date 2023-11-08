@@ -1,11 +1,13 @@
 use gtk::{self, glib};
 
 mod imp {
+    use std::cell::RefCell;
+    use std::ops::Deref;
     use gtk::{Button, CompositeTemplate, glib, Label, ListItem, ListView, SignalListItemFactory, SingleSelection, StringObject, TemplateChild, Window};
     use gtk::glib::{Cast, CastNone, clone};
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::{GtkWindowExt, SelectionModelExt};
-    use gtk::subclass::prelude::{BoxImpl, ListModelImpl, ObjectImpl, ObjectSubclass, ObjectSubclassIsExt, WidgetClassSubclassExt};
+    use gtk::subclass::prelude::{BoxImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt, WidgetClassSubclassExt};
     use gtk::subclass::widget::{CompositeTemplate, CompositeTemplateInitializingExt, WidgetImpl};
     use gtk::traits::{ButtonExt, WidgetExt};
 
@@ -25,6 +27,8 @@ mod imp {
         pub aircraft_delete: TemplateChild<Button>,
         #[template_child]
         pub aircraft_default: TemplateChild<Button>,
+
+        aircraft_dialog: RefCell<Option<AircraftDialog>>,
     }
 
     impl PreferenceAircraftPage {
@@ -84,7 +88,13 @@ mod imp {
 
     impl ObjectImpl for PreferenceAircraftPage {
         fn constructed(&self) {
+            self.parent_constructed();
             self.setup_aircraft_list();
+
+            let pref_dialog = AircraftDialog::new();
+            pref_dialog.set_modal(true);
+            pref_dialog.set_hide_on_close(true);
+            self.aircraft_dialog.replace(Some(pref_dialog));
 
             self.aircraft_list.model().unwrap().connect_selection_changed(clone!(@weak self as view => move |model, _position, _count| {
                 let selection = model.selection();
@@ -100,23 +110,69 @@ mod imp {
             }));
 
             self.aircraft_edit.connect_clicked(clone!(@weak self as view => move | button | {
-                if let Some(r) =  &button.root() {
-                    let our_window = r.clone().downcast::<Window>().unwrap();
-                    let pref_dialog = AircraftDialog::new();
-                    pref_dialog.set_transient_for(Some(&our_window));
+                let dialog_ref = view.aircraft_dialog.borrow();
+                if let Some(dialog) = dialog_ref.deref() {
                     // Get the selectiion
                     if let Some(selection) = view.aircraft_list.model() {
                         let s = selection.selection();
                         if !s.is_empty() {
                             let index = s.nth(0);
-                            if let Some(name) = get_hangar().imp().item(index) {
-                                pref_dialog.imp().set_aircraft(name.downcast::<StringObject>().expect("Ouch").string().to_string());
+                            if let Some(aircraft) = get_hangar().imp().aircraft_at(index) {
+                                dialog.imp().set_aircraft(Some(aircraft.get_name().to_string()));
                             }
                         }
                     }
-                    pref_dialog.show();
+                    let r = button.root().unwrap();
+                    let our_window = r.clone().downcast::<Window>().unwrap();
+                    dialog.set_transient_for(Some(&our_window));
+                    dialog.present();
                 }
             }));
+
+            self.aircraft_add.connect_clicked(clone!(@weak self as view => move | button | {
+                let dialog_ref = view.aircraft_dialog.borrow();
+                if let Some(dialog) = dialog_ref.deref() {
+                    // Get the selectiion
+                    dialog.imp().set_aircraft(None);
+                    let r = button.root().unwrap();
+                    let our_window = r.clone().downcast::<Window>().unwrap();
+                    dialog.set_transient_for(Some(&our_window));
+                    dialog.present();
+                }
+            }));
+
+            self.aircraft_delete.connect_clicked(clone!(@weak self as view => move | _button | {
+                    // Get the selectiion
+                    if let Some(selection) = view.aircraft_list.model() {
+                        let s = selection.selection();
+                        if !s.is_empty() {
+                            let index = s.nth(0);
+                            if let Some(aircraft) = get_hangar().imp().aircraft_at(index) {
+                                get_hangar().imp().remove(aircraft.get_name());
+                            }
+                        }
+                    }
+            }));
+
+            self.aircraft_default.connect_clicked(clone!(@weak self as view => move | _button | {
+                    // Get the selectiion
+                    if let Some(selection) = view.aircraft_list.model() {
+                        let s = selection.selection();
+                        if !s.is_empty() {
+                            let index = s.nth(0);
+                            if let Some(aircraft) = get_hangar().imp().aircraft_at(index) {
+                                get_hangar().imp().set_default(aircraft.get_name());
+                            }
+                        }
+                    }
+            }));
+
+        }
+
+        fn dispose(&self) {
+            if let Some(dialog) = self.aircraft_dialog.borrow().deref() {
+                dialog.unparent();
+            }
         }
     }
 

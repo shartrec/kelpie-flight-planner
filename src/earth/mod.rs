@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
+use flate2::read;
 
 use lazy_static::lazy_static;
 use log::info;
@@ -144,9 +145,11 @@ fn load_airports(path: &str) {
     let mut runway_offsets = HashMap::with_capacity(25000);
     let file = fs::File::open(path);
     match file {
-        Ok(f) => {
+        Ok(input) => {
+            let decoder = read::GzDecoder::new(input);
+            let mut reader = BufReader::new(decoder);
+
             let mut parser = AirportParserFG850::new();
-            let mut reader = BufReader::new(f);
             match parser.load_airports(&mut airports, &mut runway_offsets, &mut reader) {
                 Ok(()) => (),
                 Err(msg) => panic! {"{}", msg},
@@ -164,9 +167,10 @@ fn load_navaids(path: &str) {
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
     match file {
-        Ok(f) => {
+        Ok(input) => {
             let mut parser = NavaidParserFG {};
-            let mut reader = BufReader::new(f);
+            let decoder = read::GzDecoder::new(input);
+            let mut reader = BufReader::new(decoder);
             match parser.load_navaids(&mut navaids, &mut ils, &mut reader) {
                 Ok(()) => (),
                 Err(msg) => panic! {"{}", msg},
@@ -183,9 +187,10 @@ fn load_fixes(path: &str) {
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
     match file {
-        Ok(f) => {
+        Ok(input) => {
             let mut parser = FixParserFG {};
-            let mut reader = BufReader::new(f);
+            let decoder = read::GzDecoder::new(input);
+            let mut reader = BufReader::new(decoder);
             match parser.load_fixes(&mut fixes, &mut reader) {
                 Ok(()) => (),
                 Err(msg) => panic! {"{}", msg},

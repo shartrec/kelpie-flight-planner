@@ -66,18 +66,19 @@ impl Default for Hangar{
 }
 
 mod imp {
+    use std::collections::BTreeMap;
     use std::sync::{Arc, RwLock};
 
     use gtk::{gio, glib, StringObject};
-    use gtk::prelude::StaticType;
-    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectSubclass};
+    use gtk::prelude::{ListModelExt, StaticType};
+    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassExt};
 
-    use crate::hangar::hangar::load_hangar;
+    use crate::hangar::hangar::{load_hangar, save_hangar};
     use crate::model::aircraft::Aircraft;
 
     #[derive(Default)]
     pub struct Hangar {
-        pub aircraft: Arc<RwLock<Vec<Arc<Aircraft>>>>,
+        pub aircraft: Arc<RwLock<BTreeMap<String, Arc<Aircraft>>>>,
     }
 
     impl Hangar {
@@ -86,7 +87,7 @@ mod imp {
                 .aircraft
                 .read()
                 .expect("Unable to get a lock on the aircraft hangar");
-            for a in aircraft.iter() {
+            for (_name, a) in aircraft.iter() {
                 if *a.is_default() {
                     return Some(a.clone());
                 }
@@ -94,17 +95,108 @@ mod imp {
             None
         }
 
-        pub fn get_all(&self) -> Arc<RwLock<Vec<Arc<Aircraft>>>> {
-            self.aircraft.clone()
+        pub fn get_all(&self) -> &Arc<RwLock<BTreeMap<String, Arc<Aircraft>>>> {
+            &self.aircraft
         }
 
         pub fn get(&self, name: &str) -> Option<Arc<Aircraft>> {
-            for aircraft in self.aircraft.read().expect("Can't get aiscraft lock").iter() {
-                if aircraft.get_name() == name {
-                    return Some(aircraft.clone());
+            match self.aircraft.read().expect("Can't get aiscraft lock").get(name) {
+                Some(a) => {
+                    Some(a.clone())
+                }
+                None => None
+            }
+        }
+
+        pub fn put(&self, aircraft: Aircraft) {
+            let name = aircraft.get_name().to_string().clone();
+            let old_p = self.get_item_position(&name);
+            let mut binding = self.aircraft.write().expect("Can't get aiscraft lock");
+            binding.insert(aircraft.get_name().to_string(), Arc::new(aircraft));
+            drop(binding);
+            self.save();
+            if let Some(pos) = old_p {
+                self.obj().items_changed(pos,0,0);
+            } else if let Some(pos) = self.get_item_position(&name) {
+                self.obj().items_changed(pos,0,1);
+            }
+        }
+
+        pub fn remove(&self, name: &str) {
+            let p = self.get_item_position(name);
+            let mut binding = self.aircraft.write().expect("Can't get aiscraft lock");
+            binding.remove(name);
+            drop(binding);
+            self.save();
+            if let Some(pos) = p {
+                self.obj().items_changed(pos,1,0);
+            }
+        }
+
+        pub fn set_default(&self, name: &str) {
+            // We need to unset the old default and set the new default.
+            if let Some(a) = self.get_default_aircraft() {
+                let prior_default = Aircraft::new(
+                    a.get_name().to_string(),
+                    a.get_cruise_speed().clone(),
+                    a.get_cruise_altitude().clone(),
+                    a.get_climb_speed().clone(),
+                    a.get_climb_rate().clone(),
+                    a.get_sink_speed().clone(),
+                    a.get_sink_rate().clone(),
+                    false,
+                );
+                self.put(prior_default);
+                if let Some(pos) = self.get_item_position(a.get_name()) {
+                    self.obj().items_changed(pos,1,1);
                 }
             }
+            if let Some(a) = self.get(name) {
+                let new_default = Aircraft::new(
+                    a.get_name().to_string(),
+                    a.get_cruise_speed().clone(),
+                    a.get_cruise_altitude().clone(),
+                    a.get_climb_speed().clone(),
+                    a.get_climb_rate().clone(),
+                    a.get_sink_speed().clone(),
+                    a.get_sink_rate().clone(),
+                    true,
+                );
+                self.put(new_default);
+                if let Some(pos) = self.get_item_position(name) {
+                    self.obj().items_changed(pos,1,1);
+                }
+            }
+        }
+
+        pub fn save(&self) {
+            save_hangar();
+        }
+
+        fn get_item_position(&self, plane: &str) -> Option<u32> {
+            let aircraft = self
+                .aircraft
+                .read()
+                .expect("Unable to get a lock on the aircraft hangar");
+            let mut i: u32 = 0;
+            for name in aircraft.keys() {
+                if name == plane {
+                    return Some(i)
+                }
+                i += 1;
+            }
             None
+        }
+
+        pub fn aircraft_at(&self, position: u32) -> Option<Arc<Aircraft>> {
+            let aircraft = self
+                .aircraft
+                .read()
+                .expect("Unable to get a lock on the aircraft hangar");
+            match aircraft.values().nth(position as usize) {
+                Some(a) => Some(a.clone()),
+                None => None
+            }
         }
 
     }
@@ -119,8 +211,12 @@ mod imp {
 
     impl ObjectImpl for Hangar {
         fn constructed(&self) {
+            self.parent_constructed();
+
             let mut aircraft = self.aircraft.write().expect("Can't get lock on aircraft");
-            aircraft.append(&mut load_hangar());
+            for a in load_hangar() {
+                aircraft.insert(a.get_name().to_string(), a);
+            }
         }
     }
 
@@ -138,12 +234,18 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            let aircraft = self
-                .aircraft
-                .read()
-                .expect("Unable to get a lock on the aircraft hangar");
-            let name = aircraft[position as usize].get_name();
-            Some(glib::Object::from(StringObject::new(name)))
+            match self.aircraft_at(position) {
+                Some(plane) => {
+                    let mut name_string = plane.get_name().to_string();
+                    // Get the aircraft and see if it is the default
+                    if *plane.is_default() {
+                        name_string.push_str("*");
+                    }
+                    Some(glib::Object::from(StringObject::new(name_string.as_str())))
+                }
+
+                None => None
+            }
         }
     }
 
@@ -232,7 +334,7 @@ pub fn save_hangar() {
     let mut vec = Vec::new();
 
     // if let Some(mut vec) = vec.as_vec() {
-    for a in all.iter() {
+    for (_name, a) in all.iter() {
         let mut inner_map = Hash::new();
         put_string(&mut inner_map, KEY_NAME, a.get_name());
         put_i32(&mut inner_map, KEY_CRUISE_SPEED, a.get_cruise_speed());

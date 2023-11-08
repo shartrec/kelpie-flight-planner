@@ -20,7 +20,7 @@ pub struct Plan {
     path: RefCell<Option<String>>,
     sectors: RefCell<Vec<RefCell<Sector>>>,
     aircraft: RefCell<Option<Arc<Aircraft>>>,
-    max_altitude: RefCell<i32>,
+    max_altitude: RefCell<Option<i32>>,
 }
 
 impl Plan {
@@ -30,7 +30,7 @@ impl Plan {
             path: RefCell::new(None),
             sectors: RefCell::new(Vec::with_capacity(2)),
             aircraft: RefCell::new(None),
-            max_altitude: RefCell::new(0i32),
+            max_altitude: RefCell::new(None),
         }
     }
 
@@ -83,21 +83,21 @@ impl Plan {
         self.aircraft.replace(aircraft.clone());
     }
 
-    pub fn set_max_altitude(&self, max_altitude: i32) {
-        self.max_altitude.replace(max_altitude.clone());
+    pub fn set_max_altitude(&self, max_altitude: Option<i32>) {
+        self.max_altitude.replace(max_altitude);
     }
 
-    pub fn get_max_altitude(&self) -> i32 {
+    pub fn get_max_altitude(&self) -> Option<i32> {
         self.max_altitude.borrow().clone()
     }
 
     pub fn get_plan_altitude(&self) -> i32 {
         match self.max_altitude.borrow().clone() {
-            0 => match self.aircraft.borrow().deref() {
+            Some(a) => a,
+            None => match self.aircraft.borrow().deref() {
                 Some(a) => a.get_cruise_altitude().clone(),
                 None => 0,
             },
-            max => max,
         }
     }
 

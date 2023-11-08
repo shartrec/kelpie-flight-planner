@@ -10,10 +10,7 @@ mod imp {
     use std::sync::{Arc, RwLock};
 
     use glib::subclass::InitializingObject;
-    use gtk::{
-        Builder, Button, DropDown, Label, ListItem, PopoverMenu, ScrolledWindow,
-        SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView,
-    };
+    use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
@@ -49,6 +46,10 @@ mod imp {
         pub btn_move_up: TemplateChild<Button>,
         #[template_child]
         pub btn_move_down: TemplateChild<Button>,
+        #[template_child]
+        pub btn_max_alt: TemplateChild<CheckButton>,
+        #[template_child]
+        pub max_alt: TemplateChild<Entry>,
 
         pub plan: Arc<RwLock<Plan>>,
 
@@ -211,7 +212,7 @@ mod imp {
         pub fn initialise(&self) -> () {
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
             let index = event::manager().register_listener(tx);
-            rx.attach(None,clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
+            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
                 match ev {
                     Event::PreferencesChanged => {
                         view.refresh(None);
@@ -222,7 +223,6 @@ mod imp {
             }));
             // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
-
         }
 
         pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {
@@ -476,7 +476,6 @@ mod imp {
         }
 
         fn setup_aircraft_combo(&self) {
-
             let factory = SignalListItemFactory::new();
             factory.connect_setup(move |_, list_item| {
                 let label = Label::new(None);
@@ -489,6 +488,15 @@ mod imp {
             let selection_model = SingleSelection::new(Some(get_hangar().clone()));
             self.aircraft_combo.set_factory(Some(&factory));
             self.aircraft_combo.set_model(Some(&selection_model));
+
+            self.aircraft_combo.connect_selected_notify(clone!(@weak self as window => move | combo | {
+                // Get the selectiion
+                let index = combo.selected();
+                if let Some(aircraft) = get_hangar().imp().aircraft_at(index) {
+                    let plan = window.plan.write().expect("Could not get plan lock");
+                    plan.set_aircraft(&Some(aircraft));
+                }
+            }));
 
             factory.connect_bind(move |_, list_item| {
                 // Get `IntegerObject` from `ListItem`
@@ -511,6 +519,16 @@ mod imp {
                 label.set_label(&string_object.string().to_string());
                 label.set_xalign(0.0);
             });
+
+            // set the selection initially to the default
+            let hangar = get_hangar().imp();
+            let mut i = 0;
+            for (k, a) in hangar.get_all().read().expect("ould not get hangar lock").iter() {
+                if *a.is_default() {
+                    self.aircraft_combo.set_selected(i);
+                }
+                i += 1;
+            }
         }
     }
 
@@ -579,6 +597,40 @@ mod imp {
                 .connect_clicked(clone!(@weak self as view => move |_| {
                     view.move_selected_down();
                 }));
+
+            self.btn_max_alt
+                .connect_toggled(clone!(@weak self as view => move | button | {
+                    let plan = view.plan.read().expect("Can't get lock on plan");
+                    if button.is_active() {
+                        match view.max_alt.text().parse::<i32>() {
+                            Ok(n) => {
+                                plan.set_max_altitude(Some(n));
+                            }
+                            _ => {
+                                plan.set_max_altitude(None);
+                            }
+                        }
+                        view.max_alt.set_sensitive(true);
+                    } else {
+                        plan.set_max_altitude(None);
+                        view.max_alt.set_sensitive(false);
+                    }
+                }));
+
+            self.max_alt.connect_changed(clone!(@weak self as view => move| editable | {
+                if view.btn_max_alt.is_active() {
+                    let plan = view.plan.read().expect("Can't get lock on plan");
+                    match editable.text().parse::<i32>() {
+                        Ok(n) => {
+                            plan.set_max_altitude(Some(n));
+                        }
+                        _ => {
+                            plan.set_max_altitude(None);
+                        }
+                    }
+                }
+            }));
+
 
             self.plan_tree.connect_cursor_changed(clone!(@weak self as view => move |tree_view| {
             let plan = view.plan.read().expect("Can't get lock on plan");

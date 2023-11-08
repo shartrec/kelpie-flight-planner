@@ -73,7 +73,7 @@
           </object>
         </child>
         <child>
-          <object class="GtkCheckButton" id="set_max_alt">
+          <object class="GtkCheckButton" id="btn_max_alt">
             <property name="label">Set max altitude</property>
           </object>
         </child>
