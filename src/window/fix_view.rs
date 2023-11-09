@@ -153,11 +153,13 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
+            self.fix_search_name
+                .set_text("");
             self.fix_search_lat
                 .set_text(&coordinate.get_latitude_as_string());
             self.fix_search_long
                 .set_text(&coordinate.get_longitude_as_string());
-            self.fix_search.activate();
+            self.fix_search.emit_clicked();
         }
     }
 
@@ -274,8 +276,19 @@ mod imp {
                     }
                }
             }));
-
             actions.add_action(&action);
+
+            let action = SimpleAction::new("find_fixes_near", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                if let Some((model, iter)) = view.fix_list.selection().selected() {
+                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                    if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                        view.search_near(&fix.get_loc());
+                    }
+               }
+            }));
+            actions.add_action(&action);
+
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 view.add_selected_to_plan();

@@ -120,7 +120,7 @@ mod imp {
                 String::static_type(),
                 String::static_type(),
                 String::static_type(),
-                i32::static_type(),
+                String::static_type(),
             ]);
             for navaid in searh_result {
                 store.insert_with_values(
@@ -130,7 +130,7 @@ mod imp {
                         (1, &navaid.get_name()),
                         (2, &navaid.get_lat_as_string()),
                         (3, &navaid.get_long_as_string()),
-                        (4, &(navaid.get_elevation())),
+                        (4, &format!("{:>6.2}", &(navaid.get_freq()))),
                     ],
                 );
             }
@@ -160,11 +160,13 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
+            self.navaid_search_name
+                .set_text("");
             self.navaid_search_lat
                 .set_text(&coordinate.get_latitude_as_string());
             self.navaid_search_long
                 .set_text(&coordinate.get_longitude_as_string());
-            self.navaid_search.activate();
+            self.navaid_search.emit_clicked();
         }
     }
 
@@ -263,6 +265,18 @@ mod imp {
                             },
                             None => (),
                         }
+                    }
+               }
+            }));
+            actions.add_action(&action);
+
+            let action = SimpleAction::new("find_navaids_near", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                if let Some((model, iter)) = view.navaid_list.selection().selected() {
+                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                    let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
+                    if let Some(navaid) = earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str()) {
+                        view.search_near(&navaid.get_loc());
                     }
                }
             }));

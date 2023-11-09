@@ -22,6 +22,8 @@ epoxy = "0.1.0"
 gl = "0.14.0"
 nalgebra-glm = "0.18.0"
 flate2 = "1.0.28"
+xmltree = "0.10.3"
+xml-rs = "0.8.19"
 
 [build-dependencies]
 glib-build-tools = "0.17.10"

@@ -117,9 +117,9 @@ fn connect_actions(app: &Application, window: &Window) {
     app.add_action(&action);
 
     let action = SimpleAction::new("save", None);
-    action.connect_activate(move |_action, _parameter| {
-        todo!("Save clicked");
-    });
+    action.connect_activate(clone!(@weak window => move  |_action, _parameter| {
+        let _ = &window.imp().save_plan();
+    }));
     app.add_action(&action);
 
     let action = SimpleAction::new("quit", None);

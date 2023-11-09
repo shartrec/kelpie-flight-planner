@@ -66,9 +66,9 @@
             </child>
             <child>
               <object class="GtkTreeViewColumn">
-                <property name="title" translatable="yes">Elevation</property>
+                <property name="title" translatable="yes">Frequency</property>
                 <child>
-                  <object class="GtkCellRendererText" id="a-elev-renderer">
+                  <object class="GtkCellRendererText" id="a-freq-renderer">
                     <property name="xalign">1.0</property>
                   </object>
                   <attributes>
@@ -116,7 +116,7 @@
             </child>
             <child>
               <object class="GtkEntry" id="navaid_search_lat">
-                <property name="max-length">10</property>
+                <property name="max-length">12</property>
                 <property name="height-request">1</property>
               </object>
             </child>
@@ -128,7 +128,7 @@
             </child>
             <child>
               <object class="GtkEntry" id="navaid_search_long">
-                <property name="max-length">10</property>
+                <property name="max-length">12</property>
                 <property name="height-request">1</property>
               </object>
             </child>

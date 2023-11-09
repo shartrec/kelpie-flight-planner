@@ -95,7 +95,7 @@
             </child>
             <child>
               <object class="GtkEntry" id="fix_search_lat">
-                <property name="max-length">10</property>
+                <property name="max-length">12</property>
                 <property name="height-request">1</property>
               </object>
             </child>
@@ -107,7 +107,7 @@
             </child>
             <child>
               <object class="GtkEntry" id="fix_search_long">
-                <property name="max-length">10</property>
+                <property name="max-length">12</property>
                 <property name="height-request">1</property>
               </object>
             </child>

@@ -40,6 +40,17 @@ pub enum Waypoint {
 }
 
 impl Waypoint {
+    pub(crate) fn get_type_name(&self) -> &str {
+        match self {
+            Waypoint::Simple { .. } => "GPS",
+            Waypoint::Toc { .. } => "TOC",
+            Waypoint::Bod { .. } => "BOD",
+            Waypoint::Navaid { .. } => "NAVAID",
+            Waypoint::Fix { .. } => "FIX",
+            Waypoint::Airport { .. } => "AIRPORT",
+        }
+    }
+
     pub(crate) fn get_id(&self) -> &str {
         match self {
             Waypoint::Simple { .. } => "GPS",
@@ -101,7 +112,10 @@ impl Waypoint {
     }
 
     pub fn get_freq(&self) -> Option<&f64> {
-        None
+        match self {
+            Waypoint::Navaid { navaid, .. } => Some(navaid.get_freq()),
+            _  => None,
+        }
     }
     pub(crate) fn get_lat_as_string(&self) -> String {
         self.get_loc().get_latitude_as_string()

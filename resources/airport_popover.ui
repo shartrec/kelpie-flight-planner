@@ -6,19 +6,23 @@
   <menu id="airports-menu">
     <section>
       <item>
-        <attribute name="label">Add to plan</attribute>
+        <attribute name="label" translatable="yes">Add to plan</attribute>
         <attribute name="action">airport.add_to_plan</attribute>
       </item>
       <item>
-        <attribute name="label">View airport</attribute>
+        <attribute name="label" translatable="yes">View airport</attribute>
         <attribute name="action">airport.view</attribute>
       </item>
       <item>
-        <attribute name="label">Find navaids near</attribute>
+        <attribute name="label" translatable="yes">Find airports near</attribute>
+        <attribute name="action">airport.find_airports_near</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Find navaids near</attribute>
         <attribute name="action">airport.find_navaids_near</attribute>
       </item>
       <item>
-        <attribute name="label">Find fixes near</attribute>
+        <attribute name="label" translatable="yes">Find fixes near</attribute>
         <attribute name="action">airport.find_fixes_near</attribute>
       </item>
     </section>

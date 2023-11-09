@@ -51,6 +51,13 @@ impl Window {
         self.plan_stack.set_visible_child(&view);
     }
 
+    pub(crate) fn save_plan(&self) {
+        if let Some(view) = self.plan_stack.visible_child()
+                .and_downcast::<PlanView>() {
+            view.imp().save_plan();
+        }
+    }
+
     fn layout_panels(&self) {
         let pref = crate::preference::manager();
 

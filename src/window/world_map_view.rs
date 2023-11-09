@@ -65,6 +65,15 @@ mod imp {
             self.gl_area.queue_draw();
         }
 
+        pub fn center_map(&self, point: Coordinate) {
+            if let Some(renderer) = self.renderer.borrow().as_ref() {
+                renderer.set_map_centre(point, false);
+                center_scrollbar(&self.map_window.hadjustment());
+                center_scrollbar(&self.map_window.vadjustment());
+                self.gl_area.queue_draw();
+            }
+        }
+
         pub fn set_plan(&self, plan: Arc<RwLock<Plan>>) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
                 renderer.set_plan(plan);

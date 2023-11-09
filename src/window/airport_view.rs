@@ -154,11 +154,13 @@ mod imp {
         }
 
         pub fn search_near(&self, coordinate: &Coordinate) {
+            self.airport_search_name
+                .set_text("");
             self.airport_search_lat
                 .set_text(&coordinate.get_latitude_as_string());
             self.airport_search_long
                 .set_text(&coordinate.get_longitude_as_string());
-            self.airport_search.activate();
+            self.airport_search.emit_clicked();
         }
     }
 
@@ -247,6 +249,17 @@ mod imp {
             }));
             actions.add_action(&action);
 
+            let action = SimpleAction::new("find_airports_near", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                if let Some((model, iter)) = view.airport_list.selection().selected() {
+                    let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
+                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
+                        view.search_near(&airport.get_loc());
+                    }
+               }
+            }));
+            actions.add_action(&action);
+
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some((model, iter)) = view.airport_list.selection().selected() {
@@ -281,8 +294,8 @@ mod imp {
                     }
                }
             }));
-
             actions.add_action(&action);
+
             let action = SimpleAction::new("view", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some((model, iter)) = view.airport_list.selection().selected() {

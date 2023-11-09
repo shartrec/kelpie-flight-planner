@@ -130,11 +130,11 @@ impl Plan {
                     end = airport_end.get_id().to_string();
                 }
                 if !start.is_empty() || !end.is_empty() {
-                    return format!("{}-{}.fpl", start, end);
+                    return format!("{}-{}", start, end);
                 }
-                return String::from("new_plan.fpl");
+                return String::from("new_plan");
             }
-            return String::from("new_plan.fpl");
+            return String::from("new_plan");
         }
 
         let f = std::path::PathBuf::from(&self.path.borrow().clone().unwrap_or("".to_string()));
