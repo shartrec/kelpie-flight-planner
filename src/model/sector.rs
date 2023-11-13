@@ -9,6 +9,7 @@ use crate::model::plan::Plan;
 use super::airport::Airport;
 use super::waypoint::Waypoint;
 
+#[derive(Clone)]
 pub struct Sector {
     airport_start: RefCell<Option<Waypoint>>,
     airport_end: RefCell<Option<Waypoint>>,
@@ -24,27 +25,25 @@ impl Sector {
         }
     }
 
-    pub fn set_start(&self, start: Arc<Airport>) {
-        self.airport_start.set(Some(Waypoint::Airport {
-            airport: start.clone(),
-            locked: true,
+    pub fn set_start(&mut self, start: Option<Arc<Airport>>) {
+        self.airport_start.set(start.map(|a| {
+            Waypoint::Airport {
+                airport: a.clone(),
+                locked: true,
+            }
         }));
     }
 
-    pub fn set_end(&self, end: Arc<Airport>) {
-        self.airport_end.set(Some(Waypoint::Airport {
-            airport: end.clone(),
-            locked: true,
+    pub fn set_end(&mut self, end: Option<Arc<Airport>>) {
+        self.airport_end.set(end.map(|a| {
+            Waypoint::Airport {
+                airport: a.clone(),
+                locked: true,
+            }
         }));
     }
-    pub fn clear_start(&self) {
-        self.airport_start.set(None);
-    }
 
-    pub fn clear_end(&self) {
-        self.airport_end.set(None);
-    }
-    pub fn insert_waypoint(&self, index: usize, waypoint: Waypoint) {
+    pub fn insert_waypoint(&mut self, index: usize, waypoint: Waypoint) {
         if let Ok(mut vec) = self.waypoints.write() {
             if index <= vec.len() {
                 vec.insert(index, waypoint);
@@ -52,13 +51,13 @@ impl Sector {
         }
     }
 
-    pub fn add_waypoint(&self, waypoint: Waypoint) {
+    pub fn add_waypoint(&mut self, waypoint: Waypoint) {
         if let Ok(mut vec) = self.waypoints.write() {
             vec.push(waypoint);
         }
     }
 
-    pub fn add_all_waypoint(&self, waypoints: Vec<Waypoint>) {
+    pub fn add_all_waypoint(&mut self, waypoints: Vec<Waypoint>) {
         if let Ok(mut vec) = self.waypoints.write() {
             vec.clear();
             for wp in waypoints {
@@ -67,7 +66,7 @@ impl Sector {
         }
     }
 
-    pub fn remove_waypoint(&self, index: usize) -> Option<Waypoint> {
+    pub fn remove_waypoint(&mut self, index: usize) -> Option<Waypoint> {
         if let Ok(mut vec) = self.waypoints.write() {
             if index < vec.len() {
                 Some(vec.remove(index))
@@ -140,23 +139,23 @@ mod tests {
 
     #[test]
     fn test_set_start() {
-        let s = Sector::new();
-        s.set_start(make_airport("YSSY"));
+        let mut s = Sector::new();
+        s.set_start(Some(make_airport("YSSY")));
         assert_eq!(s.get_start().unwrap().get_id(), "YSSY");
     }
 
     #[test]
     fn test_set_end() {
-        let s = Sector::new();
-        s.set_end(make_airport("YMLB"));
+        let mut s = Sector::new();
+        s.set_end(Some(make_airport("YMLB")));
         assert_eq!(s.get_end().unwrap().get_id(), "YMLB");
     }
 
     #[test]
     fn test_waypoints() {
-        let s = Sector::new();
-        s.set_start(make_airport("YSSY"));
-        s.set_end(make_airport("YMLB"));
+        let mut s = Sector::new();
+        s.set_start(Some(make_airport("YSSY")));
+        s.set_end(Some(make_airport("YMLB")));
         let w1 = Waypoint::Simple {
             loc: Coordinate::new(13.0, 111.0),
             elevation: Cell::new(10),

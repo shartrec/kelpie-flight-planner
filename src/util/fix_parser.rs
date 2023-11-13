@@ -85,7 +85,7 @@ mod tests {
         let mut fixs: Vec<Arc<Fix>> = Vec::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test/fixes.dat");
+        path.push("resources/test/fixes.dat.gz");
         let file = fs::File::open(path);
 
         match file {

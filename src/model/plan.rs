@@ -18,7 +18,7 @@ use super::sector::Sector;
 pub struct Plan {
     dirty: RefCell<bool>,
     path: RefCell<Option<String>>,
-    sectors: RefCell<Vec<RefCell<Sector>>>,
+    sectors: Vec<RefCell<Sector>>,
     aircraft: RefCell<Option<Arc<Aircraft>>>,
     max_altitude: RefCell<Option<i32>>,
 }
@@ -28,62 +28,46 @@ impl Plan {
         Self {
             dirty: RefCell::new(false),
             path: RefCell::new(None),
-            sectors: RefCell::new(Vec::with_capacity(2)),
+            sectors: Vec::with_capacity(2),
             aircraft: RefCell::new(None),
             max_altitude: RefCell::new(None),
         }
     }
 
-    pub fn add_sector(&self, start: Option<Arc<Airport>>, end: Option<Arc<Airport>>) {
-        let sector = Sector::new();
-        match start {
-            Some(s) => sector.set_start(s),
-            None => (),
-        }
-        match end {
-            Some(e) => sector.set_end(e),
-            None => (),
-        }
-        self.sectors.borrow_mut().push(RefCell::new(sector));
+    pub fn add_sector(&mut self, sector: Sector) {
+        self.sectors.push(RefCell::new(sector));
     }
 
     pub fn add_sector_at(
-        &self,
+        &mut self,
         pos: usize,
         start: Option<Arc<Airport>>,
         end: Option<Arc<Airport>>,
     ) {
-        let sector = Sector::new();
-        match start {
-            Some(s) => sector.set_start(s),
-            None => (),
-        }
-        match end {
-            Some(e) => sector.set_end(e),
-            None => (),
-        }
+        let mut sector = Sector::new();
+        sector.set_start(start);
+        sector.set_end(end);
         self.sectors
-            .borrow_mut()
             .insert(pos as usize, RefCell::new(sector));
     }
 
-    pub fn remove_sector_at(&self, pos: usize) {
-        self.sectors.borrow_mut().remove(pos);
+    pub fn remove_sector_at(&mut self, pos: usize) {
+        self.sectors.remove(pos);
     }
 
-    pub fn get_sectors(&self) -> Ref<Vec<RefCell<Sector>>> {
-        self.sectors.borrow()
+    pub fn get_sectors(&self) -> &Vec<RefCell<Sector>> {
+        &self.sectors
     }
 
     pub fn get_aircraft(&self) -> Ref<Option<Arc<Aircraft>>> {
         self.aircraft.borrow()
     }
 
-    pub fn set_aircraft(&self, aircraft: &Option<Arc<Aircraft>>) {
+    pub fn set_aircraft(&mut self, aircraft: &Option<Arc<Aircraft>>) {
         self.aircraft.replace(aircraft.clone());
     }
 
-    pub fn set_max_altitude(&self, max_altitude: Option<i32>) {
+    pub fn set_max_altitude(&mut self, max_altitude: Option<i32>) {
         self.max_altitude.replace(max_altitude);
     }
 
@@ -103,7 +87,6 @@ impl Plan {
 
     pub fn get_duration(&self) -> f64 {
         self.sectors
-            .borrow()
             .iter()
             .map(|s| s.borrow().get_duration(self))
             .sum()
@@ -121,7 +104,7 @@ impl Plan {
         if self.path.borrow().is_none() {
             let mut start: String = "".to_string();
             let mut end: String = "".to_string();
-            let sectors = self.sectors.borrow();
+            let sectors = self.get_sectors();
             if sectors.len() > 0 {
                 if let Some(airport_start) = sectors[0].borrow().get_start() {
                     start = airport_start.get_id().to_string();
@@ -194,14 +177,14 @@ impl Plan {
         None
     }
 
-    pub fn add_airport(&self, airport: Arc<Airport>) {
-        for s in self.sectors.borrow_mut().deref() {
+    pub fn add_airport(&mut self, airport: Arc<Airport>) {
+        for s in self.get_sectors() {
             if s.borrow().get_start().is_none() {
-                s.borrow_mut().set_start(airport);
+                s.borrow_mut().set_start(Some(airport));
                 return;
             }
             if s.borrow().get_end().is_none() {
-                s.borrow_mut().set_end(airport);
+                s.borrow_mut().set_end(Some(airport));
                 return;
             }
         }
@@ -326,6 +309,7 @@ fn compare_wp(a: &Waypoint, b: &Waypoint) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use crate::model::sector::Sector;
     use crate::model::test_utils::tests::make_airport;
 
     use super::Plan;
@@ -334,20 +318,28 @@ mod tests {
     fn test_name() {
         let a = make_airport("YSSY");
         let b = make_airport("YMLB");
-        let plan = Plan::new();
-        plan.add_sector(Some(a.clone()), Some(b.clone()));
-        assert_eq!(plan.get_name(), "YSSY-YMLB.fpl");
+        let mut plan = Plan::new();
+        let mut s = Sector::new();
+        s.set_start(Some(a.clone()));
+        s.set_end(Some(b.clone()));
+        plan.add_sector(s);
+        assert_eq!(plan.get_name(), "YSSY-YMLB");
 
-        let plan = Plan::new();
-        plan.add_sector(None, Some(b.clone()));
-        assert_eq!(plan.get_name(), "-YMLB.fpl");
+        let mut plan = Plan::new();
+        let mut s = Sector::new();
+        s.set_end(Some(b.clone()));
+        plan.add_sector(s);
+        assert_eq!(plan.get_name(), "-YMLB");
 
-        let plan = Plan::new();
-        plan.add_sector(Some(a.clone()), None);
-        assert_eq!(plan.get_name(), "YSSY-.fpl");
+        let mut plan = Plan::new();
+        let mut s = Sector::new();
+        s.set_start(Some(a.clone()));
+        plan.add_sector(s);
+        assert_eq!(plan.get_name(), "YSSY-");
 
-        let plan = Plan::new();
-        plan.add_sector(None, None);
-        assert_eq!(plan.get_name(), "new_plan.fpl");
+        let mut plan = Plan::new();
+        let s = Sector::new();
+        plan.add_sector(s);
+        assert_eq!(plan.get_name(), "new_plan");
     }
 }

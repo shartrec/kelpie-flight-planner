@@ -7,7 +7,8 @@ use gtk::prelude::AdjustmentExt;
 mod imp {
     use std::cell::{Cell, RefCell};
     use std::cmp::Ordering::Equal;
-    use std::sync::{Arc, RwLock};
+    use std::rc::Rc;
+    use std::sync::Arc;
 
     use gtk::{Button, GLArea, glib, Inhibit, ScrolledWindow, ToggleButton};
     use gtk::glib::clone;
@@ -74,7 +75,7 @@ mod imp {
             }
         }
 
-        pub fn set_plan(&self, plan: Arc<RwLock<Plan>>) {
+        pub fn set_plan(&self, plan: Rc<RefCell<Plan>>) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
                 renderer.set_plan(plan);
                 self.gl_area.queue_draw();

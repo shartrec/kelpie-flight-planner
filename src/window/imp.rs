@@ -1,9 +1,12 @@
 use glib::subclass::InitializingObject;
-use gtk::{CompositeTemplate, glib, Notebook, Paned, Stack};
-use gtk::gio::File;
+use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned, Stack};
+use gtk::gio::{Cancellable, File};
+use gtk::glib::{Cast, clone};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 
+use crate::util::{get_plan_file_filter, plan_writer_xml};
+use crate::util::plan_reader::read_plan;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
 use crate::window::fix_view::FixView;
@@ -51,31 +54,118 @@ impl Window {
         self.plan_stack.set_visible_child(&view);
     }
 
+    pub(crate) fn open_plan(&self) {
+        let win = match self.plan_stack.root() {
+            Some(r) => {
+                let window = r.clone().downcast::<gtk::Window>().unwrap().clone();
+                Some(window)
+            }
+            _ => {
+                None
+            }
+        };
+
+        let dialog = FileDialog::new();
+        dialog.set_modal(true);
+        dialog.set_title("Open Plan");
+        let store = get_plan_file_filter();
+        dialog.set_filters(&store);
+
+        let x1 = &win.unwrap();
+        let x = Some(x1);
+
+        dialog.open(x, Some(&Cancellable::default()),
+                    clone!(@weak self as window, => move | result: Result<File, _>| {
+                match result {
+                    Ok(file) => {
+                        if let Some(path) = file.path() {
+                            if let Ok(plan) = read_plan(&path) {
+                                let view = PlanView::new();
+                                window.plan_stack
+                                    .add_titled(&view, Some(plan.get_name().as_str()), plan.get_name().as_str());
+                                window.plan_stack.set_visible_child(&view);
+                                view.imp().set_plan(plan);
+                            }
+                        };
+                    }
+                    _ => {}
+                }
+            }));
+    }
+
     pub(crate) fn save_plan(&self) {
-        if let Some(view) = self.plan_stack.visible_child()
-                .and_downcast::<PlanView>() {
-            view.imp().save_plan();
-        }
-    }
+        if let Ok(view) = self.plan_stack.visible_child().expect("REASON").downcast::<PlanView>() {
+            let win = match self.plan_stack.root() {
+                Some(r) => {
+                    let window = r.clone().downcast::<gtk::Window>().unwrap().clone();
+                    Some(window)
+                }
+                _ => {
+                    None
+                }
+            };
 
-    fn layout_panels(&self) {
-        let pref = crate::preference::manager();
+            let rc = view.imp().get_plan();
+            let plan = rc.borrow();
+            let dialog = FileDialog::new();
+            dialog.set_modal(true);
+            dialog.set_title("Open Plan");
+            dialog.set_initial_name(Some(&plan.get_name()));
+            let store = get_plan_file_filter();
+            dialog.set_filters(&store);
 
-        // Set the size of the window
-        if let Some(p) = pref.get::<i32>("vertical-split-pos") {
-            self.pane_1v.set_position(p);
-        }
-        if let Some(p) = pref.get::<i32>("horizontal-split-pos") {
-            self.pane_1h.set_position(p);
-        }
-    }
-    fn save_panel_layout(&self) {
-        let pref = crate::preference::manager();
+            let x1 = &win.unwrap();
+            let xx = Some(x1.clone());
+            let x = Some(x1);
 
-        // Set the size of the window
-        pref.put("vertical-split-pos", self.pane_1v.position());
-        pref.put("horizontal-split-pos", self.pane_1h.position());
+
+            dialog.save(x, Some(&Cancellable::default()),
+                        clone!(@weak view, => move | result: Result<File, _>| {
+                match result {
+                    Ok(file) => {
+                        if let Some(path) = file.path() {
+                            let plan = view.imp().get_plan();
+                            match plan_writer_xml::write_plan(&plan.borrow(), &path) {
+                                Ok(_) => {}
+                                Err(s) => {
+                                    let mut buttons = Vec::<String>::new();
+                                    buttons.push("Ok".to_string());
+                                    let alert = AlertDialog::builder()
+                                        .message(format!("Failed to save plan: {}", s.to_string()))
+                                        .buttons(buttons)
+                                        .build();
+
+                                    alert.show(xx.as_ref());
+
+                                }
+                            };
+                        };
+                    }
+                    _ => {}
+                }
+            }));
+        }
+}
+
+fn layout_panels(&self) {
+    let pref = crate::preference::manager();
+
+    // Set the size of the window
+    if let Some(p) = pref.get::<i32>("vertical-split-pos") {
+        self.pane_1v.set_position(p);
     }
+    if let Some(p) = pref.get::<i32>("horizontal-split-pos") {
+        self.pane_1h.set_position(p);
+    }
+}
+
+fn save_panel_layout(&self) {
+    let pref = crate::preference::manager();
+
+    // Set the size of the window
+    pref.put("vertical-split-pos", self.pane_1v.position());
+    pref.put("horizontal-split-pos", self.pane_1h.position());
+}
 }
 
 // The central trait for subclassing a GObject
@@ -118,7 +208,6 @@ impl BuildableImpl for Window {}
 // Trait shared by all widgets
 impl WidgetImpl for Window {
     fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
-
         let old_height = self.pane_1h.height() as f32;
         let h_div = self.pane_1h.position() as f32 / old_height;
         let old_width = self.pane_1v.width() as f32;

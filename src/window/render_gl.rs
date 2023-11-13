@@ -6,7 +6,7 @@ extern crate nalgebra_glm as glm;
 use std;
 use std::cell::{Cell, RefCell};
 use std::ffi::{CStr, CString};
-use std::sync::{Arc, RwLock};
+use std::rc::Rc;
 use std::time::Duration;
 
 use gl;
@@ -211,7 +211,7 @@ impl Renderer {
         self.navaid_renderer.replace(NavaidRenderer::new());
     }
 
-    pub fn set_plan(&self, plan: Arc<RwLock<Plan>>) {
+    pub fn set_plan(&self, plan: Rc<RefCell<Plan>>) {
         self.plan_renderer.replace(Some(PlanRenderer::new(plan)));
     }
 

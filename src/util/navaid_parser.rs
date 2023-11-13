@@ -147,7 +147,7 @@ mod tests {
         let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
 
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test/navaids.dat");
+        path.push("resources/test/navaids.dat.gz");
         let file = fs::File::open(path);
 
         match file {

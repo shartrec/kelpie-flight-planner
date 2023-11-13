@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plan name="YSSY-YBBN" aircraft="Velocity XL">
+  <sector>
+    <from-airport id="YSSY" />
+    <waypoint latitude="-33.6514" elevation="10000" name="Top of climb" type="TOC" longitude="151.2652" />
+    <waypoint id="WMD" elevation="10000" name="WEST MAITLAND VOR" type="NAVAID" />
+    <waypoint name="POINT LOOKOUT VOR" elevation="10000" type="NAVAID" id="PLO" />
+    <waypoint type="NAVAID" elevation="10000" id="LAV" name="LARAVALE VOR" />
+    <waypoint latitude="-27.8824" name="Beginning of descent" longitude="152.9865" type="BOD" elevation="10000" />
+    <waypoint name="BRISBANE VOR-DME" elevation="472" id="BN" type="NAVAID" />
+    <to-airport id="YBBN" />
+  </sector>
+  <sector>
+    <from-airport id="YBBN" />
+    <waypoint elevation="10000" latitude="-27.2135" type="TOC" longitude="152.8456" name="Top of climb" />
+    <waypoint id="KRY" elevation="10000" type="NAVAID" name="KINGAROY NDB" />
+    <waypoint type="NAVAID" elevation="10000" name="TAROOM VOR" id="TAM" />
+    <waypoint id="BCK" elevation="10000" name="BLACKALL NDB" type="NAVAID" />
+    <waypoint name="LONGREACH VOR" id="LRE" type="NAVAID" elevation="10000" />
+    <waypoint name="WINTON NDB" elevation="10000" type="NAVAID" id="WTN" />
+    <waypoint name="MOUNT ISA VOR-DME" elevation="10000" id="MA" type="NAVAID" />
+    <waypoint elevation="10000" type="NAVAID" id="CNY" name="CENTURY MINE NDB" />
+    <waypoint elevation="10000" type="NAVAID" id="MHU" name="MCARTHUR RIVER MINE NDB" />
+    <waypoint name="TINDAL VOR" type="NAVAID" id="TN" elevation="10000" />
+    <waypoint latitude="-12.8601" type="BOD" elevation="10000" longitude="131.2091" name="Beginning of descent" />
+    <waypoint id="DN" name="DARWIN VOR-DME" elevation="592" type="NAVAID" />
+    <to-airport id="YPDN" />
+  </sector>
+</plan>

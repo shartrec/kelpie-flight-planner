@@ -2,9 +2,10 @@
  * Copyright (c) 2003-2023. Trevor Campbell and others.
  */
 
+use std::cell::RefCell;
 use std::f32::consts::PI;
 use std::ops::Deref;
-use std::sync::{Arc, RwLock};
+use std::rc::Rc;
 
 use gl::types::{GLint, GLuint};
 use gtk::GLArea;
@@ -21,7 +22,7 @@ pub struct PlanRenderer {
 
 impl PlanRenderer {
     //todo drop buffers at end of program
-    pub fn new(plan: Arc<RwLock<Plan>>) -> Self {
+    pub fn new(plan: Rc<RefCell<Plan>>) -> Self {
         let (vertices, indices) = Self::build_plan_vertices(plan);
         let mut plan_vertex_buffer: GLuint = 0;
         let mut plan_index_buffer: GLuint = 0;
@@ -99,7 +100,7 @@ impl PlanRenderer {
         }
     }
 
-    fn build_plan_vertices(plan: Arc<RwLock<Plan>>) -> (Vec<Vertex>, Vec<u32>) {
+    fn build_plan_vertices(plan: Rc<RefCell<Plan>>) -> (Vec<Vertex>, Vec<u32>) {
         let projector = SphericalProjector::new(1.000);
 
         let mut vertices: Vec<Vertex> = Vec::new();
@@ -107,7 +108,7 @@ impl PlanRenderer {
 
         // We create a vertex for each waypoint and treat the whole as a line strip,
         // We also add an index for each airport, which is drawn as a point
-        let plan = plan.read().expect("Can't get plan lock");
+        let plan = plan.borrow();
         for s_ref in plan.get_sectors().deref() {
             let binding = s_ref.borrow();
             let s = binding.deref();

@@ -3,17 +3,20 @@
  */
 
 use std::fs::File;
-use std::io::BufWriter;
 use std::ops::Deref;
-use xml::EventWriter;
+use std::path::Path;
 
 use xmltree::{Element, EmitterConfig, XMLNode};
+use crate::model::location::Location;
 
 use crate::model::plan::Plan;
 use crate::model::waypoint::Waypoint;
-use crate::model::waypoint::Waypoint::Navaid;
 
-pub fn write_plan(plan: &Plan, out: &mut File) -> xml::writer::Result<()> {
+pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
+    let out = match File::create(file_path) {
+        Ok(file) => file,
+        Err(_) => return Err(String::from("Error reading file")),
+    };
     let mut plan_element = Element::new("plan");
     plan_element.attributes.insert("name".to_string(), plan.get_name());
     if let Some(aircraft) = plan.get_aircraft().deref() {
@@ -38,14 +41,14 @@ pub fn write_plan(plan: &Plan, out: &mut File) -> xml::writer::Result<()> {
             wp_element.attributes.insert("name".to_string(), wp.get_name().to_string());
             wp_element.attributes.insert("type".to_string(), wp.get_type_name().to_string());
             match wp {
-                Waypoint::Navaid { navaid: a, elevation: b, locked: c } => {
-                    wp_element.attributes.insert("id".to_string(), wp.get_id().to_string());
+                Waypoint::Navaid { navaid: n, elevation: _b, locked: _c } => {
+                    wp_element.attributes.insert("id".to_string(), n.get_id().to_string());
                 }
-                Waypoint::Airport{airport: a, locked: b} => {
-                    wp_element.attributes.insert("id".to_string(), wp.get_id().to_string());
+                Waypoint::Airport{airport: a, locked: _b} => {
+                    wp_element.attributes.insert("id".to_string(), a.get_id().to_string());
                 }
-                Waypoint::Fix { fix: a,elevation: b,locked: c} => {
-                    wp_element.attributes.insert("id".to_string(), wp.get_id().to_string());
+                Waypoint::Fix { fix: f,elevation: _b,locked: _c} => {
+                    wp_element.attributes.insert("id".to_string(), f.get_id().to_string());
                 }
                 _ => {
                     wp_element.attributes.insert("latitude".to_string(), format!("{:.4}", wp.get_lat()));
@@ -68,5 +71,8 @@ pub fn write_plan(plan: &Plan, out: &mut File) -> xml::writer::Result<()> {
     let config = EmitterConfig::new()
         .perform_indent(true);
 
-    plan_element.write_with_config(out, config)
+    match plan_element.write_with_config(out, config) {
+        Ok(_) => { Ok(())}
+        Err(e) => {Err(e.to_string())}
+    }
 }
