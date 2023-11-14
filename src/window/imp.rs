@@ -57,7 +57,7 @@ impl Window {
     pub(crate) fn open_plan(&self) {
         let win = match self.plan_stack.root() {
             Some(r) => {
-                let window = r.clone().downcast::<gtk::Window>().unwrap().clone();
+                let window = r.downcast::<gtk::Window>().unwrap().clone();
                 Some(window)
             }
             _ => {
@@ -97,7 +97,7 @@ impl Window {
         if let Ok(view) = self.plan_stack.visible_child().expect("REASON").downcast::<PlanView>() {
             let win = match self.plan_stack.root() {
                 Some(r) => {
-                    let window = r.clone().downcast::<gtk::Window>().unwrap().clone();
+                    let window = r.downcast::<gtk::Window>().unwrap().clone();
                     Some(window)
                 }
                 _ => {

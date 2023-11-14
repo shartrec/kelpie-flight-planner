@@ -3,43 +3,35 @@
   <requires lib="gtk+" version="4.0"/>
   <menu id="main-menu">
     <submenu>
-      <attribute name="label">File</attribute>
+      <attribute name="label" translatable="yes">Plan</attribute>
       <section>
         <item>
-          <attribute name="label">New</attribute>
+          <attribute name="label" translatable="yes">New</attribute>
           <attribute name="action">app.new</attribute>
         </item>
         <item>
-          <attribute name="label">Open</attribute>
+          <attribute name="label" translatable="yes">Open</attribute>
           <attribute name="action">app.open</attribute>
         </item>
         <item>
-          <attribute name="label">Save</attribute>
+          <attribute name="label" translatable="yes">Save</attribute>
           <attribute name="action">app.save</attribute>
         </item>
         <item>
-          <attribute name="label">Quit</attribute>
+          <attribute name="label" translatable="yes">Quit</attribute>
           <attribute name="action">app.quit</attribute>
         </item>
       </section>
     </submenu>
     <submenu>
-      <attribute name="label">Edit</attribute>
+      <attribute name="label" translatable="yes">Edit</attribute>
       <section>
         <item>
-          <attribute name="label">Preferences</attribute>
+          <attribute name="label" translatable="yes">Preferences</attribute>
           <attribute name="action">app.preferences</attribute>
         </item>
       </section>
     </submenu>
-    <item>
-      <attribute name="label" translatable="yes">_Close window</attribute>
-      <attribute name="action">win.close</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">_Toggle button frame</attribute>
-      <attribute name="action">win.button-frame</attribute>
-    </item>
   </menu>
   <template class="KelpiePlannerWindow" parent="GtkApplicationWindow">
     <property name="title">Kelpie Flight Planner for FlightGear</property>
