@@ -4,7 +4,10 @@
 
 
 use gtk::{Entry, gio, glib};
+use gtk::prelude::WidgetExt;
 use gtk::traits::EditableExt;
+
+use crate::window::util::show_error_dialog;
 
 mod imp {
     use gtk::{AlertDialog, Button, CompositeTemplate, Entry, glib, TemplateChild};
@@ -16,7 +19,7 @@ mod imp {
 
     use crate::hangar::hangar::get_hangar;
     use crate::model::aircraft::Aircraft;
-    use crate::window::preferences::preference_edit_aircraft::number_from;
+    use crate::window::preferences::preference_edit_aircraft::{number_from, validate_not_empty, validate_numeric};
 
     #[derive(CompositeTemplate, Default)]
     #[template(resource = "/com/shartrec/kelpie_planner/preference_aircraft_dialog.ui")]
@@ -43,9 +46,7 @@ mod imp {
     }
 
     impl AircraftDialog {
-
         pub fn set_aircraft(&self, name: Option<String>) {
-
             match name {
                 Some(name) => {
                     let hangar = get_hangar().imp();
@@ -78,6 +79,16 @@ mod imp {
             }
         }
 
+        fn validate(&self) -> bool {
+            validate_not_empty(&self.ac_name,"Name" ) &&
+            validate_numeric(&self.ac_cruise_speed,"Cruise Speed" ) &&
+            validate_numeric(&self.ac_cruise_alt,"Cruise Altitude" ) &&
+            validate_numeric(&self.ac_climb_speed,"Climb Speed" ) &&
+            validate_numeric(&self.ac_climb_rate,"Climb Rate" ) &&
+            validate_numeric(&self.ac_sink_speed,"Sink Speed" ) &&
+            validate_numeric(&self.ac_sink_rate,"Sink Rate" )
+        }
+
         fn save_aircraft(&self) -> bool {
             // Check we have a name
             if self.ac_name.text().is_empty() {
@@ -101,14 +112,12 @@ mod imp {
                     number_from(&self.ac_climb_rate),
                     number_from(&self.ac_sink_speed),
                     number_from(&self.ac_sink_rate),
-                    false
+                    false,
                 );
                 hangar.put(aircraft);
                 true
             }
-
         }
-
     }
 
     #[glib::object_subclass]
@@ -125,7 +134,6 @@ mod imp {
         fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
-
     }
 
     impl ObjectImpl for AircraftDialog {
@@ -137,18 +145,19 @@ mod imp {
             }));
 
             self.btn_ok.connect_clicked(clone!( @weak self as window => move |_button| {
-                if *(&window.save_aircraft()) {
-                    window.obj().close();
+
+                if window.validate() {
+                    if window.save_aircraft() {
+                        window.obj().close();
+                    }
                 }
             }));
-
         }
     }
 
     impl WidgetImpl for AircraftDialog {}
 
     impl WindowImpl for AircraftDialog {}
-
 }
 
 glib::wrapper! {
@@ -166,4 +175,23 @@ impl AircraftDialog {
 
 fn number_from(entry: &Entry) -> i32 {
     entry.text().as_str().parse::<i32>().unwrap_or(0)
+}
+fn validate_numeric(entry: &Entry, name: &str) -> bool {
+    match entry.text().as_str().parse::<i32>() {
+        Ok(_) => {true}
+        Err(_) => {
+            show_error_dialog(&entry.root(), format!("{} should be numeric", name).as_str());
+            false
+        }
+    }
+}
+
+fn validate_not_empty(entry: &Entry, name: &str) -> bool {
+    if entry.text().as_str().len() < 1 {
+        show_error_dialog(&entry.root(), format!("{} is required", name).as_str());
+        false
+    } else {
+        true
+    }
+
 }

@@ -21,11 +21,11 @@ use crate::window::world_map_view::WorldMapView;
 // To use it
 // entry_disallow(&entry, is_numeric);
 #[allow(dead_code)]
-fn is_non_numeric(c: char) -> bool {
+pub fn is_non_numeric(c: char) -> bool {
     !c.is_numeric()
 }
 #[allow(dead_code)]
-fn entry_disallow(entry: &gtk::Entry, pattern: fn(char) -> bool) {
+pub fn entry_disallow(entry: &gtk::Entry, pattern: fn(char) -> bool) {
     entry.connect_insert_text(move |entry, text, position| {
         if text.contains(pattern) {
             glib::signal::signal_stop_emission_by_name(entry, "insert-text");

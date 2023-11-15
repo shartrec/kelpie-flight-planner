@@ -30,10 +30,6 @@ impl SphericalProjector {
         let y: f32 = self.r * lat1.sin();
         let z: f32 = self.r * lat1.cos() * (lon1 + self._90rad).sin();
         // For OpenGL we flip the z-axis
-        if (x*x+y*y+z*z).sqrt() > 1.001{
-            println!("Lat {}, Long {}, - projection {}, {}, {}", lat, lon, x,y,z);
-        }
-
         [x, y, -z]
 
     }

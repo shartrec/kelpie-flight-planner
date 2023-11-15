@@ -10,11 +10,15 @@ mod imp {
     use std::rc::Rc;
     use std::sync::Arc;
 
-    use gtk::{Button, GLArea, glib, Inhibit, ScrolledWindow, ToggleButton};
+    use gtk::{Builder, Button, GLArea, glib, Inhibit, PopoverMenu, ScrolledWindow, ToggleButton};
+    use gtk::gdk::Rectangle;
+    use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
+    use gtk::graphene::Point;
     use gtk::prelude::*;
     use gtk::subclass::prelude::*;
+    use log::error;
 
     use crate::earth;
     use crate::earth::coordinate::Coordinate;
@@ -22,6 +26,7 @@ mod imp {
     use crate::model::location::Location;
     use crate::model::plan::Plan;
     use crate::window::render_gl::Renderer;
+    use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
 
     use super::*;
 
@@ -40,6 +45,10 @@ mod imp {
         btn_show_airports: TemplateChild<ToggleButton>,
         #[template_child]
         btn_show_navaids: TemplateChild<ToggleButton>,
+
+        popover: RefCell<Option<PopoverMenu>>,
+        view_action: RefCell<Option<SimpleAction>>,
+        add_action: RefCell<Option<SimpleAction>>,
 
         renderer: RefCell<Option<Renderer>>,
         drag_start: RefCell<Option<[f64; 2]>>,
@@ -83,7 +92,7 @@ mod imp {
         }
 
         fn unproject(&self, x: f64, y: f64) -> Result<Coordinate, String> {
-            match self.renderer.borrow().as_ref().unwrap().get_glpoint_from_win(&self.gl_area, x as f32, y as f32) {
+            match self.renderer.borrow().as_ref().unwrap().get_cord_from_win(&self.gl_area, x as f32, y as f32) {
                 Ok(point) => {
                     Ok(Coordinate::new(point[0] as f64, point[1] as f64))
                 }
@@ -185,7 +194,7 @@ mod imp {
                 if let Some(context) = area.context() {
                     context.make_current();
                     if let Some(error) = area.error() {
-                        println!("{:?}", error);
+                        error!("{:?}", error);
                     }
 
                     let renderer = Renderer::new();
@@ -208,6 +217,20 @@ mod imp {
                 Inhibit{ 0: false }
             }));
 
+            // build popover menu
+            let builder = Builder::from_resource("/com/shartrec/kelpie_planner/world_map_popover.ui");
+            let menu = builder.object::<MenuModel>("world-map-menu");
+            match menu {
+                Some(popover) => {
+                    let popover = PopoverMenu::builder()
+                        .menu_model(&popover)
+                        .build();
+                    popover.set_parent(&self.map_window.get());
+                    let _ = self.popover.replace(Some(popover));
+                }
+                None => error!(" Not a popover"),
+            }
+
             // Set double click to centre map
             let gesture = gtk::GestureClick::new();
             gesture.set_button(1);
@@ -223,6 +246,38 @@ mod imp {
                 }
             }));
             self.gl_area.add_controller(gesture);
+
+            // Connect popup menu to right click
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(3);
+            gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
+
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(x as f32, y as f32)) {
+                let on_airport = match view.unproject(point.x() as f64, point.y() as f64) {
+                    Ok(pos) => {
+                        if let Some(airport) = view.find_location_for_point(pos) {
+                            // let action = view.add_action.borrow_mut().as_ref().unwrap();
+                            // action.set_property("label", format!("View {}", airport.get_id()));
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Err(_) => {
+                        false
+                    }
+                };
+                view.add_action.borrow_mut().as_ref().unwrap().set_enabled(on_airport);
+                view.view_action.borrow_mut().as_ref().unwrap().set_enabled(on_airport);
+
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                if let Some(popover) = view.popover.borrow().as_ref() {
+                    popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                    popover.popup();
+                };
+                };
+            }));
+            self.map_window.add_controller(gesture);
 
             // Set Gesture to drag the map about
             let gesture = gtk::GestureDrag::new();
@@ -322,6 +377,112 @@ mod imp {
                     let z_factor = 0.75;
                     view.zoom(z_factor);
                 }));
+
+            let actions = SimpleActionGroup::new();
+            self.map_window
+                .get()
+                .insert_action_group("world_map", Some(&actions));
+
+            let action = SimpleAction::new("view_airport", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
+                        if let Some(airport) = view.find_location_for_point(loc) {
+                            match get_airport_map_view(&view.map_window.get()) {
+                                Some(airport_map_view) => {
+                                    airport_map_view.imp().set_airport(airport);
+                                    show_airport_map_view(&view.map_window.get());
+                                },
+                                None => (),
+                            }
+                        }
+                    }
+                }
+            }));
+            actions.add_action(&action);
+            self.view_action.replace(Some(action));
+
+            let action = SimpleAction::new("add_to_plan", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
+                        if let Some(airport) = view.find_location_for_point(loc) {
+                            match get_plan_view(&view.map_window.get()) {
+                            Some(ref mut plan_view) => {
+                                // get the plan
+                                plan_view.imp().add_airport_to_plan(airport);
+                                ()
+                            }
+                            None => (),
+                            }
+                        }
+                    }
+                }
+            }));
+            actions.add_action(&action);
+            self.add_action.replace(Some(action));
+
+            let action = SimpleAction::new("find_airports_near", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
+                        match get_airport_view(&view.map_window.get()) {
+                            Some(airport_view) => {
+                                show_airport_view(&view.map_window.get());
+                                airport_view.imp().search_near(&loc);
+                                ()
+                            },
+                            None => (),
+                        }
+                    }
+                }
+            }));
+            actions.add_action(&action);
+
+            let action = SimpleAction::new("find_navaids_near", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
+                        match get_navaid_view(&view.map_window.get()) {
+                            Some(navaid_view) => {
+                                show_navaid_view(&view.map_window.get());
+                                navaid_view.imp().search_near(&loc);
+                                ()
+                            },
+                            None => (),
+                        }
+                    }
+                }
+            }));
+            actions.add_action(&action);
+
+            let action = SimpleAction::new("find_fixes_near", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
+                        match get_fix_view(&view.map_window.get()) {
+                            Some(fix_view) => {
+                                show_fix_view(&view.map_window.get());
+                                fix_view.imp().search_near(&loc);
+                                ()
+                            },
+                            None => (),
+                        }
+                    }
+                }
+            }));
+            actions.add_action(&action);
+        }
+
+        fn dispose(&self) {
+            if let Some(popover) = self.popover.borrow().as_ref() {
+                popover.unparent();
+            };
         }
     }
 

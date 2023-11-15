@@ -12,6 +12,7 @@
     <file compressed="true" preprocess="xml-stripblanks">plan_popover.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">window.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">world_map_view.ui</file>
+    <file compressed="true" preprocess="xml-stripblanks">world_map_popover.ui</file>
 
     <file compressed="true" preprocess="xml-stripblanks">preference.ui</file>
     <file compressed="true" preprocess="xml-stripblanks">preference_general.ui</file>

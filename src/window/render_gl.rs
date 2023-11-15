@@ -339,7 +339,7 @@ impl Renderer {
         }
     }
 
-    pub fn get_glpoint_from_win(&self, area: &GLArea, x: f32, y: f32) -> Result<[f32; 2], String> {
+    pub fn get_cord_from_win(&self, area: &GLArea, x: f32, y: f32) -> Result<[f32; 2], String> {
         // We need to calculate the Z depth where the point meets the earth
         // Get the earth radius
         let height = area.height() as f32;
@@ -350,7 +350,6 @@ impl Renderer {
         let x_offset = (width - side) /2.;
         let y_offset = (height - side) /2.;
 
-        let depth = earth_radius;
 
         let v_scroll = 0.0;
         let h_scroll = 0.0;
@@ -358,6 +357,7 @@ impl Renderer {
         // Get the true projected x, y coordinates
         let x1 = earth_radius as i32 - ((x-x_offset) + h_scroll) as i32;
         let y1 = earth_radius as i32 - ((y-y_offset) + v_scroll) as i32;
+        let depth = earth_radius;
 
         let r_squared = (x1 * x1 + y1 * y1) as f32;
         let earth_r_squared = (earth_radius * earth_radius) as f32;
