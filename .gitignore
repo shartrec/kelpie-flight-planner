@@ -1,2 +1,4 @@
 # Project exclude paths
 /target/
+/kelpie-planner.log
+/Cargo.lock
