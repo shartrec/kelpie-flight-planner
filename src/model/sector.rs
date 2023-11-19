@@ -5,6 +5,9 @@ use std::sync::{Arc, RwLock};
 use gtk::glib::PropertySet;
 
 use crate::model::plan::Plan;
+use crate::preference::UNITS;
+use crate::util::distance_format::DistanceFormat;
+use crate::util::hour_format::HourFormat;
 
 use super::airport::Airport;
 use super::waypoint::Waypoint;
@@ -78,6 +81,12 @@ impl Sector {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        ! (self.airport_start.borrow().is_some()
+            || self.airport_end.borrow().is_some()
+            || self.waypoints.read().unwrap().len() > 0)
+    }
+
     pub fn get_name(&self) -> String {
         let binding = self.airport_start.borrow();
         let w1 = binding.deref();
@@ -114,12 +123,34 @@ impl Sector {
         Some(self.waypoints.read().unwrap()[pos].clone())
     }
 
-    //todo
+    pub fn get_duration_as_string(&self, plan: &Plan) -> String {
+        let time_format = HourFormat::new();
+        let time = &self.get_duration(plan);
+        time_format.format(time)
+    }
+
     pub fn get_duration(&self, plan: &Plan) -> f64 {
         match self.waypoints.read() {
             Ok(waypoints) => waypoints
                 .iter()
                 .map(move |wp| plan.get_time_to(wp))
+                .reduce(|acc, t| acc + t)
+                .unwrap_or(0.0),
+            _ => 0.0,
+        }
+    }
+    pub fn get_distance_as_string(&self, plan: &Plan) -> String {
+        let pref = crate::preference::manager();
+        let units = pref.get::<String>(UNITS).unwrap_or("Nm".to_string());
+        let distance_format = DistanceFormat::new(&units);
+        let distance = &self.get_distance(plan);
+        distance_format.format(distance)
+    }
+    pub fn get_distance(&self, plan: &Plan) -> f64 {
+        match self.waypoints.read() {
+            Ok(waypoints) => waypoints
+                .iter()
+                .map(move |wp| plan.get_leg_distance_to(wp))
                 .reduce(|acc, t| acc + t)
                 .unwrap_or(0.0),
             _ => 0.0,

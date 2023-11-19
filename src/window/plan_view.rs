@@ -125,71 +125,75 @@ mod imp {
             // Iterate over the plan loading the TreeModel
             let plan = self.plan.borrow();
             for s_ref in plan.get_sectors().deref() {
-                let row = tree_store.append(None);
                 let binding = s_ref.borrow();
                 let s = binding.deref();
-                tree_store.set(&row, &[(0, &s.get_name())]);
-                if let Some(airport) = s.get_start() {
-                    let wp_row = tree_store.append(Some(&row));
-                    tree_store.set(
-                        &wp_row,
-                        &[
-                            (Col::Name as u32, &airport.get_name()),
-                            (Col::Elev as u32, &(airport.get_elevation())),
-                            (Col::Lat as u32, &airport.get_lat_as_string()),
-                            (Col::Long as u32, &airport.get_long_as_string()),
-                        ],
-                    );
-                }
-                for wp in s
-                    .get_waypoints()
-                    .read()
-                    .expect("Can't get read lock on sectors")
-                    .deref()
-                {
-                    let wp_row = tree_store.append(Some(&row));
-                    tree_store.set(
-                        &wp_row,
-                        &[
-                            (Col::Name as u32, &wp.get_name()),
-                            (Col::Elev as u32, &(wp.get_elevation())),
-                            (Col::Lat as u32, &wp.get_lat_as_string()),
-                            (Col::Long as u32, &wp.get_long_as_string()),
-                            (
-                                Col::Freq as u32,
-                                &(match wp.get_freq() {
-                                    Some(f) => format!("{:>6.2}", f),
-                                    None => "".to_string(),
-                                }),
-                            ),
-                            (
-                                Col::Hdg as u32,
-                                &(format!("{:6.0}", plan.get_leg_heading_to(wp))),
-                            ),
-                            (
-                                Col::Dist as u32,
-                                &plan.get_leg_distance_to_as_string(wp),
-                            ),
-                            (Col::Time as u32, &plan.get_time_to_as_string(wp)),
-                            (Col::Speed as u32, &plan.get_speed_to_as_string(wp)),
-                        ],
-                    );
-                }
-                if let Some(airport) = s.get_end() {
-                    let wp_row = tree_store.append(Some(&row));
-                    tree_store.set(
-                        &wp_row,
-                        &[
-                            (Col::Name as u32, &airport.get_name()),
-                            (Col::Elev as u32, &(airport.get_elevation())),
-                            (Col::Lat as u32, &airport.get_lat_as_string()),
-                            (Col::Long as u32, &airport.get_long_as_string()),
-                            (
-                                Col::Dist as u32,
-                                &plan.get_leg_distance_to_as_string(&airport),
-                            ),
-                        ],
-                    );
+                if !s.is_empty() {
+                    let row = tree_store.append(None);
+                    tree_store.set(&row,
+                                   &[
+                                       (Col::Name as u32, &s.get_name()),
+                                       (Col::Dist as u32, &s.get_distance_as_string(&plan)),
+                                       (Col::Time as u32, &s.get_duration_as_string(&plan)),
+                                   ]);
+                    if let Some(airport) = s.get_start() {
+                        let wp_row = tree_store.append(Some(&row));
+                        tree_store.set(
+                            &wp_row,
+                            &[
+                                (Col::Name as u32, &airport.get_name()),
+                                (Col::Elev as u32, &(airport.get_elevation())),
+                                (Col::Lat as u32, &airport.get_lat_as_string()),
+                                (Col::Long as u32, &airport.get_long_as_string()),
+                            ],
+                        );
+                    }
+                    for wp in s
+                        .get_waypoints()
+                        .read()
+                        .expect("Can't get read lock on sectors")
+                        .deref()
+                    {
+                        let wp_row = tree_store.append(Some(&row));
+                        tree_store.set(
+                            &wp_row,
+                            &[
+                                (Col::Name as u32, &wp.get_name()),
+                                (Col::Elev as u32, &(wp.get_elevation())),
+                                (Col::Lat as u32, &wp.get_lat_as_string()),
+                                (Col::Long as u32, &wp.get_long_as_string()),
+                                (
+                                    Col::Freq as u32,
+                                    &(match wp.get_freq() {
+                                        Some(f) => format!("{:>6.2}", f),
+                                        None => "".to_string(),
+                                    }),
+                                ),
+                                (
+                                    Col::Hdg as u32,
+                                    &(format!("{:6.0}", plan.get_leg_heading_to(wp))),
+                                ),
+                                (
+                                    Col::Dist as u32,
+                                    &plan.get_leg_distance_to_as_string(wp),
+                                ),
+                                (Col::Time as u32, &plan.get_time_to_as_string(wp)),
+                                (Col::Speed as u32, &plan.get_speed_to_as_string(wp)),
+                            ],
+                        );
+                    }
+                    if let Some(airport) = s.get_end() {
+                        let wp_row = tree_store.append(Some(&row));
+                        tree_store.set(
+                            &wp_row,
+                            &[
+                                (Col::Name as u32, &airport.get_name()),
+                                (Col::Elev as u32, &(airport.get_elevation())),
+                                (Col::Lat as u32, &airport.get_lat_as_string()),
+                                (Col::Long as u32, &airport.get_long_as_string()),
+                                (Col::Dist as u32, &plan.get_leg_distance_to_as_string(&airport)),
+                            ],
+                        );
+                    }
                 }
             }
 
@@ -500,7 +504,7 @@ mod imp {
                 let path = model.path(&iter).indices();
                 // Sectors are at the top level
                 match path.len() {
-                    1 => {None}
+                    1 => { None }
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
