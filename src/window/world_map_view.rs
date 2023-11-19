@@ -10,9 +10,9 @@ mod imp {
     use std::rc::Rc;
     use std::sync::Arc;
 
-    use gtk::{Builder, Button, GLArea, glib, Inhibit, PopoverMenu, ScrolledWindow, ToggleButton};
+    use gtk::{Button, GLArea, glib, Inhibit, PopoverMenu, ScrolledWindow, ToggleButton};
     use gtk::gdk::Rectangle;
-    use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
+    use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
     use gtk::graphene::Point;
@@ -56,6 +56,8 @@ mod imp {
         zoom_level: Cell<f32>,
 
     }
+
+    const MAX_ZOOM: f32 = 20.;
 
     impl WorldMapView {
         pub fn initialise(&self) -> () {
@@ -102,7 +104,7 @@ mod imp {
 
         fn zoom(&self, z_factor: f32) {
             let zoom = self.zoom_level.get() * z_factor;
-            if zoom < 12. && zoom > 1. {
+            if zoom < MAX_ZOOM && zoom > 1. {
                 self.zoom_level.replace(zoom);
                 self.renderer.borrow().as_ref().unwrap().set_zoom_level(zoom);
 
@@ -163,6 +165,28 @@ mod imp {
 
             None
         }
+
+        fn make_popup(&self, airport: Option<Arc<Airport>>) -> PopoverMenu {
+            let model = Menu::new();
+            if let Some(airport) = airport {
+                let item = MenuItem::new(Some(format!("View {} layout", airport.get_name()).as_str()), Some("world_map.view_airport"));
+                model.append_item(&item);
+                let item = MenuItem::new(Some(format!("Add {} to plan", airport.get_name()).as_str()), Some("world_map.add_to_plan"));
+                model.append_item(&item);
+            }
+            let item = MenuItem::new(Some("Find airports near"), Some("world_map.find_airports_near"));
+            model.append_item(&item);
+            let item = MenuItem::new(Some("Find navaids near"), Some("world_map.find_navaids_near"));
+            model.append_item(&item);
+            let item = MenuItem::new(Some("Find fixes near"), Some("world_map.find_fixes_near"));
+            model.append_item(&item);
+
+            let popover = PopoverMenu::builder()
+                .menu_model(&model)
+                .build();
+            popover.set_parent(&self.map_window.get());
+            popover
+        }
     }
 
     #[glib::object_subclass]
@@ -217,20 +241,6 @@ mod imp {
                 Inhibit{ 0: false }
             }));
 
-            // build popover menu
-            let builder = Builder::from_resource("/com/shartrec/kelpie_planner/world_map_popover.ui");
-            let menu = builder.object::<MenuModel>("world-map-menu");
-            match menu {
-                Some(popover) => {
-                    let popover = PopoverMenu::builder()
-                        .menu_model(&popover)
-                        .build();
-                    popover.set_parent(&self.map_window.get());
-                    let _ = self.popover.replace(Some(popover));
-                }
-                None => error!(" Not a popover"),
-            }
-
             // Set double click to centre map
             let gesture = gtk::GestureClick::new();
             gesture.set_button(1);
@@ -251,30 +261,27 @@ mod imp {
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
             gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
-
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(x as f32, y as f32)) {
-                let on_airport = match view.unproject(point.x() as f64, point.y() as f64) {
-                    Ok(pos) => {
-                        if let Some(airport) = view.find_location_for_point(pos) {
-                            // let action = view.add_action.borrow_mut().as_ref().unwrap();
-                            // action.set_property("label", format!("View {}", airport.get_id()));
-                            true
-                        } else {
-                            false
+                    let airport = match view.unproject(point.x() as f64, point.y() as f64) {
+                        Ok(pos) => {
+                            view.find_location_for_point(pos)
                         }
-                    }
-                    Err(_) => {
-                        false
-                    }
-                };
-                view.add_action.borrow_mut().as_ref().unwrap().set_enabled(on_airport);
-                view.view_action.borrow_mut().as_ref().unwrap().set_enabled(on_airport);
+                        Err(_) => {
+                            None
+                        }
+                    };
+                    let popover = view.make_popup(airport);
 
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                if let Some(popover) = view.popover.borrow().as_ref() {
-                    popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
-                    popover.popup();
-                };
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+
+                    if let Some(old_popover) = view.popover.replace(Some(popover)) {
+                        old_popover.unparent();
+                    }
+
+                    if let Some(popover) = view.popover.borrow().as_ref() {
+                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                        popover.popup();
+                    };
                 };
             }));
             self.map_window.add_controller(gesture);
@@ -347,7 +354,8 @@ mod imp {
                     Ok(pos) => {
                         if let Some(airport) = view.find_location_for_point(pos) {
                             tooltip.set_text(Some(airport.get_name()));
-                                true
+                            true
+
                         } else {
                             tooltip.set_text(None);
                             false
