@@ -122,6 +122,12 @@ fn connect_actions(app: &Application, window: &Window) {
     }));
     app.add_action(&action);
 
+    let action = SimpleAction::new("export_fg_rm", None);
+    action.connect_activate(clone!(@weak window => move  |_action, _parameter| {
+        let _ = &window.imp().export_plan();
+    }));
+    app.add_action(&action);
+
     let action = SimpleAction::new("quit", None);
     action.connect_activate(clone!(@weak app => move |_action, _parameter| {
         app.quit()

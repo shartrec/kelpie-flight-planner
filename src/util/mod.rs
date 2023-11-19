@@ -13,12 +13,13 @@ pub(crate) mod navaid_parser;
 pub(crate) mod speed_format;
 pub(crate) mod plan_writer_xml;
 pub(crate) mod plan_reader;
+pub(crate) mod plan_writer_route_manager;
 
-pub fn get_plan_file_filter() -> ListStore {
+pub fn get_plan_file_filter(ext: &str) -> ListStore {
 
     let store = ListStore::new(FileFilter::static_type());
     let filter = FileFilter::new();
-    filter.add_suffix("fpl");
+    filter.add_suffix(ext);
     store.append(&filter);
     let filter = FileFilter::new();
     filter.add_pattern("*");

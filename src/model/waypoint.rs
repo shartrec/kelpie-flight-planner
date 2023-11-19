@@ -161,6 +161,15 @@ impl Waypoint {
         }
     }
 
+    pub(crate) fn get_airport(&self) -> Arc<Airport> {
+        match self {
+            Waypoint::Airport { airport, .. } => airport.clone(),
+            _ => {
+                panic!("Not an airport waypoint")
+            }
+        }
+    }
+
     pub(crate) fn set_elevation(&self, elev: &i32) {
         match self {
             Waypoint::Simple {

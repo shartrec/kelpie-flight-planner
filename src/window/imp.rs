@@ -5,7 +5,7 @@ use gtk::glib::{Cast, clone};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 
-use crate::util::{get_plan_file_filter, plan_writer_xml};
+use crate::util::{get_plan_file_filter, plan_writer_xml, plan_writer_route_manager};
 use crate::util::plan_reader::read_plan;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -13,6 +13,12 @@ use crate::window::fix_view::FixView;
 use crate::window::navaid_view::NavaidView;
 use crate::window::plan_view::PlanView;
 use crate::window::world_map_view::WorldMapView;
+
+enum SaveTyoe {
+    Native,
+    FgRouteManager
+}
+
 
 // Object holding the state
 #[derive(CompositeTemplate, Default)]
@@ -68,7 +74,7 @@ impl Window {
         let dialog = FileDialog::new();
         dialog.set_modal(true);
         dialog.set_title("Open Plan");
-        let store = get_plan_file_filter();
+        let store = get_plan_file_filter("fgfp");
         dialog.set_filters(&store);
 
         let x1 = &win.unwrap();
@@ -93,8 +99,18 @@ impl Window {
             }));
     }
 
+
+
     pub(crate) fn save_plan(&self) {
-        if let Ok(view) = self.plan_stack.visible_child().expect("REASON").downcast::<PlanView>() {
+        self.do_save("Save Plan", SaveTyoe::Native);
+    }
+
+    pub(crate) fn export_plan(&self) {
+        self.do_save("Export Plan", SaveTyoe::FgRouteManager);
+    }
+
+    fn do_save(&self, title: &str, save_tyoe: SaveTyoe) {
+        if let Ok(view) = self.plan_stack.visible_child().expect("No plan").downcast::<PlanView>() {
             let win = match self.plan_stack.root() {
                 Some(r) => {
                     let window = r.downcast::<gtk::Window>().unwrap().clone();
@@ -109,23 +125,34 @@ impl Window {
             let plan = rc.borrow();
             let dialog = FileDialog::new();
             dialog.set_modal(true);
-            dialog.set_title("Open Plan");
-            dialog.set_initial_name(Some(&plan.get_name()));
-            let store = get_plan_file_filter();
+            dialog.set_title(title);
+            let ext = match save_tyoe {
+                SaveTyoe::Native => "fgfp",
+                SaveTyoe::FgRouteManager => "xml",
+            };
+            let mut name = plan.get_name();
+            name.push_str(".");
+            name.push_str(ext);
+            dialog.set_initial_name(Some(name.as_str()));
+            let store = get_plan_file_filter(ext);
             dialog.set_filters(&store);
 
             let x1 = &win.unwrap();
             let xx = Some(x1.clone());
             let x = Some(x1);
 
-
             dialog.save(x, Some(&Cancellable::default()),
                         clone!(@weak view, => move | result: Result<File, _>| {
-                match result {
+
+                    match result {
                     Ok(file) => {
+                        let writer = match save_tyoe {
+                                    SaveTyoe::Native => plan_writer_xml::write_plan,
+                                    SaveTyoe::FgRouteManager => plan_writer_route_manager::export_plan_fg,
+                                };
                         if let Some(path) = file.path() {
                             let plan = view.imp().get_plan();
-                            match plan_writer_xml::write_plan(&plan.borrow(), &path) {
+                            match writer(&plan.borrow(), &path) {
                                 Ok(_) => {}
                                 Err(s) => {
                                     let mut buttons = Vec::<String>::new();
@@ -145,26 +172,26 @@ impl Window {
                 }
             }));
         }
-}
-
-fn layout_panels(&self) {
-    let pref = crate::preference::manager();
-
-    // Set the size of the window
-    if let Some(p) = pref.get::<i32>("vertical-split-pos") {
-        self.pane_1v.set_position(p);
     }
-    if let Some(p) = pref.get::<i32>("horizontal-split-pos") {
-        self.pane_1h.set_position(p);
+
+    fn layout_panels(&self) {
+        let pref = crate::preference::manager();
+
+        // Set the size of the window
+        if let Some(p) = pref.get::<i32>("vertical-split-pos") {
+            self.pane_1v.set_position(p);
+        }
+        if let Some(p) = pref.get::<i32>("horizontal-split-pos") {
+            self.pane_1h.set_position(p);
+        }
     }
-}
 
-fn save_panel_layout(&self) {
-    let pref = crate::preference::manager();
+    fn save_panel_layout(&self) {
+        let pref = crate::preference::manager();
 
-    // Set the size of the window
-    pref.put("vertical-split-pos", self.pane_1v.position());
-    pref.put("horizontal-split-pos", self.pane_1h.position());
+        // Set the size of the window
+        pref.put("vertical-split-pos", self.pane_1v.position());
+        pref.put("horizontal-split-pos", self.pane_1h.position());
 }
 }
 
