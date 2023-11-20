@@ -20,7 +20,7 @@
         <style>
           <class name="preference-page"/>
         </style>
-        <child type="tab">
+        <child>
           <object class="GtkLabel">
             <property name="label" translatable="yes">Flight plan</property>
             <layout>
@@ -35,12 +35,22 @@
           </object>
         </child>
         <child>
+          <object class="GtkCheckButton" id="btn_auto_plan">
+            <property name="label" translatable="yes">Update plan on change</property>
+            <layout>
+              <property name="column">0</property>
+              <property name="row">1</property>
+              <property name="column-span">2</property>
+            </layout>
+          </object>
+        </child>
+        <child>
           <object class="GtkLabel">
             <property name="label" translatable="yes">Preferred maximum leg length</property>
             <property name="halign">end</property>
             <layout>
               <property name="column">0</property>
-              <property name="row">1</property>
+              <property name="row">2</property>
             </layout>
           </object>
         </child>
@@ -49,7 +59,7 @@
             <property name="width-request">50</property>
             <layout>
               <property name="column">1</property>
-              <property name="row">1</property>
+              <property name="row">2</property>
             </layout>
           </object>
         </child>

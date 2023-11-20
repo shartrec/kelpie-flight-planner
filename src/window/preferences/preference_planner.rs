@@ -31,11 +31,13 @@ mod imp {
     use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassSubclassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
-    use crate::preference::{ADD_WAYPOINTS, MAX_DEVIATION, MAX_LEG_LENGTH, MIN_LEG_LENGTH, PLAN_TYPE, USE_FIXES, USE_GPS, USE_RADIO_BEACONS, VOR_ONLY, VOR_PREFERED};
+    use crate::preference::{ADD_WAYPOINTS, AUTO_PLAN, MAX_DEVIATION, MAX_LEG_LENGTH, MIN_LEG_LENGTH, PLAN_TYPE, USE_FIXES, USE_GPS, USE_RADIO_BEACONS, VOR_ONLY, VOR_PREFERED};
 
     #[derive(CompositeTemplate, Default)]
     #[template(resource = "/com/shartrec/kelpie_planner/preference_planner.ui")]
     pub struct PreferencePlannerPage {
+        #[template_child]
+        btn_auto_plan: TemplateChild<CheckButton>,
         #[template_child]
         planner_max_leg: TemplateChild<Entry>,
         #[template_child]
@@ -60,6 +62,7 @@ mod imp {
     impl PreferencePlannerPage {
         fn initialise(&self) {
             let prefs = crate::preference::manager();
+            self.btn_auto_plan.set_active(prefs.get::<bool>(AUTO_PLAN).unwrap_or(true));
             self.planner_max_leg.set_text(prefs.get::<String>(MAX_LEG_LENGTH).unwrap_or("100".to_string()).as_str());
             self.planner_min_leg.set_text(prefs.get::<String>(MIN_LEG_LENGTH).unwrap_or("10".to_string()).as_str());
             self.planner_deviation.set_text(prefs.get::<String>(MAX_DEVIATION).unwrap_or("10".to_string()).as_str());
@@ -102,6 +105,9 @@ mod imp {
 
             self.initialise();
 
+            self.btn_auto_plan.connect_toggled(| button| {
+                crate::preference::manager().put(AUTO_PLAN, button.is_active());
+            });
             self.planner_max_leg.connect_changed(| editable | {
                 crate::preference::manager().put(MAX_LEG_LENGTH, editable.text());
             });

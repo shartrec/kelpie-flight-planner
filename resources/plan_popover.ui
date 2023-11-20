@@ -16,6 +16,12 @@
         <attribute name="action">plan.view</attribute>
       </item>
       <item>
+        <attribute name="label">Show on map</attribute>
+        <attribute name="action">plan.show_on_map</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
         <attribute name="label" translatable="yes">Find airports near</attribute>
         <attribute name="action">plan.find_airports_near</attribute>
       </item>

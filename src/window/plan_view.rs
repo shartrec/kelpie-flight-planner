@@ -48,7 +48,7 @@ mod imp {
     use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
-    use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
+    use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view};
 
     use super::*;
 
@@ -113,7 +113,7 @@ mod imp {
 
         pub fn plan_updated(&self) {
             let pref = crate::preference::manager();
-            if pref.get::<bool>(AUTO_PLAN).unwrap_or(false) {
+            if pref.get::<bool>(AUTO_PLAN).unwrap_or(true) {
                 self.make_plan();
             }
             self.refresh(None);
@@ -291,7 +291,7 @@ mod imp {
                 plan.add_airport(loc);
             }
             drop(plan);
-            let _ = &self.refresh(None);
+            let _ = &self.plan_updated();
         }
 
         pub fn add_waypoint_to_plan(&self, waypoint: Waypoint) {
@@ -481,7 +481,16 @@ mod imp {
                 // Sectors are at the top level
                 match path.len() {
                     1 => {
-                        None
+                        let sector_index = path[0] as usize;
+                        let sectors = plan.get_sectors();
+                        let sector = &sectors[sector_index];
+                        if let Some(wp) = &sector.borrow().get_start() {
+                            Some(wp.get_loc().clone())
+                        } else if let Some(wp) = &sector.borrow().get_end() {
+                            Some(wp.get_loc().clone())
+                        } else {
+                            None
+                        }
                     }
                     2 => {
                         let sector_index = path[0] as usize;
@@ -762,6 +771,18 @@ mod imp {
                             airport_map_view.imp().set_airport(airport);
                         }
                         None => (),
+                    }
+                }
+            }));
+            actions.add_action(&action);
+
+            let action = SimpleAction::new("show_on_map", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+               if let Some(map_view) = get_world_map_view(&view.plan_window) {
+                    show_world_map_view(&view.plan_window);
+                    if let Some(loc) = view.get_selected_location() {
+                        map_view.imp().set_plan(view.plan.clone());
+                        map_view.imp().center_map(loc.clone());
                     }
                 }
             }));
