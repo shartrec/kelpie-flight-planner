@@ -340,6 +340,7 @@ impl Renderer {
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0);
 
+        trans = translate(&trans, &vec3(0.,0., 0.001));
         trans = scale(&trans, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
         trans = rotate(&trans, -(self.last_map_centre.borrow().get_latitude().to_radians()) as f32, &vec3(1., 0., 0.));
         trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
