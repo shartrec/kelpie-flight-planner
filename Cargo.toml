@@ -24,6 +24,7 @@ nalgebra-glm = "0.18.0"
 flate2 = "1.0.28"
 xmltree = "0.10.3"
 xml-rs = "0.8.19"
+rust-embed = "8.0.0"
 
 [build-dependencies]
 glib-build-tools = "0.17.10"

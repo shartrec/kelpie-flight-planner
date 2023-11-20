@@ -21,43 +21,47 @@
  *      Trevor Campbell
  *
  */
+use std::io::Cursor;
+use std::ops::Deref;
+
 use log::error;
+use rust_embed::RustEmbed;
 use shapefile::Polygon;
 use shapefile::Shape;
 use shapefile::ShapeReader;
 
+// This handles the use of embedded files
+#[derive(RustEmbed)]
+#[folder = "resources/embedded/"]
+struct Asset;
+
 // Read shape file into a Vector of shapes for the shorelines of the world.
-
 pub fn read_shapes() -> Option<Vec<Polygon>> {
-    let pref = crate::preference::manager();
-    let path = pref.get::<String>(crate::preference::GSHHG_PATH);
-    match path {
-        Some(p) => {
 
-            let mut world: Vec<Polygon> = Vec::new();
+    let mut world: Vec<Polygon> = Vec::new();
 
-            match ShapeReader::from_path(&p) {
-                Ok(mut reader) => {
-                    for shape in reader.iter_shapes() {
-                        match shape {
-                            Ok(shape) => {
-                                match shape {
-                                    Shape::Polygon(pts) => world.push(pts),
-                                    _ => {
-                                        error!("World shoreline data in file is not polygons as expected: {}", &p);
-                                        ()
-                                    },
-                                }
+    let file = Asset::get("GSHHS_l_L1.shp");
+    match file {
+        Some(embedded_file) => {
+            let data = embedded_file.data;
+            let sb = Cursor::new(data.deref());
+            match ShapeReader::new(sb) {
+
+                Ok(reader) => {
+                    if let Ok(shapes) = reader.read() {
+                        for shape in shapes.iter() {
+                            match shape {
+                                Shape::Polygon(pts) => world.push(pts.clone()),
+                                _ => {
+                                    error!("World shoreline data in file is not polygons as expected: ");
+                                    ()
+                                },
                             }
-                            _ => {
-                                error!("World shoreline data in file is not valid: {}", &p);
-                                ()
-                            },
                         }
                     }
                 }
                 _ => {
-                    error! ("Unable to open file for world shoreline data: {}", p);
+                    error! ("Unable to open file for world shoreline data");
                     ()
                 }
             }
