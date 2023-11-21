@@ -114,6 +114,9 @@ pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder
     if !is_folder {
         let store = ListStore::new(FileFilter::static_type());
         let filter = FileFilter::new();
+        filter.add_suffix("dat.gz");
+        store.append(&filter);
+        let filter = FileFilter::new();
         filter.add_suffix("dat");
         store.append(&filter);
         let filter = FileFilter::new();
