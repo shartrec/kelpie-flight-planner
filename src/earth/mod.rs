@@ -144,27 +144,28 @@ pub fn get_earth_model() -> &'static Earth {
     &EARTH
 }
 
-pub fn initialise() {
+pub fn initialise() -> Result<(), String> {
     let timer = std::time::Instant::now();
     let pref = crate::preference::manager();
     match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
-        Some(p) => load_airports(&p),
-        None => (),
+        Some(p) => load_airports(&p)?,
+        None => return Err("Flightgear Airport path not set".to_string()),
     }
     info!("Airports loaded in {:?}", timer.elapsed());
     match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
-        Some(p) => load_navaids(&p),
-        None => (),
+        Some(p) => load_navaids(&p)?,
+        None => return Err("Flightgear Navaid path not set".to_string()),
     }
     info!("Navaids loaded in {:?}", timer.elapsed());
     match pref.get::<String>(crate::preference::FIXES_PATH) {
-        Some(p) => load_fixes(&p),
-        None => (),
+        Some(p) => load_fixes(&p)?,
+        None => return Err("Flightgear Fix path not set".to_string()),
     }
     info!("Fixes loaded in {:?}", timer.elapsed());
+    Ok(())
 }
 
-fn load_airports(path: &str) {
+fn load_airports(path: &str) -> Result<(), String>{
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
     let file = fs::File::open(path);
@@ -172,21 +173,22 @@ fn load_airports(path: &str) {
         Ok(input) => {
             let decoder = read::GzDecoder::new(input);
             let mut reader = BufReader::new(decoder);
-
             let mut parser = AirportParserFG850::new();
             match parser.load_airports(&mut airports, &mut runway_offsets, &mut reader) {
-                Ok(()) => (),
-                Err(msg) => panic! {"{}", msg},
+                Ok(()) => {
+                    get_earth_model().set_airports(airports);
+                    get_earth_model().set_runway_offsets(runway_offsets);
+                    event::manager().notify_listeners(Event::AirportsLoaded);
+                    Ok(())
+                }
+                Err(msg) => Err(msg),
             }
         }
-        Err(_e) => panic!("Unable to open test airport data"),
+        Err(e) => Err(e.to_string()),
     }
-    get_earth_model().set_airports(airports);
-    get_earth_model().set_runway_offsets(runway_offsets);
-    event::manager().notify_listeners(Event::AirportsLoaded);
 }
 
-fn load_navaids(path: &str) {
+fn load_navaids(path: &str)  -> Result<(), String> {
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
@@ -196,18 +198,20 @@ fn load_navaids(path: &str) {
             let decoder = read::GzDecoder::new(input);
             let mut reader = BufReader::new(decoder);
             match parser.load_navaids(&mut navaids, &mut ils, &mut reader) {
-                Ok(()) => (),
-                Err(msg) => panic! {"{}", msg},
+                Ok(()) => {
+                    get_earth_model().set_navaids(navaids);
+                    get_earth_model().set_ils(ils);
+                    event::manager().notify_listeners(Event::NavaidsLoaded);
+                    Ok(())
+                },
+                Err(msg) => Err(msg),
             }
         }
-        Err(_) => panic!("Unable to open test navaid data"),
+        Err(e) => Err(e.to_string()),
     }
-    get_earth_model().set_navaids(navaids);
-    get_earth_model().set_ils(ils);
-    event::manager().notify_listeners(Event::NavaidsLoaded);
 }
 
-fn load_fixes(path: &str) {
+fn load_fixes(path: &str)  -> Result<(), String> {
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
     match file {
@@ -216,12 +220,14 @@ fn load_fixes(path: &str) {
             let decoder = read::GzDecoder::new(input);
             let mut reader = BufReader::new(decoder);
             match parser.load_fixes(&mut fixes, &mut reader) {
-                Ok(()) => (),
-                Err(msg) => panic! {"{}", msg},
+                Ok(()) => {
+                    get_earth_model().set_fixes(fixes);
+                    event::manager().notify_listeners(Event::FixesLoaded);
+                    Ok(())
+                },
+                Err(msg) => Err(msg),
             }
         }
-        Err(_) => panic!("Unable to open test fix data"),
+        Err(e) => Err(e.to_string()),
     }
-    get_earth_model().set_fixes(fixes);
-    event::manager().notify_listeners(Event::FixesLoaded);
 }

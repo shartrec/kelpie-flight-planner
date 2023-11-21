@@ -36,6 +36,7 @@ use crate::window::airport_view::AirportView;
 use crate::window::fix_view::FixView;
 use crate::window::navaid_view::NavaidView;
 use crate::window::plan_view::PlanView;
+use crate::window::preferences::PreferenceDialog;
 use crate::window::world_map_view::WorldMapView;
 
 enum SaveTyoe {
@@ -135,15 +136,7 @@ impl Window {
 
     fn do_save(&self, title: &str, save_tyoe: SaveTyoe) {
         if let Ok(view) = self.plan_stack.visible_child().expect("No plan").downcast::<PlanView>() {
-            let win = match self.plan_stack.root() {
-                Some(r) => {
-                    let window = r.downcast::<gtk::Window>().unwrap().clone();
-                    Some(window)
-                }
-                _ => {
-                    None
-                }
-            };
+            let win = self.get_window_handle();
 
             let rc = view.imp().get_plan();
             let plan = rc.borrow();
@@ -198,6 +191,19 @@ impl Window {
         }
     }
 
+    fn get_window_handle(&self) -> Option<gtk::Window> {
+        let win = match self.plan_stack.root() {
+            Some(r) => {
+                let window = r.downcast::<gtk::Window>().unwrap().clone();
+                Some(window)
+            }
+            _ => {
+                None
+            }
+        };
+        win
+    }
+
     fn layout_panels(&self) {
         let pref = crate::preference::manager();
 
@@ -249,7 +255,27 @@ impl ObjectImpl for Window {
 
         self.layout_panels();
 
-        crate::earth::initialise();
+        match crate::earth::initialise() {
+            Ok(_) => {}
+            Err(_) => {
+                let win = self.get_window_handle();
+                let win_clone = win.clone();
+
+                let mut buttons = Vec::<String>::new();
+                buttons.push("Ok".to_string());
+                let alert = AlertDialog::builder()
+                    .modal(true)
+                    .message(format!("Please set paths to flightgear Airport and Navaid files" ))
+                    .buttons(buttons)
+                    .build();
+                alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
+                    let pref_dialog = PreferenceDialog::new();
+                    pref_dialog.set_transient_for(Some(&win_clone.unwrap()));
+                    pref_dialog.show();
+                });
+            }
+        }
+
     }
 }
 
