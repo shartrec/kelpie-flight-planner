@@ -27,21 +27,23 @@ use gtk::prelude::AdjustmentExt;
 mod imp {
     use std::cell::{Cell, RefCell};
     use std::cmp::Ordering::Equal;
+    use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
 
     use gtk::{Button, GLArea, glib, Inhibit, PopoverMenu, ScrolledWindow, ToggleButton};
     use gtk::gdk::Rectangle;
     use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
-    use gtk::glib::clone;
+    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use gtk::glib::subclass::InitializingObject;
     use gtk::graphene::Point;
     use gtk::prelude::*;
     use gtk::subclass::prelude::*;
     use log::error;
 
-    use crate::earth;
+    use crate::{earth, event};
     use crate::earth::coordinate::Coordinate;
+    use crate::event::Event;
     use crate::model::airport::{Airport, AirportType};
     use crate::model::location::Location;
     use crate::model::plan::Plan;
@@ -70,6 +72,7 @@ mod imp {
         view_action: RefCell<Option<SimpleAction>>,
         add_action: RefCell<Option<SimpleAction>>,
 
+        my_listener_id: RefCell<usize>,
         renderer: RefCell<Option<Renderer>>,
         drag_start: RefCell<Option<[f64; 2]>>,
         drag_last: RefCell<Option<[f64; 2]>>,
@@ -82,6 +85,24 @@ mod imp {
     impl WorldMapView {
         pub fn initialise(&self) -> () {
             self.zoom_level.replace(1.0);
+
+            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let index = event::manager().register_listener(tx);
+            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
+                match ev {
+                    Event::PlanChanged => {
+                        if let Some(renderer) = view.renderer.borrow().as_ref() {
+                            renderer.plan_changed();
+                        }
+                        view.gl_area.queue_draw();
+                    },
+                    _ => (),
+                }
+                glib::source::Continue(true)
+            }));
+            // self.my_listener.replace(Some(rx));
+            self.my_listener_id.replace(index);
+
         }
 
         pub fn airports_loaded(&self) {
@@ -508,6 +529,7 @@ mod imp {
         }
 
         fn dispose(&self) {
+            event::manager().unregister_listener(self.my_listener_id.borrow().deref());
             if let Some(popover) = self.popover.borrow().as_ref() {
                 popover.unparent();
             };

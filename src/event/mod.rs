@@ -34,6 +34,7 @@ pub enum Event {
     AirportsLoaded,
     NavaidsLoaded,
     FixesLoaded,
+    PlanChanged,
     PreferencesChanged,
 }
 

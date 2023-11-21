@@ -192,7 +192,6 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    //todo drop buffers at end of program
     pub fn new() -> Self {
         let vert_shader = Shader::from_vert_source(
             &CString::new(include_str!("program.vert")).unwrap()
@@ -232,7 +231,15 @@ impl Renderer {
     }
 
     pub fn set_plan(&self, plan: Rc<RefCell<Plan>>) {
-        self.plan_renderer.replace(Some(PlanRenderer::new(plan)));
+        if let Some(old_pr) = self.plan_renderer.replace(Some(PlanRenderer::new(plan))) {
+            old_pr.drop_buffers();
+        }
+    }
+
+    pub fn plan_changed(&self) {
+        if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
+            plan_renderer.plan_changed();
+        }
     }
 
     pub fn set_zoom_level(&self, zoom: f32) {
@@ -307,7 +314,7 @@ impl Renderer {
         }
 
         if with_navaids {
-            let color = vec!(0.8, 0.8, 1.0f32);
+            let color = vec!(0.2, 0.2, 1.0f32);
             unsafe {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);

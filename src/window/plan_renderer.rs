@@ -22,7 +22,7 @@
  *
  */
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::f32::consts::PI;
 use std::ops::Deref;
 use std::rc::Rc;
@@ -35,45 +35,59 @@ use crate::model::plan::Plan;
 use crate::window::map_utils::Vertex;
 
 pub struct PlanRenderer {
+    plan: Rc<RefCell<Plan>>,
     plan_vertex_buffer: GLuint,
     plan_index_buffer: GLuint,
-    waypoints: usize,
+    waypoints: Cell<usize>,
 }
 
 impl PlanRenderer {
     //todo drop buffers at end of program
     pub fn new(plan: Rc<RefCell<Plan>>) -> Self {
-        let (vertices, indices) = Self::build_plan_vertices(plan);
         let mut plan_vertex_buffer: GLuint = 0;
         let mut plan_index_buffer: GLuint = 0;
         unsafe {
             gl::GenBuffers(1, &mut plan_vertex_buffer);
+            gl::GenBuffers(1, &mut plan_index_buffer);
+        }
+        let vertices = Self::load_buffers(plan.clone(), plan_vertex_buffer, plan_index_buffer);
+
+        PlanRenderer {
+            plan: plan.clone(),
+            plan_vertex_buffer,
+            plan_index_buffer,
+            waypoints: Cell::new(vertices.len()),
+        }
+    }
+
+    fn load_buffers(plan: Rc<RefCell<Plan>>, mut plan_vertex_buffer: GLuint, mut plan_index_buffer: GLuint) -> Vec<Vertex> {
+        let (vertices, indices) = Self::build_plan_vertices(plan);
+        unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, plan_vertex_buffer);
             gl::BufferData(
                 gl::ARRAY_BUFFER, // target
                 (vertices.len() * std::mem::size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
                 vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                gl::STATIC_DRAW, // usage
+                gl::DYNAMIC_DRAW, // usage
             );
 
-            gl::GenBuffers(1, &mut plan_index_buffer);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, plan_index_buffer);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
                 indices.as_ptr() as *const gl::types::GLvoid, // pointer to data
-                gl::STATIC_DRAW, // usage
+                gl::DYNAMIC_DRAW, // usage
             );
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
+        vertices
+    }
 
-        PlanRenderer {
-            plan_vertex_buffer,
-            plan_index_buffer,
-            waypoints: vertices.len(),
-        }
+    pub fn plan_changed(&self) {
+        let vertices = Self::load_buffers(self.plan.clone(), self.plan_vertex_buffer, self.plan_index_buffer);
+        self.waypoints.replace(vertices.len());
     }
 
     pub fn draw(&self, _area: &GLArea) {
@@ -95,12 +109,12 @@ impl PlanRenderer {
             gl::BindVertexArray(self.plan_index_buffer);
             gl::DrawElements(
                 gl::POINTS, // mode
-                self.waypoints as gl::types::GLsizei,
+                self.waypoints.get() as gl::types::GLsizei,
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
 
-            gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints - 1) as GLint);
+            gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints.get() - 1) as GLint);
             gl::PointSize(1.0);
             gl::LineWidth(1.0);
 

@@ -249,6 +249,7 @@ mod imp {
                     map_view.imp().center_map(wp.get_loc().clone());
                 }
             }
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         pub fn initialise(&self) -> () {
@@ -292,6 +293,7 @@ mod imp {
             }
             drop(plan);
             let _ = &self.plan_updated();
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         pub fn add_waypoint_to_plan(&self, waypoint: Waypoint) {
@@ -333,6 +335,7 @@ mod imp {
             }
             drop(plan);
             let _ = &self.refresh(None);
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         fn new_sector(&self) {
@@ -362,6 +365,7 @@ mod imp {
             }
             drop(plan);
             let _ = &self.refresh(None);
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         fn move_selected_up(&self) {
@@ -398,6 +402,7 @@ mod imp {
             }
             drop(plan);
             let _ = &self.refresh(tree_path);
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         fn move_selected_down(&self) {
@@ -435,6 +440,7 @@ mod imp {
             }
             drop(plan);
             let _ = &self.refresh(tree_path);
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         fn remove_selected(&self) {
@@ -471,6 +477,7 @@ mod imp {
             }
             drop(plan);
             let _ = &self.refresh(tree_path);
+            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         fn get_selected_location(&self) -> Option<Coordinate> {
