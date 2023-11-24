@@ -60,7 +60,7 @@ impl PlanRenderer {
         }
     }
 
-    fn load_buffers(plan: Rc<RefCell<Plan>>, mut plan_vertex_buffer: GLuint, mut plan_index_buffer: GLuint) -> Vec<Vertex> {
+    fn load_buffers(plan: Rc<RefCell<Plan>>, plan_vertex_buffer: GLuint, plan_index_buffer: GLuint) -> Vec<Vertex> {
         let (vertices, indices) = Self::build_plan_vertices(plan);
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, plan_vertex_buffer);

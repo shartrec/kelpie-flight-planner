@@ -22,7 +22,10 @@
  *
  */
 use gtk::{self, Adjustment, CompositeTemplate, glib};
+use gtk::glib::Sender;
 use gtk::prelude::AdjustmentExt;
+
+use crate::util::fg_link::{AircraftPositionInfo, get_aircraft_position};
 
 mod imp {
     use std::cell::{Cell, RefCell};
@@ -40,6 +43,7 @@ mod imp {
     use gtk::prelude::*;
     use gtk::subclass::prelude::*;
     use log::error;
+    use scheduling::SchedulerHandle;
 
     use crate::{earth, event};
     use crate::earth::coordinate::Coordinate;
@@ -47,6 +51,7 @@ mod imp {
     use crate::model::airport::{Airport, AirportType};
     use crate::model::location::Location;
     use crate::model::plan::Plan;
+    use crate::util::fg_link::AircraftPositionInfo;
     use crate::window::render_gl::Renderer;
     use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
 
@@ -77,7 +82,7 @@ mod imp {
         drag_start: RefCell<Option<[f64; 2]>>,
         drag_last: RefCell<Option<[f64; 2]>>,
         zoom_level: Cell<f32>,
-
+        scheduler_handle: RefCell<Option<SchedulerHandle>>,
     }
 
     const MAX_ZOOM: f32 = 20.;
@@ -102,6 +107,24 @@ mod imp {
             }));
             // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
+
+            // Set up the scheduled tasks to query the aircraft position
+            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ap: Option<AircraftPositionInfo> | {
+                if let Some(renderer) = view.renderer.borrow().as_ref() {
+                    renderer.set_aircraft_position(ap);
+                }
+                view.gl_area.queue_draw();
+                glib::source::Continue(true)
+            }));
+
+            let recurring_handle = scheduling::Scheduler::delayed_recurring(
+                std::time::Duration::from_secs(2),
+                std::time::Duration::from_secs(5),
+                move || get_aircraft_position_task(tx.clone()),
+            )
+                .start();
+            self.scheduler_handle.replace(Some(recurring_handle));
 
         }
 
@@ -254,7 +277,6 @@ mod imp {
             self.gl_area.set_has_depth_buffer(true);
             self.gl_area.set_has_tooltip(true);
 
-
             self.gl_area.connect_realize(clone!(@weak self as window => move |area| {
                 if let Some(context) = area.context() {
                     context.make_current();
@@ -264,6 +286,7 @@ mod imp {
 
                     let renderer = Renderer::new();
                     renderer.set_zoom_level(1.0);
+                    renderer.set_aircraft_position(None);
                     window.renderer.replace(Some(renderer));
                 }
             }));
@@ -533,6 +556,10 @@ mod imp {
             if let Some(popover) = self.popover.borrow().as_ref() {
                 popover.unparent();
             };
+
+            if let Some(scheduler) = self.scheduler_handle.borrow_mut().deref() {
+                scheduler.cancel();
+            }
         }
     }
 
@@ -562,4 +589,10 @@ fn center_scrollbar(adjustment: &Adjustment) {
     let upper = adjustment.upper();
     let value = (upper - page_size) / 2.0;
     adjustment.set_value(value);
+}
+
+fn get_aircraft_position_task(tx: Sender<Option<AircraftPositionInfo>>) {
+    // Your task implementation goes here
+    let ap = get_aircraft_position();
+    let _ = tx.send(ap);
 }

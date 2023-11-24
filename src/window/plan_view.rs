@@ -603,13 +603,13 @@ mod imp {
             }));
 
             factory.connect_bind(move |_, list_item| {
-                // Get `IntegerObject` from `ListItem`
+                // Get `StringObject` from `ListItem`
                 let string_object = list_item
                     .downcast_ref::<ListItem>()
                     .expect("Needs to be ListItem")
                     .item()
                     .and_downcast::<StringObject>()
-                    .expect("The item has to be an `IntegerObject`.");
+                    .expect("The item has to be an `StringObject`.");
 
                 // Get `Label` from `ListItem`
                 let label = list_item
@@ -627,7 +627,7 @@ mod imp {
             // set the selection initially to the default
             let hangar = get_hangar().imp();
             let mut i = 0;
-            for (_k, a) in hangar.get_all().read().expect("ould not get hangar lock").iter() {
+            for (_k, a) in hangar.get_all().read().expect("could not get hangar lock").iter() {
                 if *a.is_default() {
                     self.aircraft_combo.set_selected(i);
                 }

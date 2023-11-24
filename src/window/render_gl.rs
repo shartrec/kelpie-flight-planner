@@ -38,6 +38,8 @@ use gtk::prelude::WidgetExt;
 use crate::earth::coordinate::Coordinate;
 use crate::earth::spherical_projector::SphericalProjector;
 use crate::model::plan::Plan;
+use crate::util::fg_link::AircraftPositionInfo;
+use crate::window::aircraft_renderer::AircraftRenderer;
 use crate::window::airport_renderer::AirportRenderer;
 use crate::window::navaid_renderer::NavaidRenderer;
 use crate::window::plan_renderer::PlanRenderer;
@@ -185,6 +187,7 @@ pub struct Renderer {
     airport_renderer: RefCell<AirportRenderer>,
     navaid_renderer: RefCell<NavaidRenderer>,
     plan_renderer: RefCell<Option<PlanRenderer>>,
+    aircraft_renderer: RefCell<AircraftRenderer>,
 
     zoom_level: Cell<f32>,
     map_centre: RefCell<Coordinate>,
@@ -209,6 +212,7 @@ impl Renderer {
         let shore_line_renderer = ShorelineRenderer::new();
         let airport_renderer = AirportRenderer::new();
         let navaid_renderer = NavaidRenderer::new();
+        let aircraft_renderer = AircraftRenderer::new();
 
         Renderer {
             shader_program,
@@ -217,6 +221,7 @@ impl Renderer {
             airport_renderer: RefCell::new(airport_renderer),
             navaid_renderer: RefCell::new(navaid_renderer),
             plan_renderer: RefCell::new(None),
+            aircraft_renderer: RefCell::new(aircraft_renderer),
             zoom_level: Cell::new(1.0),
             map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
             last_map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
@@ -243,7 +248,8 @@ impl Renderer {
     }
 
     pub fn set_zoom_level(&self, zoom: f32) {
-        self.zoom_level.replace(zoom);
+        self.zoom_level.replace(zoom.clone());
+        self.aircraft_renderer.borrow().set_zoom_level(zoom.clone());
     }
 
     pub fn get_map_centre(&self) -> Coordinate {
@@ -257,6 +263,9 @@ impl Renderer {
         }
     }
 
+    pub fn set_aircraft_position(&self, aircraft_position: Option<AircraftPositionInfo>) {
+        self.aircraft_renderer.borrow().set_aircraft_position(aircraft_position);
+    }
 
     pub fn draw(&self, area: &GLArea, with_airports: bool, with_navaids: bool) {
         unsafe {
@@ -331,6 +340,13 @@ impl Renderer {
             plan_renderer.draw(area);
         }
 
+        let color = vec!(1.0, 0.1, 0.1f32);
+        unsafe {
+            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.aircraft_renderer.borrow().draw(area);
+
         if !true_centre {
             let my_area = area.clone();
             timeout_add_local(Duration::from_millis(20), move || {
@@ -366,8 +382,8 @@ impl Renderer {
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
             plan_renderer.drop_buffers();
         }
+        self.aircraft_renderer.borrow().drop_buffers();
     }
-
     pub fn get_cord_from_win(&self, area: &GLArea, x: f32, y: f32) -> Result<[f32; 2], String> {
         // We need to calculate the Z depth where the point meets the earth
         // Get the earth radius

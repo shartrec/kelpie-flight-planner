@@ -38,6 +38,7 @@ pub(crate) mod speed_format;
 pub(crate) mod plan_writer_xml;
 pub(crate) mod plan_reader;
 pub(crate) mod plan_writer_route_manager;
+pub(crate) mod fg_link;
 
 pub fn get_plan_file_filter(ext: &str) -> ListStore {
 
