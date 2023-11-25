@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>Plan editor &#8212; Kelpie Flight Planner 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nature.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Airport Search" href="airport_view.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="airport_view.html" title="Airport Search"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Kelpie Flight Planner 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Plan editor</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="plan-editor">
+<h1>Plan editor<a class="headerlink" href="#plan-editor" title="Permalink to this heading">¶</a></h1>
+<p>The plan editor is where you construct your flight plan.
+You use the
+<a class="reference external" href="./airport_view.html">airport</a>
+and
+<a class="reference external" href="./navaid_view.html">navaid</a>
+views to select components to add to the plan and use the toolbar
+and planner menu to manipulate the plan.
+<img alt="Plan editor screenshot" src="_images/Plan.png" /></p>
+<p>You can open as many editors at one time as you wish, using the main menu.</p>
+<p>The plan table lists the plan. Plans are divided into Sectors.</p>
+<p>Each sector has a starting and ending airport and a list of intermediate waypoints that may either be based
+on a navigation aid or may be an artificial waypoint such as the Top of Climb or Bottom of Descent or a GPS reference.</p>
+<p>Each sector in the plan may be collapsed or expanded by clicking on the ‘+’ or ‘-’ sign. The Plan table shows each item in the plan and includes a description of the waypoint its latitude and longitude, the heading and distance from the previous waypoint and the estimated time from the previous waypoint.The time is based on the aircraft information supplied in the preferences dialog. The popup menu on the plan table has three options that allow you to add a new sector or,
+more usefully, find navaids and airports near the selected item in the plan.</p>
+<section id="plan-context-menu">
+<h2>Plan context menu<a class="headerlink" href="#plan-context-menu" title="Permalink to this heading">¶</a></h2>
+<blockquote>
+<div><p><img alt="Plan popover" src="_images/PlanPopover.png" /></p>
+</div></blockquote>
+<p>Use the options in the plan context menu to remove items from the plan and to view and find items of interest.</p>
+</section>
+<section id="plan-toolbar">
+<h2>Plan toolbar<a class="headerlink" href="#plan-toolbar" title="Permalink to this heading">¶</a></h2>
+<blockquote>
+<div><p><img alt="Plan toolbar" src="_images/PlanToolbar.png" /></p>
+</div></blockquote>
+<dl class="simple">
+<dt>Generate plan <img alt="generate plan icon" src="_images/generate_plan.gif" /></dt><dd><p>Generate the content of the selected plan.
+When you select this action, all the waypoints previously calculated by the planner
+will be removed (waypoints or nav aids added manually will not be removed)
+and a new flight plan generated adding waypoints at regular intervals.
+The type of plan generated can be influenced by you by changing setting in the <a class="reference external" href="./plannerPreferences.html">planner preferences</a>.|</p>
+</dd>
+<dt>New Sector <img alt="new sector icon" src="_images/new_sector.gif" /></dt><dd><p>Add a new sector to the plan. The sector will be added to the end of the plan and will
+start at the end airport of the previous sector.
+You can move the sector about as required after it is created.</p>
+</dd>
+<dt>Move up or down <img alt="up icon" src="_images/up.gif" /> <img alt="down icon" src="_images/down.gif" /></dt><dd><p>Move the selected plan component up or down.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Plan editor</a><ul>
+<li><a class="reference internal" href="#plan-context-menu">Plan context menu</a></li>
+<li><a class="reference internal" href="#plan-toolbar">Plan toolbar</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="install.html"
+                          title="previous chapter">Installation</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="airport_view.html"
+                          title="next chapter">Airport Search</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/plan_editor.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="airport_view.html" title="Airport Search"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="install.html" title="Installation"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">Kelpie Flight Planner 0.1 documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Plan editor</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2023, Trevor Campbell.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.2.1.
+    </div>
+  </body>
+</html>
