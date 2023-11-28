@@ -22,7 +22,7 @@
  *
  */
 
-use gtk::{ButtonsType, gdk_pixbuf, glib, MessageDialog, MessageType, Root, ScrolledWindow, show_about_dialog};
+use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root, ScrolledWindow, show_about_dialog};
 use gtk::gdk::Texture;
 use gtk::glib::Cast;
 use gtk::prelude::{
