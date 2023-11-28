@@ -26,15 +26,17 @@
 
 use std::ptr;
 
-use gtk::{Application, CssProvider, gio, glib};
+use gtk::{Application, CssProvider, gio, glib, UriLauncher};
 use gtk::gdk::Display;
-use gtk::gio::{File, SimpleAction};
+use gtk::gio::{Cancellable, File, SimpleAction};
 use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use simplelog::*;
 
 use window::{preferences::PreferenceDialog, Window};
+use crate::util::info;
+use crate::window::util::show_help_about;
 
 mod earth;
 mod event;
@@ -165,6 +167,22 @@ fn connect_actions(app: &Application, window: &Window) {
         pref_dialog.show();
     }));
     app.add_action(&action);
+
+    let action = SimpleAction::new("help-about", None);
+    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+        show_help_about(&window.root());
+    }));
+    app.add_action(&action);
+
+    let action = SimpleAction::new("help-contents", None);
+    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+        UriLauncher::builder()
+            .uri(info::DOCSITE)
+            .build()
+            .launch(Some(&window), Some(&Cancellable::default()), |_| {});
+    }));
+    app.add_action(&action);
+
 }
 
 fn build_ui(app: &Application) {

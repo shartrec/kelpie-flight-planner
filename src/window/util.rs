@@ -22,13 +22,15 @@
  *
  */
 
-use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root, ScrolledWindow};
+use gtk::{ButtonsType, gdk_pixbuf, glib, MessageDialog, MessageType, Root, ScrolledWindow, show_about_dialog};
+use gtk::gdk::Texture;
 use gtk::glib::Cast;
 use gtk::prelude::{
     CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt,
 };
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
+use crate::util;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
 use crate::window::fix_view::FixView;
@@ -73,6 +75,30 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
             obj.close();
         });
     };
+}
+
+
+
+pub fn show_help_about(root: &Option<Root>) {
+    // Create a new message dialog
+    if let Ok(w) = root
+        .as_ref()
+        .expect("Can't get the root window")
+        .clone()
+        .downcast::<gtk::Window>()
+    {
+        let icon = Texture::from_resource(
+            "/com/shartrec/kelpie_planner/images/kelpiedog_120x120_transparent.png");
+        show_about_dialog(Some(&w), &[
+            ("program-name", &util::info::PROGRAM_NAME),
+            ("version", &util::info::VERSION),
+            ("website", &util::info::WEBSITE),
+            ("license-type", &util::info::LICENSE_TYPE),
+            ("title", &util::info::ABOUT_TITLE),
+            ("authors", &[util::info::AUTHOR].as_ref()),
+            ("logo", &icon)
+            ]);
+    }
 }
 
 pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {

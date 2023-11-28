@@ -32,7 +32,7 @@ mod fix_view;
 pub(crate) mod imp;
 mod navaid_view;
 mod plan_view;
-mod util;
+pub(crate) mod util;
 mod world_map_view;
 pub(crate) mod map_utils;
 pub(crate) mod render_gl;
