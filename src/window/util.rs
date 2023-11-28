@@ -79,26 +79,18 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
 
 
 
-pub fn show_help_about(root: &Option<Root>) {
-    // Create a new message dialog
-    if let Ok(w) = root
-        .as_ref()
-        .expect("Can't get the root window")
-        .clone()
-        .downcast::<gtk::Window>()
-    {
-        let icon = Texture::from_resource(
-            "/com/shartrec/kelpie_planner/images/kelpiedog_120x120_transparent.png");
-        show_about_dialog(Some(&w), &[
-            ("program-name", &util::info::PROGRAM_NAME),
-            ("version", &util::info::VERSION),
-            ("website", &util::info::WEBSITE),
-            ("license-type", &util::info::LICENSE_TYPE),
-            ("title", &util::info::ABOUT_TITLE),
-            ("authors", &[util::info::AUTHOR].as_ref()),
-            ("logo", &icon)
-            ]);
-    }
+pub fn show_help_about(window: &Window) {
+    let icon = Texture::from_resource(
+        "/com/shartrec/kelpie_planner/images/kelpiedog_120x120_transparent.png");
+    show_about_dialog(Some(window), &[
+        ("program-name", &util::info::PROGRAM_NAME),
+        ("version", &util::info::VERSION),
+        ("website", &util::info::WEBSITE),
+        ("license-type", &util::info::LICENSE_TYPE),
+        ("title", &util::info::ABOUT_TITLE),
+        ("authors", &[util::info::AUTHOR].as_ref()),
+        ("logo", &icon)
+        ]);
 }
 
 pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
