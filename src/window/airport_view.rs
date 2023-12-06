@@ -30,7 +30,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, ListItem, PopoverMenu, ScrollablePolicy, ScrolledWindow, SignalListItemFactory, SingleSelection};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, Object, PRIORITY_DEFAULT};
