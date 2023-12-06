@@ -24,10 +24,39 @@
 
 // Range filer for determining if a coordinate is within the specified distance of another
 
+use gtk::CustomFilter;
+use gtk::glib::Cast;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 use regex::{Regex, RegexBuilder};
 
 use crate::earth::coordinate::Coordinate;
+use crate::model::airport_object::AirportObject;
 use crate::model::location::Location;
+
+pub fn new_filter(filter: Box<dyn Filter>) -> CustomFilter {
+    CustomFilter::new ( move | obj | {
+        let airport_object = obj.clone()
+            .downcast::<AirportObject>()
+            .expect("The item has to be an `Airport`.");
+
+        let airport = airport_object.imp().airport();
+        let airport: &dyn Location = &*airport;
+        filter.filter(airport)
+
+    })
+}
+
+pub fn set_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
+    custom_filter.set_filter_func ( move | obj | {
+        let airport_object = obj.clone()
+            .downcast::<AirportObject>()
+            .expect("The item has to be an `Airport`.");
+
+        let airport = airport_object.imp().airport();
+        let airport: &dyn Location = &*airport;
+        filter.filter(airport)
+    })
+}
 
 pub trait Filter {
     fn filter(&self, location: &dyn Location) -> bool;
@@ -67,6 +96,21 @@ impl Filter for RangeFilter {
         } else {
             false
         }
+    }
+}
+
+pub struct NilFilter {
+}
+
+impl NilFilter {
+    pub fn new() -> Self {
+        Self{}
+    }
+}
+
+impl Filter for NilFilter {
+    fn filter(&self, _location: &dyn Location) -> bool {
+        false
     }
 }
 

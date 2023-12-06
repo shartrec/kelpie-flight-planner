@@ -32,3 +32,4 @@ pub mod sector;
 pub mod waypoint;
 
 pub(crate) mod test_utils;
+pub(crate) mod airport_object;

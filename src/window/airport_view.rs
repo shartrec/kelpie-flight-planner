@@ -22,26 +22,29 @@
  *
  */
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
-use gtk::{ListStore, TreeView};
 
 mod imp {
     use std::boxed::Box;
     use std::cell::RefCell;
     use std::ops::Deref;
+    use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, Entry, PopoverMenu, ScrolledWindow};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext, Object, PRIORITY_DEFAULT};
     use log::error;
 
-    use crate::{earth, event};
+    use crate::event;
+    use crate::earth::airport_list_model::Airports;
     use crate::earth::coordinate::Coordinate;
     use crate::event::Event;
+    use crate::model::airport::Airport;
+    use crate::model::airport_object::AirportObject;
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
+    use crate::util::location_filter::{CombinedFilter, NameIdFilter, new_filter, NilFilter, RangeFilter, set_filter};
     use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_error_dialog, show_fix_view, show_navaid_view};
 
     use super::*;
@@ -52,7 +55,17 @@ mod imp {
         #[template_child]
         pub airport_window: TemplateChild<ScrolledWindow>,
         #[template_child]
-        pub airport_list: TemplateChild<TreeView>,
+        pub airport_list: TemplateChild<ColumnView>,
+        #[template_child]
+        pub col_id: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_name: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lat: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lon: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_elev: TemplateChild<ColumnViewColumn>,
         #[template_child]
         pub airport_search_name: TemplateChild<Entry>,
         #[template_child]
@@ -64,6 +77,7 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         my_listener_id: RefCell<usize>,
+        filter_list_model: RefCell<Option<FilterListModel>>,
 
     }
 
@@ -75,6 +89,14 @@ mod imp {
                 match ev {
                     Event::AirportsLoaded => {
                         view.airport_search.set_sensitive(true);
+
+                        // let fm = FilterListModel::new(Some(Airports::new()), self.filter.borrow().deref().as_ref());
+                        let fm = FilterListModel::new(Some(Airports::new()), Some(new_filter(Box::new(NilFilter::new()))));
+
+                        view.filter_list_model.replace(Some(fm.clone()));
+
+                        let selection_model = SingleSelection::new(Some(fm));
+                        view.airport_list.set_model(Some(&selection_model));
                     },
                     _ => (),
                 }
@@ -129,47 +151,51 @@ mod imp {
                     }
                 }
             }
-            let airports = earth::get_earth_model().get_airports().read().unwrap();
-            let searh_result = airports.iter().filter(move |a| {
-                let airport: &dyn Location = &***a;
-                combined_filter.filter(airport)
-            });
-            let store = ListStore::new(&[
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                i32::static_type(),
-            ]);
 
-            for airport in searh_result {
-                store.insert_with_values(
-                    None,
-                    &[
-                        (0, &airport.get_id()),
-                        (1, &airport.get_name()),
-                        (2, &airport.get_lat_as_string()),
-                        (3, &airport.get_long_as_string()),
-                        (4, &(airport.get_elevation())),
-                    ],
-                );
-            }
-            self.airport_list.set_model(Some(&store));
+            let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
+
+            set_filter(&custom_filter, Box::new(combined_filter));
+            custom_filter.changed(FilterChange::Different);
         }
 
         fn add_selected_to_plan(&self) {
-            if let Some((model, iter)) = self.airport_list.selection().selected() {
-                let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
-                    match get_plan_view(&self.airport_window.get()) {
-                        Some(ref mut plan_view) => {
-                            // get the plan
-                            plan_view.imp().add_airport_to_plan(airport);
-                            ()
-                        }
-                        None => (),
-                    }
+            if let Some(airport) = self.get_selection() {
+                self.add_to_plan(airport);
+            }
+        }
+
+        fn add_item_to_plan(&self, item: u32) {
+            if let Some(airport) = self.get_model_airport(item) {
+                self.add_to_plan(airport);
+            }
+        }
+
+        fn add_to_plan(&self, airport: Arc<Airport>) {
+            match get_plan_view(&self.airport_window.get()) {
+                Some(ref mut plan_view) => {
+                    // get the plan
+                    plan_view.imp().add_airport_to_plan(airport.clone());
+                    ()
                 }
+                None => (),
+            }
+        }
+
+        fn get_selection(&self) -> Option<Arc<Airport>> {
+            let selection = self.airport_list.model().unwrap().selection();
+            let sel_ap = selection.nth(0);
+            self.get_model_airport(sel_ap)
+        }
+
+        fn get_model_airport(&self, sel_ap: u32) -> Option<Arc<Airport>> {
+            let selection = self.airport_list.model().unwrap().item(sel_ap);
+            if let Some(object) = selection {
+                let airport_object = object.downcast::<AirportObject>()
+                    .expect("The item has to be an `Airport`.");
+
+                Some(airport_object.imp().airport())
+            } else {
+                None
             }
         }
 
@@ -181,6 +207,39 @@ mod imp {
             self.airport_search_long
                 .set_text(&coordinate.get_longitude_as_string());
             self.airport_search.emit_clicked();
+        }
+
+        fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalListItemFactory {
+            let factory = SignalListItemFactory::new();
+            factory.connect_setup(move |_, list_item| {
+                let label = Label::new(None);
+                list_item
+                    .downcast_ref::<ListItem>()
+                    .expect("Needs to be ListItem")
+                    .set_child(Some(&label));
+            });
+
+            factory.connect_bind(move |_, list_item| {
+                // Get `StringObject` from `ListItem`
+                let obj = list_item
+                    .downcast_ref::<ListItem>()
+                    .expect("Needs to be ListItem")
+                    .item()
+                    .and_downcast::<T>()
+                    .expect("The item has to be an <T>.");
+
+                // Get `Label` from `ListItem`
+                let label = list_item
+                    .downcast_ref::<ListItem>()
+                    .expect("Needs to be ListItem")
+                    .child()
+                    .and_downcast::<Label>()
+                    .expect("The child has to be a `Label`.");
+
+                // Set "label" to "number"
+                f(label, &obj);
+            });
+            factory
         }
     }
 
@@ -205,9 +264,44 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.airport_list.connect_row_activated(
-                clone!(@weak self as view => move | _list_view, _position, _col| {
-                    view.add_selected_to_plan();
+            let f = |label: Label, airport: &AirportObject|{
+                label.set_label(&airport.property::<String>("id"));
+                label.set_xalign(0.0);
+            };
+            let factory = Self::build_column_factory(f);
+            self.col_id.set_factory(Some(&factory));
+
+            let f = |label: Label, airport: &AirportObject|{
+                label.set_label(&airport.property::<String>("name"));
+                label.set_xalign(0.0);
+            };
+            let factory = Self::build_column_factory(f);
+            self.col_name.set_factory(Some(&factory));
+
+            let f = |label: Label, airport: &AirportObject|{
+                label.set_label(&airport.property::<String>("latitude"));
+                label.set_xalign(0.0);
+            };
+            let factory = Self::build_column_factory(f);
+            self.col_lat.set_factory(Some(&factory));
+
+            let f = |label: Label, airport: &AirportObject|{
+                label.set_label(&airport.property::<String>("longitude"));
+                label.set_xalign(0.0);
+            };
+            let factory = Self::build_column_factory(f);
+            self.col_lon.set_factory(Some(&factory));
+
+            let f = |label: Label, airport: &AirportObject|{
+                label.set_label(&airport.property::<i32>("elevation").to_string());
+                label.set_xalign(1.0);
+            };
+            let factory = Self::build_column_factory(f);
+            self.col_elev.set_factory(Some(&factory));
+
+            self.airport_list.connect_activate(
+                clone!(@weak self as view => move | _list_view, position | {
+                    view.add_item_to_plan(position);
                 }),
             );
 
@@ -225,17 +319,16 @@ mod imp {
                 None => error!(" Not a popover"),
             }
 
-
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
-            gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
+            gesture.connect_released(clone!(@weak self as view => move | gesture, _n, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 if let Some(popover) = view.popover.borrow().as_ref() {
                         popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
                         popover.popup();
                 };
             }));
-            self.airport_window.add_controller(gesture);
+            self.airport_list.add_controller(gesture);
 
             // If the user clicks search or pressses enter in any of the search fields do the search
             self.airport_search
@@ -271,20 +364,15 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.airport_list.selection().selected() {
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
-                        view.search_near(&airport.get_loc());
+                    if let Some(airport) = view.get_selection() {
+                        view.search_near(airport.get_loc());
                     }
-               }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.airport_list.selection().selected() {
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
+                    if let Some(airport) = view.get_selection() {
                         match get_navaid_view(&view.airport_window.get()) {
                             Some(navaid_view) => {
                                 show_navaid_view(&view.airport_window.get());
@@ -294,42 +382,35 @@ mod imp {
                             None => (),
                         }
                     }
-               }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.airport_list.selection().selected() {
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
+                if let Some(airport) = view.get_selection() {
                         match get_fix_view(&view.airport_window.get()) {
                             Some(fix_view) => {
                                 show_fix_view(&view.airport_window.get());
-                                fix_view.imp().search_near(&airport.get_loc());
+                                fix_view.imp().search_near(airport.get_loc());
                                 ()
                             },
                             None => (),
                         }
                     }
-               }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("view", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.airport_list.selection().selected() {
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(airport) = earth::get_earth_model().get_airport_by_id(name.as_str()) {
+                if let Some(airport) = view.get_selection() {
                         match get_airport_map_view(&view.airport_window.get()) {
                             Some(airport_map_view) => {
-                                airport_map_view.imp().set_airport(airport);
                                 show_airport_map_view(&view.airport_window.get());
+                                airport_map_view.imp().set_airport(airport.clone());
                             },
                             None => (),
                         }
                     }
-               }
             }));
             actions.add_action(&action);
         }
