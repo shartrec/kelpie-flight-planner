@@ -265,35 +265,35 @@ mod imp {
             self.initialise();
 
             let f = |label: Label, airport: &AirportObject|{
-                label.set_label(&airport.property::<String>("id"));
+                label.set_label(&airport.imp().airport().get_id());
                 label.set_xalign(0.0);
             };
             let factory = Self::build_column_factory(f);
             self.col_id.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
-                label.set_label(&airport.property::<String>("name"));
+                label.set_label(&airport.imp().airport().get_name());
                 label.set_xalign(0.0);
             };
             let factory = Self::build_column_factory(f);
             self.col_name.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
-                label.set_label(&airport.property::<String>("latitude"));
+                label.set_label(&airport.imp().airport().get_lat_as_string());
                 label.set_xalign(0.0);
             };
             let factory = Self::build_column_factory(f);
             self.col_lat.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
-                label.set_label(&airport.property::<String>("longitude"));
+                label.set_label(&airport.imp().airport().get_long_as_string());
                 label.set_xalign(0.0);
             };
             let factory = Self::build_column_factory(f);
             self.col_lon.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
-                label.set_label(&airport.property::<i32>("elevation").to_string());
+                label.set_label(&airport.imp().airport().get_elevation().to_string());
                 label.set_xalign(1.0);
             };
             let factory = Self::build_column_factory(f);

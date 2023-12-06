@@ -22,23 +22,8 @@
  *
  */
 use gtk::glib;
-use gtk::glib::{ParamSpecInt, ParamSpecString};
-// This is a list model that wraps the earth::airports static list making
-use lazy_static::lazy_static;
 
-lazy_static! {
-    static ref PROPERTIES: Vec<glib::ParamSpec> = {
-        vec![
-            ParamSpecString::builder("id").build(),
-            ParamSpecString::builder("name").build(),
-            ParamSpecString::builder("latitude").build(),
-            ParamSpecString::builder("longitude").build(),
-            ParamSpecInt::builder("elevation").build(),
-        ]
-    };
-}
-
-// To use the Airports as a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
+// To use the Airport in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
 // Public part of the Model type.
 glib::wrapper! {
     pub struct AirportObject(ObjectSubclass<imp::AirportObject>);
@@ -58,15 +43,12 @@ impl Default for AirportObject {
 
 mod imp {
     use std::cell::RefCell;
-    use std::ops::Deref;
     use std::sync::Arc;
 
     use gtk::glib;
-    use gtk::glib::{ParamSpec, Value};
     use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::airport::Airport;
-    use crate::model::location::Location;
 
     #[derive(Default)]
     pub struct AirportObject {
@@ -95,26 +77,6 @@ mod imp {
             self.parent_constructed();
         }
 
-        fn properties() -> &'static [glib::ParamSpec] {
-            super::PROPERTIES.as_ref()
-        }
-
-        fn property(&self, id: usize, _pspec: &ParamSpec) -> Value {
-            let airport = self.airport.borrow();
-            match airport.deref() {
-                Some(a) => {
-                    match id {
-                        1 => Value::from(a.get_id()),
-                        2 => Value::from(a.get_name()),
-                        3 => Value::from(a.get_lat_as_string()),
-                        4 => Value::from(a.get_long_as_string()),
-                        5 => Value::from(a.get_elevation()),
-                        _ => Value::from(""),
-                    }
-                }
-                None => Value::from(""),
-            }
-        }
     }
 
 }
