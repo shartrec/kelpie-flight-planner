@@ -47,7 +47,7 @@ impl Default for Airports {
 mod imp {
     use gtk::{gio, glib};
     use gtk::glib::{Object, StaticType};
-    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt};
+    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::earth::get_earth_model;
     use crate::model::airport_object::AirportObject;
@@ -88,8 +88,7 @@ mod imp {
                 .expect("Unable to get a lock on the airports")
                 .iter().nth(position as usize) {
                 Some(airport) => {
-                    let ao = AirportObject::new();
-                    ao.imp().set_airport(airport.clone());
+                    let ao = AirportObject::new(airport);
                     Some(Object::from(ao))
                 }
 

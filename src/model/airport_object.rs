@@ -21,7 +21,11 @@
  *      Trevor Campbell
  *
  */
+use std::sync::Arc;
 use gtk::glib;
+use gtk::glib::Cast;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
+use crate::model::airport::Airport;
 
 // To use the Airport in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
 // Public part of the Model type.
@@ -30,14 +34,12 @@ glib::wrapper! {
 }
 
 impl AirportObject {
-    pub fn new() -> AirportObject {
-        glib::Object::new()
-    }
-}
-
-impl Default for AirportObject {
-    fn default() -> Self {
-        Self::new()
+    pub fn new(airport: &Arc<Airport>) -> AirportObject {
+        let obj: AirportObject = glib::Object::new();
+        obj.downcast_ref::<AirportObject>()
+            .expect("The item has to be an <AirportObject>.")
+            .imp().set_airport(airport.clone());
+        obj
     }
 }
 
