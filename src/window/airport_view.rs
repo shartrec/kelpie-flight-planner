@@ -30,7 +30,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, ListItem, PopoverMenu, ScrollablePolicy, ScrolledWindow, SignalListItemFactory, SingleSelection};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, Object, PRIORITY_DEFAULT};
@@ -96,6 +96,7 @@ mod imp {
                         view.filter_list_model.replace(Some(fm.clone()));
 
                         let selection_model = SingleSelection::new(Some(fm));
+                        selection_model.set_autoselect(false);
                         view.airport_list.set_model(Some(&selection_model));
                     },
                     _ => (),
@@ -154,6 +155,7 @@ mod imp {
 
             let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
 
+            self.airport_list.model().unwrap().unselect_all();
             set_filter(&custom_filter, Box::new(combined_filter));
             custom_filter.changed(FilterChange::Different);
         }
