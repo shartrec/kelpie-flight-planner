@@ -33,3 +33,5 @@ pub mod waypoint;
 
 pub(crate) mod test_utils;
 pub(crate) mod airport_object;
+pub(crate) mod navaid_object;
+pub(crate) mod fix_object;

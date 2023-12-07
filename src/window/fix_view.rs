@@ -26,25 +26,26 @@ use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 mod imp {
     use std::cell::{Cell, RefCell};
     use std::ops::Deref;
+    use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, Entry, ListStore, PopoverMenu, ScrolledWindow, TreeView};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, PopoverMenu, ScrolledWindow, SingleSelection};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use log::error;
 
-    use crate::{earth, event};
     use crate::earth::coordinate::Coordinate;
+    use crate::earth::fix_list_model::Fixes;
+    use crate::event;
     use crate::event::Event;
+    use crate::model::fix::Fix;
+    use crate::model::fix_object::FixObject;
     use crate::model::location::Location;
     use crate::model::waypoint::Waypoint;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{CombinedFilter, Filter, IdFilter, RangeFilter};
-    use crate::window::util::{
-        get_airport_view, get_navaid_view, get_plan_view, show_airport_view, show_error_dialog,
-        show_navaid_view,
-    };
+    use crate::util::location_filter::{CombinedFilter, IdFilter, new_fix_filter, NilFilter, RangeFilter, set_fix_filter};
+    use crate::window::util::{build_column_factory, get_airport_view, get_plan_view, show_airport_view, show_error_dialog, show_navaid_view};
 
     use super::*;
 
@@ -54,7 +55,13 @@ mod imp {
         #[template_child]
         pub fix_window: TemplateChild<ScrolledWindow>,
         #[template_child]
-        pub fix_list: TemplateChild<TreeView>,
+        pub fix_list: TemplateChild<ColumnView>,
+        #[template_child]
+        pub col_id: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lat: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lon: TemplateChild<ColumnViewColumn>,
         #[template_child]
         pub fix_search_name: TemplateChild<Entry>,
         #[template_child]
@@ -66,16 +73,25 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         my_listener_id: RefCell<usize>,
+        filter_list_model: RefCell<Option<FilterListModel>>,
+
     }
 
     impl FixView {
         pub fn initialise(&self) -> () {
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
             let index = event::manager().register_listener(tx);
-            rx.attach(None,clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
+            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
                 match ev {
                     Event::FixesLoaded => {
                         view.fix_search.set_sensitive(true);
+                        let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
+
+                        view.filter_list_model.replace(Some(fm.clone()));
+
+                        let selection_model = SingleSelection::new(Some(fm));
+                        selection_model.set_autoselect(false);
+                        view.fix_list.set_model(Some(&selection_model));
                     },
                     _ => (),
                 }
@@ -83,7 +99,6 @@ mod imp {
             }));
             // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
-
         }
 
         pub fn search(&self) {
@@ -129,46 +144,53 @@ mod imp {
                     }
                 }
             }
-            let fixes = earth::get_earth_model().get_fixes().read().unwrap();
-            let searh_result = fixes.iter().filter(move |a| {
-                let fix: &dyn Location = &***a;
-                combined_filter.filter(fix)
-            });
-            let store = ListStore::new(&[
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-            ]);
-            for fix in searh_result {
-                store.insert_with_values(
-                    None,
-                    &[
-                        (0, &fix.get_id()),
-                        (1, &fix.get_lat_as_string()),
-                        (2, &fix.get_long_as_string()),
-                    ],
-                );
-            }
-            self.fix_list.set_model(Some(&store));
+            let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
+
+            self.fix_list.model().unwrap().unselect_all();
+            set_fix_filter(&custom_filter, Box::new(combined_filter));
+            custom_filter.changed(FilterChange::Different);
         }
 
         fn add_selected_to_plan(&self) {
-            if let Some((model, iter)) = self.fix_list.selection().selected() {
-                let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
-                    match get_plan_view(&self.fix_window.get()) {
-                        Some(view) => {
-                            // get the plan
-                            view.imp().add_waypoint_to_plan(Waypoint::Fix {
-                                fix: fix.clone(),
-                                elevation: Cell::new(0),
-                                locked: true,
-                            });
-                        }
-                        None => (),
-                    }
+            if let Some(navaid) = self.get_selection() {
+                self.add_to_plan(navaid);
+            }
+        }
+
+        fn add_item_to_plan(&self, item: u32) {
+            if let Some(navaid) = self.get_model_navaid(item) {
+                self.add_to_plan(navaid);
+            }
+        }
+
+        fn add_to_plan(&self, fix: Arc<Fix>) {
+            match get_plan_view(&self.fix_window.get()) {
+                Some(ref mut plan_view) => {
+                    // get the plan
+                    plan_view.imp().add_waypoint_to_plan(Waypoint::Fix {
+                        fix: fix.clone(),
+                        elevation: Cell::new(0),
+                        locked: true,
+                    });
                 }
+                None => (),
+            }
+        }
+
+        fn get_selection(&self) -> Option<Arc<Fix>> {
+            let selection = self.fix_list.model().unwrap().selection();
+            let sel_ap = selection.nth(0);
+            self.get_model_navaid(sel_ap)
+        }
+
+        fn get_model_navaid(&self, sel_ap: u32) -> Option<Arc<Fix>> {
+            let selection = self.fix_list.model().unwrap().item(sel_ap);
+            if let Some(object) = selection {
+                let fix_object = object.downcast::<FixObject>()
+                    .expect("The item has to be an `Fix`.");
+                Some(fix_object.imp().fix())
+            } else {
+                None
             }
         }
 
@@ -204,9 +226,31 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.fix_list.connect_row_activated(
-                clone!(@weak self as view => move |_list_view, _position, _col| {
-                     view.add_selected_to_plan();
+            let f = |label: Label, fix: &FixObject| {
+                label.set_label(&fix.imp().fix().get_id());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_id.set_factory(Some(&factory));
+
+
+            let f = |label: Label, fix: &FixObject| {
+                label.set_label(&fix.imp().fix().get_lat_as_string());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_lat.set_factory(Some(&factory));
+
+            let f = |label: Label, fix: &FixObject| {
+                label.set_label(&fix.imp().fix().get_long_as_string());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_lon.set_factory(Some(&factory));
+
+            self.fix_list.connect_activate(
+                clone!(@weak self as view => move | _list_view, position | {
+                    view.add_item_to_plan(position);
                 }),
             );
 
@@ -264,9 +308,7 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.fix_list.selection().selected() {
-                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                    if let Some(fix) = view.get_selection() {
                         match get_airport_view(&view.fix_window.get()) {
                             Some(airport_view) => {
                                 show_airport_view(&view.fix_window.get());
@@ -276,35 +318,28 @@ mod imp {
                             None => (),
                         }
                     }
-               }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.fix_list.selection().selected() {
-                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
-                        match get_navaid_view(&view.fix_window.get()) {
-                            Some(navaid_view) => {
-                                show_navaid_view(&view.fix_window.get());
-                                navaid_view.imp().search_near(&fix.get_loc());
-                                ()
-                            },
-                            None => (),
-                        }
+               if let Some(fix) = view.get_selection() {
+                    match get_airport_view(&view.fix_window.get()) {
+                        Some(navaid_view) => {
+                            show_navaid_view(&view.fix_window.get());
+                            navaid_view.imp().search_near(&fix.get_loc());
+                            ()
+                        },
+                        None => (),
                     }
-               }
+                }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.fix_list.selection().selected() {
-                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    if let Some(fix) = earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                if let Some(fix) = view.get_selection() {
                         view.search_near(&fix.get_loc());
-                    }
                }
             }));
             actions.add_action(&action);
@@ -321,7 +356,6 @@ mod imp {
                 popover.unparent();
             };
             event::manager().unregister_listener(self.my_listener_id.borrow().deref());
-
         }
     }
 

@@ -30,10 +30,10 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, PopoverMenu, ScrolledWindow, SingleSelection};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, Object, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use log::error;
 
     use crate::event;
@@ -44,8 +44,8 @@ mod imp {
     use crate::model::airport_object::AirportObject;
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{CombinedFilter, NameIdFilter, new_filter, NilFilter, RangeFilter, set_filter};
-    use crate::window::util::{get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_error_dialog, show_fix_view, show_navaid_view};
+    use crate::util::location_filter::{CombinedFilter, NameIdFilter, new_airport_filter, NilFilter, RangeFilter, set_airport_filter};
+    use crate::window::util::{build_column_factory, get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_error_dialog, show_fix_view, show_navaid_view};
 
     use super::*;
 
@@ -90,8 +90,7 @@ mod imp {
                     Event::AirportsLoaded => {
                         view.airport_search.set_sensitive(true);
 
-                        // let fm = FilterListModel::new(Some(Airports::new()), self.filter.borrow().deref().as_ref());
-                        let fm = FilterListModel::new(Some(Airports::new()), Some(new_filter(Box::new(NilFilter::new()))));
+                        let fm = FilterListModel::new(Some(Airports::new()), Some(new_airport_filter(Box::new(NilFilter::new()))));
 
                         view.filter_list_model.replace(Some(fm.clone()));
 
@@ -156,7 +155,7 @@ mod imp {
             let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
 
             self.airport_list.model().unwrap().unselect_all();
-            set_filter(&custom_filter, Box::new(combined_filter));
+            set_airport_filter(&custom_filter, Box::new(combined_filter));
             custom_filter.changed(FilterChange::Different);
         }
 
@@ -211,38 +210,6 @@ mod imp {
             self.airport_search.emit_clicked();
         }
 
-        fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalListItemFactory {
-            let factory = SignalListItemFactory::new();
-            factory.connect_setup(move |_, list_item| {
-                let label = Label::new(None);
-                list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .set_child(Some(&label));
-            });
-
-            factory.connect_bind(move |_, list_item| {
-                // Get `StringObject` from `ListItem`
-                let obj = list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .item()
-                    .and_downcast::<T>()
-                    .expect("The item has to be an <T>.");
-
-                // Get `Label` from `ListItem`
-                let label = list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .child()
-                    .and_downcast::<Label>()
-                    .expect("The child has to be a `Label`.");
-
-                // Set "label" to "number"
-                f(label, &obj);
-            });
-            factory
-        }
     }
 
     #[glib::object_subclass]
@@ -270,35 +237,35 @@ mod imp {
                 label.set_label(&airport.imp().airport().get_id());
                 label.set_xalign(0.0);
             };
-            let factory = Self::build_column_factory(f);
+            let factory = build_column_factory(f);
             self.col_id.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
                 label.set_label(&airport.imp().airport().get_name());
                 label.set_xalign(0.0);
             };
-            let factory = Self::build_column_factory(f);
+            let factory = build_column_factory(f);
             self.col_name.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
                 label.set_label(&airport.imp().airport().get_lat_as_string());
                 label.set_xalign(0.0);
             };
-            let factory = Self::build_column_factory(f);
+            let factory = build_column_factory(f);
             self.col_lat.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
                 label.set_label(&airport.imp().airport().get_long_as_string());
                 label.set_xalign(0.0);
             };
-            let factory = Self::build_column_factory(f);
+            let factory = build_column_factory(f);
             self.col_lon.set_factory(Some(&factory));
 
             let f = |label: Label, airport: &AirportObject|{
                 label.set_label(&airport.imp().airport().get_elevation().to_string());
                 label.set_xalign(1.0);
             };
-            let factory = Self::build_column_factory(f);
+            let factory = build_column_factory(f);
             self.col_elev.set_factory(Some(&factory));
 
             self.airport_list.connect_activate(
@@ -315,7 +282,7 @@ mod imp {
                     let popover = PopoverMenu::builder()
                         .menu_model(&popover)
                         .build();
-                    popover.set_parent(&self.airport_window.get());
+                    popover.set_parent(&self.airport_list.get());
                     let _ = self.popover.replace(Some(popover));
                 }
                 None => error!(" Not a popover"),
