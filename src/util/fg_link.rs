@@ -102,8 +102,8 @@ pub fn get_aircraft_position() -> Option<AircraftPositionInfo> {
 }
 
 fn fetch_property(url: &str) -> Result<f64, Box<dyn Error>> {
-    let response = reqwest::blocking::get(url)?;
-    let property: FGProperty = response.json()?;
+    let response = ureq::get(url).call()?;
+    let property: FGProperty = response.into_json()?;
     Ok(property.value)
 }
 

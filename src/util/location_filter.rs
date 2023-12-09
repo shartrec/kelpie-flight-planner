@@ -27,7 +27,7 @@
 use gtk::CustomFilter;
 use gtk::glib::Cast;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
-use regex::{Regex, RegexBuilder};
+use regex_lite::{Regex, RegexBuilder};
 
 use crate::earth::coordinate::Coordinate;
 use crate::model::airport_object::AirportObject;
