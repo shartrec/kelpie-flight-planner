@@ -16,40 +16,25 @@
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkTreeView" id="fix_list">
+          <object class="GtkColumnView" id="fix_list">
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
+            <style>
+              <class name="data-table"/>
+            </style>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_id">
                 <property name="title" translatable="yes">ID</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-id-renderer"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_lat">
                 <property name="title" translatable="yes">Latitude</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-lat-renderer"/>
-                  <attributes>
-                    <attribute name="text">1</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_lon">
                 <property name="title" translatable="yes">Longitude</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-lon-renderer"/>
-                  <attributes>
-                    <attribute name="text">2</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
           </object>

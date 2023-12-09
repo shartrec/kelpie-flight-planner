@@ -22,9 +22,9 @@
  *
  */
 
-use gtk::{ButtonsType, glib, MessageDialog, MessageType, Root, ScrolledWindow, show_about_dialog};
+use gtk::{ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, show_about_dialog, SignalListItemFactory};
 use gtk::gdk::Texture;
-use gtk::glib::Cast;
+use gtk::glib::{Cast, IsA, Object};
 use gtk::prelude::{
     CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt,
 };
@@ -77,9 +77,41 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
     };
 }
 
+pub(crate) fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalListItemFactory {
+    let factory = SignalListItemFactory::new();
+    factory.connect_setup(move |_, list_item| {
+        let label = Label::new(None);
+        list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .set_child(Some(&label));
+    });
+
+    factory.connect_bind(move |_, list_item| {
+        // Get `StringObject` from `ListItem`
+        let obj = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .item()
+            .and_downcast::<T>()
+            .expect("The item has to be an <T>.");
+
+        // Get `Label` from `ListItem`
+        let label = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .child()
+            .and_downcast::<Label>()
+            .expect("The child has to be a `Label`.");
+
+        // Set "label" to "number"
+        f(label, &obj);
+    });
+    factory
+}
 
 
-pub fn show_help_about(window: &Window) {
+pub(crate) fn show_help_about(window: &Window) {
     let icon = Texture::from_resource(
         "/com/shartrec/kelpie_planner/images/kelpiedog_120x120_transparent.png");
     show_about_dialog(Some(window), &[

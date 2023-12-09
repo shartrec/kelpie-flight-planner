@@ -26,25 +26,26 @@ use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 mod imp {
     use std::cell::{Cell, RefCell};
     use std::ops::Deref;
+    use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, Entry, ListStore, PopoverMenu, ScrolledWindow, TreeView};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
     use log::error;
 
-    use crate::{earth, event};
     use crate::earth::coordinate::Coordinate;
+    use crate::earth::navaid_list_model::Navaids;
+    use crate::event;
     use crate::event::Event;
     use crate::model::location::Location;
+    use crate::model::navaid::Navaid;
+    use crate::model::navaid_object::NavaidObject;
     use crate::model::waypoint::Waypoint;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{CombinedFilter, Filter, NameIdFilter, RangeFilter};
-    use crate::window::util::{
-        get_airport_view, get_fix_view, get_plan_view, show_airport_view, show_error_dialog,
-        show_fix_view,
-    };
+    use crate::util::location_filter::{CombinedFilter, NameIdFilter, new_navaid_filter, NilFilter, RangeFilter, set_navaid_filter};
+    use crate::window::util::{build_column_factory, get_airport_view, get_fix_view, get_plan_view, show_airport_view, show_error_dialog, show_fix_view};
 
     use super::*;
 
@@ -54,7 +55,17 @@ mod imp {
         #[template_child]
         pub navaid_window: TemplateChild<ScrolledWindow>,
         #[template_child]
-        pub navaid_list: TemplateChild<TreeView>,
+        pub navaid_list: TemplateChild<ColumnView>,
+        #[template_child]
+        pub col_id: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_name: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lat: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lon: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_freq: TemplateChild<ColumnViewColumn>,
         #[template_child]
         pub navaid_search_name: TemplateChild<Entry>,
         #[template_child]
@@ -66,16 +77,37 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         my_listener_id: RefCell<usize>,
+        filter_list_model: RefCell<Option<FilterListModel>>,
+
     }
 
     impl NavaidView {
         pub fn initialise(&self) -> () {
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
             let index = event::manager().register_listener(tx);
-            rx.attach(None,clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
+            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
                 match ev {
                     Event::NavaidsLoaded => {
                         view.navaid_search.set_sensitive(true);
+
+                        let fm = FilterListModel::new(Some(Navaids::new()), Some(new_navaid_filter(Box::new(NilFilter::new()))));
+
+                        view.filter_list_model.replace(Some(fm.clone()));
+
+                         // Add a sorter
+                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                        view.col_name.set_sorter(Some(&Self::get_name_sorter()));
+                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+
+                        let sorter = view.navaid_list.sorter();
+
+                        let slm = SortListModel::new(Some(fm), sorter);
+                        slm.set_incremental(true);
+
+                        let selection_model = SingleSelection::new(Some(slm));
+                        selection_model.set_autoselect(false);
+                        view.navaid_list.set_model(Some(&selection_model));
                     },
                     _ => (),
                 }
@@ -83,7 +115,6 @@ mod imp {
             }));
             // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
-
         }
 
         pub fn search(&self) {
@@ -130,52 +161,54 @@ mod imp {
                 }
             }
 
-            let navaids = earth::get_earth_model().get_navaids().read().unwrap();
-            let searh_result = navaids.iter().filter(move |a| {
-                let navaid: &dyn Location = &***a;
-                combined_filter.filter(navaid)
-            });
-            let store = ListStore::new(&[
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-            ]);
-            for navaid in searh_result {
-                store.insert_with_values(
-                    None,
-                    &[
-                        (0, &navaid.get_id()),
-                        (1, &navaid.get_name()),
-                        (2, &navaid.get_lat_as_string()),
-                        (3, &navaid.get_long_as_string()),
-                        (4, &format!("{:>6.2}", &(navaid.get_freq()))),
-                    ],
-                );
-            }
-            self.navaid_list.set_model(Some(&store));
+            let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
+
+            self.navaid_list.model().unwrap().unselect_all();
+            set_navaid_filter(&custom_filter, Box::new(combined_filter));
+            custom_filter.changed(FilterChange::Different);
         }
 
         fn add_selected_to_plan(&self) {
-            if let Some((model, iter)) = self.navaid_list.selection().selected() {
-                let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
-                if let Some(navaid) =
-                    earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str())
-                {
-                    match get_plan_view(&self.navaid_window.get()) {
-                        Some(view) => {
-                            // get the plan
-                            view.imp().add_waypoint_to_plan(Waypoint::Navaid {
-                                navaid: navaid.clone(),
-                                elevation: Cell::new(0),
-                                locked: true,
-                            });
-                        }
-                        None => (),
-                    }
+            if let Some(navaid) = self.get_selection() {
+                self.add_to_plan(navaid);
+            }
+        }
+
+        fn add_item_to_plan(&self, item: u32) {
+            if let Some(navaid) = self.get_model_navaid(item) {
+                self.add_to_plan(navaid);
+            }
+        }
+
+        fn add_to_plan(&self, navaid: Arc<Navaid>) {
+            match get_plan_view(&self.navaid_window.get()) {
+                Some(ref mut plan_view) => {
+                    // get the plan
+                    plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {
+                        navaid: navaid.clone(),
+                        elevation: Cell::new(0),
+                        locked: true,
+                    });
                 }
+                None => (),
+            }
+        }
+
+        fn get_selection(&self) -> Option<Arc<Navaid>> {
+            let selection = self.navaid_list.model().unwrap().selection();
+            let sel_ap = selection.nth(0);
+            self.get_model_navaid(sel_ap)
+        }
+
+        fn get_model_navaid(&self, sel_ap: u32) -> Option<Arc<Navaid>> {
+            let selection = self.navaid_list.model().unwrap().item(sel_ap);
+            if let Some(object) = selection {
+                let navaid_object = object.downcast::<NavaidObject>()
+                    .expect("The item has to be an `Navaid`.");
+
+                Some(navaid_object.imp().navaid())
+            } else {
+                None
             }
         }
 
@@ -188,6 +221,46 @@ mod imp {
                 .set_text(&coordinate.get_longitude_as_string());
             self.navaid_search.emit_clicked();
         }
+
+        fn get_id_sorter() -> CustomSorter {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+                Ordering::from(a.get_id().partial_cmp(b.get_id()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_name_sorter() -> CustomSorter {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+                Ordering::from(a.get_name().partial_cmp(b.get_name()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_lat_sorter() -> CustomSorter {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+                Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_long_sorter() -> CustomSorter {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+                Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_common_sorter(f: fn(Arc<Navaid>, Arc<Navaid>) -> Ordering) -> CustomSorter {
+            CustomSorter::new( move |a, b| {
+                let navaid_a = a.clone().downcast::<NavaidObject>()
+                    .expect("The item has to be an `Navaid`.");
+                let navaid_b = b.clone().downcast::<NavaidObject>()
+                    .expect("The item has to be an `Navaid`.");
+
+                f(navaid_a.imp().navaid(), navaid_b.imp().navaid())
+            })
+        }
+
     }
 
     #[glib::object_subclass]
@@ -211,9 +284,44 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.navaid_list.connect_row_activated(
-                clone!(@weak self as view => move |_list_view, _position, _col| {
-                    view.add_selected_to_plan()
+            let f = |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_id());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_id.set_factory(Some(&factory));
+
+            let f = |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_name());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_name.set_factory(Some(&factory));
+
+            let f = |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_lat_as_string());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_lat.set_factory(Some(&factory));
+
+            let f = |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_long_as_string());
+                label.set_xalign(0.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_lon.set_factory(Some(&factory));
+
+            let f = |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_freq().to_string());
+                label.set_xalign(1.0);
+            };
+            let factory = build_column_factory(f);
+            self.col_freq.set_factory(Some(&factory));
+
+            self.navaid_list.connect_activate(
+                clone!(@weak self as view => move | _list_view, position | {
+                    view.add_item_to_plan(position);
                 }),
             );
 
@@ -225,7 +333,7 @@ mod imp {
                     let popover = PopoverMenu::builder()
                         .menu_model(&popover)
                         .build();
-                    popover.set_parent(&self.navaid_window.get());
+                    popover.set_parent(&self.navaid_list.get());
                     let _ = self.popover.replace(Some(popover));
                 }
                 None => error!(" Not a popover"),
@@ -249,17 +357,17 @@ mod imp {
             self.navaid_search_name.connect_activate(
                 clone!(@weak self as window => move |_search| {
                     window.search();
-                }),
+                })
             );
             self.navaid_search_lat.connect_activate(
                 clone!(@weak self as window => move |_search| {
                     window.search();
-                }),
+                })
             );
             self.navaid_search_long.connect_activate(
                 clone!(@weak self as window => move |_search| {
                     window.search();
-                }),
+                })
             );
 
             let actions = SimpleActionGroup::new();
@@ -273,10 +381,7 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.navaid_list.selection().selected() {
-                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
-                    if let Some(navaid) = earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str()) {
+                    if let Some(navaid) = view.get_selection() {
                         match get_airport_view(&view.navaid_window.get()) {
                             Some(airport_view) => {
                                 show_airport_view(&view.navaid_window.get());
@@ -286,28 +391,20 @@ mod imp {
                             None => (),
                         }
                     }
-               }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.navaid_list.selection().selected() {
-                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
-                    if let Some(navaid) = earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str()) {
-                        view.search_near(&navaid.get_loc());
-                    }
-               }
+                if let Some(navaid) = view.get_selection() {
+                    view.search_near(&navaid.get_loc());
+                }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                if let Some((model, iter)) = view.navaid_list.selection().selected() {
-                    let id = TreeModelExtManual::get::<String>(&model, &iter, 0);
-                    let name = TreeModelExtManual::get::<String>(&model, &iter, 1);
-                    if let Some(navaid) = earth::get_earth_model().get_navaid_by_id_and_name(id.as_str(), name.as_str()) {
+                if let Some(navaid) = view.get_selection() {
                         match get_fix_view(&view.navaid_window.get()) {
                             Some(fix_view) => {
                                 show_fix_view(&view.navaid_window.get());
@@ -316,7 +413,6 @@ mod imp {
                             },
                             None => (),
                         }
-                    }
                }
             }));
 

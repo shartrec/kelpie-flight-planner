@@ -24,10 +24,91 @@
 
 // Range filer for determining if a coordinate is within the specified distance of another
 
+use gtk::CustomFilter;
+use gtk::glib::Cast;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 use regex::{Regex, RegexBuilder};
 
 use crate::earth::coordinate::Coordinate;
+use crate::model::airport_object::AirportObject;
+use crate::model::fix_object::FixObject;
 use crate::model::location::Location;
+use crate::model::navaid_object::NavaidObject;
+
+pub fn new_airport_filter(filter: Box<dyn Filter>) -> CustomFilter {
+    CustomFilter::new ( move | obj | {
+        let airport_object = obj.clone()
+            .downcast::<AirportObject>()
+            .expect("The item has to be an `Airport`.");
+
+        let airport = airport_object.imp().airport();
+        let airport: &dyn Location = &*airport;
+        filter.filter(airport)
+
+    })
+}
+
+pub fn set_airport_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
+    custom_filter.set_filter_func ( move | obj | {
+        let airport_object = obj.clone()
+            .downcast::<AirportObject>()
+            .expect("The item has to be an `Airport`.");
+
+        let airport = airport_object.imp().airport();
+        let airport: &dyn Location = &*airport;
+        filter.filter(airport)
+    })
+}
+
+pub fn new_navaid_filter(filter: Box<dyn Filter>) -> CustomFilter {
+    CustomFilter::new ( move | obj | {
+        let navaid_object = obj.clone()
+            .downcast::<NavaidObject>()
+            .expect("The item has to be an `Navaid`.");
+
+        let navaid = navaid_object.imp().navaid();
+        let navaid: &dyn Location = &*navaid;
+        filter.filter(navaid)
+
+    })
+}
+
+pub fn set_navaid_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
+    custom_filter.set_filter_func ( move | obj | {
+        let navaid_object = obj.clone()
+            .downcast::<NavaidObject>()
+            .expect("The item has to be an `Navaid`.");
+
+        let navaid = navaid_object.imp().navaid();
+        let navaid: &dyn Location = &*navaid;
+        filter.filter(navaid)
+    })
+}
+
+pub fn new_fix_filter(filter: Box<dyn Filter>) -> CustomFilter {
+    CustomFilter::new ( move | obj | {
+        let fix_object = obj.clone()
+            .downcast::<FixObject>()
+            .expect("The item has to be an `Fix`.");
+
+        let fix = fix_object.imp().fix();
+        let fix: &dyn Location = &*fix;
+        filter.filter(fix)
+
+    })
+}
+
+pub fn set_fix_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
+    custom_filter.set_filter_func ( move | obj | {
+        let fix_object = obj.clone()
+            .downcast::<FixObject>()
+            .expect("The item has to be an `Fix`.");
+
+        let fix = fix_object.imp().fix();
+        let fix: &dyn Location = &*fix;
+        filter.filter(fix)
+    })
+}
 
 pub trait Filter {
     fn filter(&self, location: &dyn Location) -> bool;
@@ -67,6 +148,21 @@ impl Filter for RangeFilter {
         } else {
             false
         }
+    }
+}
+
+pub struct NilFilter {
+}
+
+impl NilFilter {
+    pub fn new() -> Self {
+        Self{}
+    }
+}
+
+impl Filter for NilFilter {
+    fn filter(&self, _location: &dyn Location) -> bool {
+        false
     }
 }
 

@@ -45,6 +45,9 @@ pub mod coordinate;
 pub mod geomagnetism;
 pub(crate) mod shapefile;
 pub(crate) mod spherical_projector;
+pub(crate) mod airport_list_model;
+pub(crate) mod navaid_list_model;
+pub(crate) mod fix_list_model;
 
 pub const FEET_PER_DEGREE: i32 = 6076 * 60;
 
@@ -151,17 +154,19 @@ pub fn initialise() -> Result<(), String> {
         Some(p) => load_airports(&p)?,
         None => return Err("Flightgear Airport path not set".to_string()),
     }
-    info!("Airports loaded in {:?}", timer.elapsed());
+    info!("{} Airports loaded in {:?}", get_earth_model().get_airports().read().unwrap().len(), timer.elapsed());
+    let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
         Some(p) => load_navaids(&p)?,
         None => return Err("Flightgear Navaid path not set".to_string()),
     }
-    info!("Navaids loaded in {:?}", timer.elapsed());
+    info!("{} Navaids loaded in {:?}", get_earth_model().get_navaids().read().unwrap().len(), timer.elapsed());
+    let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::FIXES_PATH) {
         Some(p) => load_fixes(&p)?,
         None => return Err("Flightgear Fix path not set".to_string()),
     }
-    info!("Fixes loaded in {:?}", timer.elapsed());
+    info!("{} Fixes loaded in {:?}", get_earth_model().get_fixes().read().unwrap().len(), timer.elapsed());
     Ok(())
 }
 
