@@ -53,11 +53,9 @@ mod imp {
     use crate::model::airport_object::AirportObject;
 
     #[derive(Default)]
-    pub struct Airports {
-    }
+    pub struct Airports {}
 
-    impl Airports {
-    }
+    impl Airports {}
 
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
@@ -96,6 +94,5 @@ mod imp {
             }
         }
     }
-
 }
 
