@@ -155,11 +155,13 @@ pub fn initialise() -> Result<(), String> {
         None => return Err("Flightgear Airport path not set".to_string()),
     }
     info!("{} Airports loaded in {:?}", get_earth_model().get_airports().read().unwrap().len(), timer.elapsed());
+    let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
         Some(p) => load_navaids(&p)?,
         None => return Err("Flightgear Navaid path not set".to_string()),
     }
     info!("{} Navaids loaded in {:?}", get_earth_model().get_navaids().read().unwrap().len(), timer.elapsed());
+    let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::FIXES_PATH) {
         Some(p) => load_fixes(&p)?,
         None => return Err("Flightgear Fix path not set".to_string()),
