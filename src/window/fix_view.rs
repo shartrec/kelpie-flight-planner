@@ -29,7 +29,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, PopoverMenu, ScrolledWindow, SingleSelection};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
@@ -89,7 +89,17 @@ mod imp {
 
                         view.filter_list_model.replace(Some(fm.clone()));
 
-                        let selection_model = SingleSelection::new(Some(fm));
+                         // Add a sorter
+                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+
+                        let sorter = view.fix_list.sorter();
+
+                        let slm = SortListModel::new(Some(fm), sorter);
+                        slm.set_incremental(true);
+
+                        let selection_model = SingleSelection::new(Some(slm));
                         selection_model.set_autoselect(false);
                         view.fix_list.set_model(Some(&selection_model));
                     },
@@ -203,6 +213,39 @@ mod imp {
                 .set_text(&coordinate.get_longitude_as_string());
             self.fix_search.emit_clicked();
         }
+
+        fn get_id_sorter() -> CustomSorter {
+            let f = |a: Arc<Fix>, b: Arc<Fix> | {
+                Ordering::from(a.get_id().partial_cmp(b.get_id()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_lat_sorter() -> CustomSorter {
+            let f = |a: Arc<Fix>, b: Arc<Fix> | {
+                Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_long_sorter() -> CustomSorter {
+            let f = |a: Arc<Fix>, b: Arc<Fix> | {
+                Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_common_sorter(f: fn(Arc<Fix>, Arc<Fix>) -> Ordering) -> CustomSorter {
+            CustomSorter::new( move |a, b| {
+                let fix_a = a.clone().downcast::<FixObject>()
+                    .expect("The item has to be an `Fix`.");
+                let fix_b = b.clone().downcast::<FixObject>()
+                    .expect("The item has to be an `Fix`.");
+
+                f(fix_a.imp().fix(), fix_b.imp().fix())
+            })
+        }
+
     }
 
     #[glib::object_subclass]

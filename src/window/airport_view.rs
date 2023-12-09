@@ -30,7 +30,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, Entry, FilterChange, FilterListModel, Label, PopoverMenu, ScrolledWindow, SingleSelection};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
@@ -91,10 +91,20 @@ mod imp {
                         view.airport_search.set_sensitive(true);
 
                         let fm = FilterListModel::new(Some(Airports::new()), Some(new_airport_filter(Box::new(NilFilter::new()))));
-
                         view.filter_list_model.replace(Some(fm.clone()));
 
-                        let selection_model = SingleSelection::new(Some(fm));
+                         // Add a sorter
+                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                        view.col_name.set_sorter(Some(&Self::get_name_sorter()));
+                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+
+                        let sorter = view.airport_list.sorter();
+
+                        let slm = SortListModel::new(Some(fm), sorter);
+                        slm.set_incremental(true);
+
+                        let selection_model = SingleSelection::new(Some(slm));
                         selection_model.set_autoselect(false);
                         view.airport_list.set_model(Some(&selection_model));
                     },
@@ -208,6 +218,45 @@ mod imp {
             self.airport_search_long
                 .set_text(&coordinate.get_longitude_as_string());
             self.airport_search.emit_clicked();
+        }
+
+        fn get_id_sorter() -> CustomSorter {
+            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+                Ordering::from(a.get_id().partial_cmp(b.get_id()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_name_sorter() -> CustomSorter {
+            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+                Ordering::from(a.get_name().partial_cmp(b.get_name()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_lat_sorter() -> CustomSorter {
+            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+                Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_long_sorter() -> CustomSorter {
+            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+                Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
+            };
+            Self::get_common_sorter(f)
+        }
+
+        fn get_common_sorter(f: fn(Arc<Airport>, Arc<Airport>) -> Ordering) -> CustomSorter {
+            CustomSorter::new( move |a, b| {
+                let airport_a = a.clone().downcast::<AirportObject>()
+                    .expect("The item has to be an `Airport`.");
+                let airport_b = b.clone().downcast::<AirportObject>()
+                    .expect("The item has to be an `Airport`.");
+
+                f(airport_a.imp().airport(), airport_b.imp().airport())
+            })
         }
 
     }
