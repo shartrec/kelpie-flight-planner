@@ -463,8 +463,8 @@ mod imp {
                         if let Some(airport) = view.find_location_for_point(loc) {
                             match get_airport_map_view(&view.map_window.get()) {
                                 Some(airport_map_view) => {
-                                    airport_map_view.imp().set_airport(airport);
                                     show_airport_map_view(&view.map_window.get());
+                                    airport_map_view.imp().set_airport(airport);
                                 },
                                 None => (),
                             }

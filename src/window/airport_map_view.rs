@@ -49,7 +49,6 @@ mod imp {
 
     impl AirportMapView {
         pub fn set_airport(&self, airport: Arc<Airport>) {
-            self.airport.set(Some(airport.clone()));
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
 
             // Ensure the runways & taxiways are loaded. This can happen in another thread.
@@ -59,14 +58,17 @@ mod imp {
                 let _ = tx.clone().send(Event::AirportsLoaded);
             });
 
-            let view = self.airport_map_window.clone();
-            rx.attach(None, move |ev: Event| {
+            let da = self.airport_map_window.clone();
+            rx.attach(None, clone!(@weak self as view => @default-return Continue(true), move |ev: Event| {
                 match ev {
-                    Event::AirportsLoaded => view.queue_draw(),
+                    Event::AirportsLoaded => {
+                        view.airport.set(Some(airport.clone()));
+                        da.queue_draw()
+                    },
                     _ => (),
                 }
-                glib::source::Continue(true)
-            });
+                Continue(true)
+            }));
 
             // let _ = airport.get_runways();
             // &self.airport_map_window.queue_draw();
