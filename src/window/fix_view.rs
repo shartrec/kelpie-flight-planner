@@ -269,27 +269,21 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            let f = |label: Label, fix: &FixObject| {
+            self.col_id.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
                 label.set_label(&fix.imp().fix().get_id());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_id.set_factory(Some(&factory));
+            })));
 
 
-            let f = |label: Label, fix: &FixObject| {
+            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
                 label.set_label(&fix.imp().fix().get_lat_as_string());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_lat.set_factory(Some(&factory));
+            })));
 
-            let f = |label: Label, fix: &FixObject| {
+            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
                 label.set_label(&fix.imp().fix().get_long_as_string());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_lon.set_factory(Some(&factory));
+            })));
 
             self.fix_list.connect_activate(
                 clone!(@weak self as view => move | _list_view, position | {

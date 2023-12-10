@@ -284,40 +284,30 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            let f = |label: Label, navaid: &NavaidObject| {
+            self.col_id.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
                 label.set_label(&navaid.imp().navaid().get_id());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_id.set_factory(Some(&factory));
+            })));
 
-            let f = |label: Label, navaid: &NavaidObject| {
+            self.col_name.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
                 label.set_label(&navaid.imp().navaid().get_name());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_name.set_factory(Some(&factory));
+            })));
 
-            let f = |label: Label, navaid: &NavaidObject| {
+            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
                 label.set_label(&navaid.imp().navaid().get_lat_as_string());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_lat.set_factory(Some(&factory));
+            })));
 
-            let f = |label: Label, navaid: &NavaidObject| {
+            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
                 label.set_label(&navaid.imp().navaid().get_long_as_string());
                 label.set_xalign(0.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_lon.set_factory(Some(&factory));
+            })));
 
-            let f = |label: Label, navaid: &NavaidObject| {
+            self.col_freq.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
                 label.set_label(&navaid.imp().navaid().get_freq().to_string());
                 label.set_xalign(1.0);
-            };
-            let factory = build_column_factory(f);
-            self.col_freq.set_factory(Some(&factory));
+            })));
 
             self.navaid_list.connect_activate(
                 clone!(@weak self as view => move | _list_view, position | {
