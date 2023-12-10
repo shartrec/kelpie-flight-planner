@@ -22,7 +22,7 @@
  *
  */
 
-use gtk::{ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, show_about_dialog, SignalListItemFactory};
+use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory};
 use gtk::gdk::Texture;
 use gtk::glib::{Cast, IsA, Object};
 use gtk::prelude::{
@@ -114,15 +114,23 @@ pub(crate) fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalLi
 pub(crate) fn show_help_about(window: &Window) {
     let icon = Texture::from_resource(
         "/com/shartrec/kelpie_planner/images/kelpiedog_120x120_transparent.png");
-    show_about_dialog(Some(window), &[
-        ("program-name", &util::info::PROGRAM_NAME),
-        ("version", &util::info::VERSION),
-        ("website", &util::info::WEBSITE),
-        ("license-type", &util::info::LICENSE_TYPE),
-        ("title", &util::info::ABOUT_TITLE),
-        ("authors", &[util::info::AUTHOR].as_ref()),
-        ("logo", &icon)
-        ]);
+
+    let mut builder = glib::Object::builder::<AboutDialog>();
+
+    builder = builder.property("program-name", &util::info::PROGRAM_NAME);
+    builder = builder.property("version", &util::info::VERSION);
+    builder = builder.property("website", &util::info::WEBSITE);
+    builder = builder.property("license-type", &util::info::LICENSE_TYPE);
+    builder = builder.property("title", &util::info::ABOUT_TITLE);
+    builder = builder.property("authors", &[util::info::AUTHOR].as_ref());
+    builder = builder.property("logo", &icon);
+
+    let about_dialog = builder.build();
+    about_dialog.set_transient_for(Some(window));
+    about_dialog.set_modal(true);
+    about_dialog.set_destroy_with_parent(true);
+
+    about_dialog.show();
 }
 
 pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
