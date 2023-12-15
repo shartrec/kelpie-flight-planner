@@ -34,8 +34,8 @@ mod navaid_view;
 mod plan_view;
 pub(crate) mod util;
 mod world_map_view;
-pub(crate) mod map_utils;
-pub(crate) mod render_gl;
+mod map_utils;
+mod render_gl;
 mod sphere_renderer;
 mod shoreline_renderer;
 mod airport_renderer;
@@ -43,6 +43,8 @@ mod navaid_renderer;
 mod plan_renderer;
 pub mod preferences;
 mod aircraft_renderer;
+mod plan_tree_model;
+mod sector_list_model;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)

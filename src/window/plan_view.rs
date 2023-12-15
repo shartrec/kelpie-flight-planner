@@ -21,8 +21,11 @@
  *      Trevor Campbell
  *
  */
-use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
+use gtk::{self, CompositeTemplate, glib, Label, ListItem, prelude::*, SignalListItemFactory, subclass::prelude::*};
 use gtk::gio;
+use gtk::glib::Object;
+use crate::model::sector_object::SectorObject;
+use crate::model::waypoint_object::WaypointObject;
 
 mod imp {
     use std::cell::RefCell;
@@ -31,7 +34,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
+    use gtk::{Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection, Stack, StringObject, TreeListModel, TreePath, TreeStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
@@ -42,12 +45,14 @@ mod imp {
     use crate::event::Event;
     use crate::hangar::hangar::get_hangar;
     use crate::model::airport::Airport;
+    use crate::model::airport_object::AirportObject;
     use crate::model::location::Location;
     use crate::model::plan::Plan;
     use crate::model::sector::Sector;
     use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
+    use crate::window::plan_tree_model::create_plan_model;
     use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view};
 
     use super::*;
@@ -60,7 +65,7 @@ mod imp {
         #[template_child]
         pub plan_window: TemplateChild<ScrolledWindow>,
         #[template_child]
-        pub plan_tree: TemplateChild<TreeView>,
+        pub plan_tree: TemplateChild<ColumnView>,
         #[template_child]
         pub btn_make_plan: TemplateChild<Button>,
         #[template_child]
@@ -74,22 +79,29 @@ mod imp {
         #[template_child]
         pub max_alt: TemplateChild<Entry>,
 
+        #[template_child]
+        pub col_name: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_elev: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lat: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_lon: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_freq: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_hdg: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_dist: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_time: TemplateChild<ColumnViewColumn>,
+        #[template_child]
+        pub col_speed: TemplateChild<ColumnViewColumn>,
+
         pub plan: Rc<RefCell<Plan>>,
 
         popover: RefCell<Option<PopoverMenu>>,
         my_listener_id: RefCell<usize>,
-    }
-
-    enum Col {
-        Name = 0,
-        Elev = 1,
-        Lat = 2,
-        Long = 3,
-        Freq = 4,
-        Hdg = 5,
-        Dist = 6,
-        Time = 7,
-        Speed = 8,
     }
 
     impl PlanView {
@@ -98,7 +110,13 @@ mod imp {
                 let mut plan = self.plan.borrow_mut();
                 plan.add_sector(Sector::new());
                 plan.set_aircraft(&get_hangar().imp().get_default_aircraft());
+
+
             }
+            let model = Some(create_plan_model(self.plan.clone()));
+            let selection_model = SingleSelection::new(model);
+            selection_model.set_autoselect(false);
+            self.plan_tree.set_model(Some(&selection_model));
             self.refresh(None);
         }
 
@@ -127,104 +145,9 @@ mod imp {
             } else {
                 "Hdg(true)"
             };
-            if let Some(col) = self.plan_tree.column(5) {
-                col.set_title(col_hdg);
-            }
+            self.col_hdg.set_title(Some(col_hdg));
 
-            let tree_store = TreeStore::new(&[
-                String::static_type(),
-                i32::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-                String::static_type(),
-            ]);
-            // Iterate over the plan loading the TreeModel
             let plan = self.plan.borrow();
-            for s_ref in plan.get_sectors().deref() {
-                let binding = s_ref.borrow();
-                let s = binding.deref();
-                if !s.is_empty() {
-                    let row = tree_store.append(None);
-                    tree_store.set(&row,
-                                   &[
-                                       (Col::Name as u32, &s.get_name()),
-                                       (Col::Dist as u32, &s.get_distance_as_string(&plan)),
-                                       (Col::Time as u32, &s.get_duration_as_string(&plan)),
-                                   ]);
-                    if let Some(airport) = s.get_start() {
-                        let wp_row = tree_store.append(Some(&row));
-                        tree_store.set(
-                            &wp_row,
-                            &[
-                                (Col::Name as u32, &airport.get_name()),
-                                (Col::Elev as u32, &(airport.get_elevation())),
-                                (Col::Lat as u32, &airport.get_lat_as_string()),
-                                (Col::Long as u32, &airport.get_long_as_string()),
-                            ],
-                        );
-                    }
-                    for wp in s
-                        .get_waypoints()
-                        .read()
-                        .expect("Can't get read lock on sectors")
-                        .deref()
-                    {
-                        let wp_row = tree_store.append(Some(&row));
-                        tree_store.set(
-                            &wp_row,
-                            &[
-                                (Col::Name as u32, &wp.get_name()),
-                                (Col::Elev as u32, &(wp.get_elevation())),
-                                (Col::Lat as u32, &wp.get_lat_as_string()),
-                                (Col::Long as u32, &wp.get_long_as_string()),
-                                (
-                                    Col::Freq as u32,
-                                    &(match wp.get_freq() {
-                                        Some(f) => format!("{:>6.2}", f),
-                                        None => "".to_string(),
-                                    }),
-                                ),
-                                (
-                                    Col::Hdg as u32,
-                                    &(format!("{:6.0}", plan.get_leg_heading_to(wp))),
-                                ),
-                                (
-                                    Col::Dist as u32,
-                                    &plan.get_leg_distance_to_as_string(wp),
-                                ),
-                                (Col::Time as u32, &plan.get_time_to_as_string(wp)),
-                                (Col::Speed as u32, &plan.get_speed_to_as_string(wp)),
-                            ],
-                        );
-                    }
-                    if let Some(airport) = s.get_end() {
-                        let wp_row = tree_store.append(Some(&row));
-                        tree_store.set(
-                            &wp_row,
-                            &[
-                                (Col::Name as u32, &airport.get_name()),
-                                (Col::Elev as u32, &(airport.get_elevation())),
-                                (Col::Lat as u32, &airport.get_lat_as_string()),
-                                (Col::Long as u32, &airport.get_long_as_string()),
-                                (Col::Dist as u32, &plan.get_leg_distance_to_as_string(&airport)),
-                            ],
-                        );
-                    }
-                }
-            }
-
-            self.plan_tree.set_model(Some(&tree_store));
-            self.plan_tree.expand_all();
-            if let Some(path) = selection {
-                self.plan_tree.selection().select_path(&path);
-                self.plan_tree
-                    .emit_by_name_with_values("cursor-changed", &[]);
-            };
-
             if let Some(stack) = self.obj().parent().and_downcast_ref::<Stack>() {
                 stack.page(self.obj().as_ref()).set_title(&plan.get_name());
             };
@@ -266,68 +189,82 @@ mod imp {
             }));
             // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
+
+
+        }
+
+        fn get_selection(&self) -> Option<Object> {
+            let selection = self.plan_tree.model().unwrap().selection();
+            let sel_ap = selection.nth(0);
+            self.plan_tree.model().unwrap().item(sel_ap)
         }
 
         pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {
             let mut added = false;
             let mut plan = self.plan.borrow_mut();
             // See if a sector is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                if path.len() == 1 {
-                    let sector_index = path[0] as usize;
-                    let sector = &plan.get_sectors()[sector_index];
-                    if sector.borrow().get_start() == None {
-                        sector.borrow_mut().set_start(Some(loc.clone()));
-                        added = true;
-                    } else if sector.borrow().get_end() == None {
-                        sector.borrow_mut().set_end(Some(loc.clone()));
-                        added = true;
-                    }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // if path.len() == 1 {
+                //     let sector_index = path[0] as usize;
+                let sector_index = 0;//path[0] as usize;
+                let sector = &plan.get_sectors()[sector_index];
+                if sector.borrow().get_start() == None {
+                    sector.borrow_mut().set_start(Some(loc.clone()));
+                    added = true;
+                } else if sector.borrow().get_end() == None {
+                    sector.borrow_mut().set_end(Some(loc.clone()));
+                    added = true;
                 }
+                // }
             }
 
             if !added {
                 plan.add_airport(loc);
             }
             drop(plan);
-            let _ = &self.plan_updated();
+
+
+            let model = &self.plan_tree.model().unwrap();
+            model.items_changed(0,1,1);
+
+            self.plan_updated();
             event::manager().notify_listeners(Event::PlanChanged);
         }
 
         pub fn add_waypoint_to_plan(&self, waypoint: Waypoint) {
             let plan = self.plan.borrow();
             // See if a sector or waypoint is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                match path.len() {
-                    1 => {
-                        // a Sector only is selected
-                        let sector_index = path[0] as usize;
-                        let sector = &plan.get_sectors()[sector_index];
-                        sector.borrow_mut().add_waypoint(waypoint);
-                    }
-                    2 => {
-                        let sector_index = path[0] as usize;
-                        let mut wp_index = path[1] as usize;
-                        // The airport is the first subitem of the plan
-                        if wp_index != 0 {
-                            wp_index -= 1;
-                        }
-                        let sector = &plan.get_sectors()[sector_index];
-                        sector
-                            .borrow_mut()
-                            .insert_waypoint(wp_index, waypoint);
-                    }
-                    _ => {
-                        // Add to end of last sector
-                        if let Some(s) = plan.get_sectors().last() {
-                            s.borrow_mut().add_waypoint(waypoint);
-                        }
-                    }
-                }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // match path.len() {
+                //     1 => {
+                //         // a Sector only is selected
+                //         let sector_index = path[0] as usize;
+                //         let sector = &plan.get_sectors()[sector_index];
+                //         sector.borrow_mut().add_waypoint(waypoint);
+                //     }
+                //     2 => {
+                //         let sector_index = path[0] as usize;
+                //         let mut wp_index = path[1] as usize;
+                //         // The airport is the first subitem of the plan
+                //         if wp_index != 0 {
+                //             wp_index -= 1;
+                //         }
+                //         let sector = &plan.get_sectors()[sector_index];
+                //         sector
+                //             .borrow_mut()
+                //             .insert_waypoint(wp_index, waypoint);
+                //     }
+                //     _ => {
+                //         // Add to end of last sector
+                //         if let Some(s) = plan.get_sectors().last() {
+                //             s.borrow_mut().add_waypoint(waypoint);
+                //         }
+                //     }
+                // }
             } else {
                 if let Some(s) = plan.get_sectors().last() {
                     s.borrow_mut().add_waypoint(waypoint);
@@ -373,32 +310,32 @@ mod imp {
             let mut tree_path: Option<TreePath> = None;
 
             // See if a sector or waypoint is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                match path.len() {
-                    1 => (),
-                    2 => {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        let mut s_clone = sector.borrow().deref().clone();
-                        if wp_index > 1
-                            && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1
-                        {
-                            let i = wp_index - 1;
-                            if let Some(wp) = s_clone.remove_waypoint(i) {
-                                let _ = s_clone.insert_waypoint(i - 1, wp.clone());
-                                tree_path =
-                                    Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
-                            }
-                            sector.replace(s_clone);
-                        }
-                    }
-                    _ => {}
-                }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // match path.len() {
+                //     1 => (),
+                //     2 => {
+                //         let sector_index = path[0] as usize;
+                //         let wp_index = path[1] as usize;
+                //         let sectors = plan.get_sectors();
+                //         // Only if a waypoint.  index > 1 and < sectors.len() - 1
+                //         let sector = &sectors[sector_index];
+                //         let mut s_clone = sector.borrow().deref().clone();
+                //         if wp_index > 1
+                //             && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1
+                //         {
+                //             let i = wp_index - 1;
+                //             if let Some(wp) = s_clone.remove_waypoint(i) {
+                //                 let _ = s_clone.insert_waypoint(i - 1, wp.clone());
+                //                 tree_path =
+                //                     Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
+                //             }
+                //             sector.replace(s_clone);
+                //         }
+                //     }
+                //     _ => {}
+                // }
             }
             drop(plan);
             let _ = &self.refresh(tree_path);
@@ -409,34 +346,34 @@ mod imp {
             let plan = self.plan.borrow_mut();
             let mut tree_path: Option<TreePath> = None;
             // See if a sector or waypoint is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                match path.len() {
-                    1 => (),
-                    2 => {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        let mut s_clone = sector.borrow().deref().clone();
-                        if wp_index > 0
-                            && wp_index < sectors[sector_index].borrow().get_waypoint_count()
-                        {
-                            let i = wp_index - 1;
-                            if let Some(wp) = s_clone.remove_waypoint(i) {
-                                let _ = s_clone.insert_waypoint(i + 1, wp.clone());
-                                tree_path = Some(TreePath::from_indices(&[
-                                    sector_index as i32,
-                                    (i + 2) as i32,
-                                ]));
-                            }
-                            sector.replace(s_clone);
-                        }
-                    }
-                    _ => {}
-                }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // match path.len() {
+                //     1 => (),
+                //     2 => {
+                //         let sector_index = path[0] as usize;
+                //         let wp_index = path[1] as usize;
+                //         let sectors = plan.get_sectors();
+                //         // Only if a waypoint.  index > 1 and < sectors.len() - 1
+                //         let sector = &sectors[sector_index];
+                //         let mut s_clone = sector.borrow().deref().clone();
+                //         if wp_index > 0
+                //             && wp_index < sectors[sector_index].borrow().get_waypoint_count()
+                //         {
+                //             let i = wp_index - 1;
+                //             if let Some(wp) = s_clone.remove_waypoint(i) {
+                //                 let _ = s_clone.insert_waypoint(i + 1, wp.clone());
+                //                 tree_path = Some(TreePath::from_indices(&[
+                //                     sector_index as i32,
+                //                     (i + 2) as i32,
+                //                 ]));
+                //             }
+                //             sector.replace(s_clone);
+                //         }
+                //     }
+                //     _ => {}
+                // }
             }
             drop(plan);
             let _ = &self.refresh(tree_path);
@@ -447,33 +384,33 @@ mod imp {
             let mut plan = self.plan.borrow_mut();
             let tree_path: Option<TreePath> = None;
             // See if a sector or waypoint is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                match path.len() {
-                    1 => {
-                        let sector_index = path[0] as usize;
-                        plan.remove_sector_at(sector_index);
-                    }
-                    2 => {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        let mut s_clone = sector.borrow().deref().clone();
-                        if wp_index == 0 {
-                            let _ = s_clone.set_start(None);
-                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            let _ = s_clone.set_end(None);
-                        } else {
-                            let i = wp_index - 1;
-                            let _ = s_clone.remove_waypoint(i);
-                        }
-                        sector.replace(s_clone);
-                    }
-                    _ => {}
-                }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // match path.len() {
+                //     1 => {
+                //         let sector_index = path[0] as usize;
+                //         plan.remove_sector_at(sector_index);
+                //     }
+                //     2 => {
+                //         let sector_index = path[0] as usize;
+                //         let wp_index = path[1] as usize;
+                //         let sectors = plan.get_sectors();
+                //         // Only if a waypoint.  index > 1 and < sectors.len() - 1
+                //         let sector = &sectors[sector_index];
+                //         let mut s_clone = sector.borrow().deref().clone();
+                //         if wp_index == 0 {
+                //             let _ = s_clone.set_start(None);
+                //         } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
+                //             let _ = s_clone.set_end(None);
+                //         } else {
+                //             let i = wp_index - 1;
+                //             let _ = s_clone.remove_waypoint(i);
+                //         }
+                //         sector.replace(s_clone);
+                //     }
+                //     _ => {}
+                // }
             }
             drop(plan);
             let _ = &self.refresh(tree_path);
@@ -483,51 +420,52 @@ mod imp {
         fn get_selected_location(&self) -> Option<Coordinate> {
             let plan = self.plan.borrow();
             // See if a sector or waypoint is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                match path.len() {
-                    1 => {
-                        let sector_index = path[0] as usize;
-                        let sectors = plan.get_sectors();
-                        let sector = &sectors[sector_index];
-                        if let Some(wp) = &sector.borrow().get_start() {
-                            Some(wp.get_loc().clone())
-                        } else if let Some(wp) = &sector.borrow().get_end() {
-                            Some(wp.get_loc().clone())
-                        } else {
-                            None
-                        }
-                    }
-                    2 => {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        if wp_index == 0 {
-                            if let Some(wp) = &sector.borrow().get_start() {
-                                Some(wp.get_loc().clone())
-                            } else {
-                                None
-                            }
-                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            if let Some(wp) = &sector.borrow().get_end() {
-                                Some(wp.get_loc().clone())
-                            } else {
-                                None
-                            }
-                        } else {
-                            let i = wp_index - 1;
-                            if let Some(wp) = &sector.borrow().get_waypoint(i) {
-                                Some(wp.get_loc().clone())
-                            } else {
-                                None
-                            }
-                        }
-                    }
-                    _ => None
-                }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // match path.len() {
+                //     1 => {
+                //         let sector_index = path[0] as usize;
+                //         let sectors = plan.get_sectors();
+                //         let sector = &sectors[sector_index];
+                //         if let Some(wp) = &sector.borrow().get_start() {
+                //             Some(wp.get_loc().clone())
+                //         } else if let Some(wp) = &sector.borrow().get_end() {
+                //             Some(wp.get_loc().clone())
+                //         } else {
+                //             None
+                //         }
+                //     }
+                //     2 => {
+                //         let sector_index = path[0] as usize;
+                //         let wp_index = path[1] as usize;
+                //         let sectors = plan.get_sectors();
+                //         // Only if a waypoint.  index > 1 and < sectors.len() - 1
+                //         let sector = &sectors[sector_index];
+                //         if wp_index == 0 {
+                //             if let Some(wp) = &sector.borrow().get_start() {
+                //                 Some(wp.get_loc().clone())
+                //             } else {
+                //                 None
+                //             }
+                //         } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
+                //             if let Some(wp) = &sector.borrow().get_end() {
+                //                 Some(wp.get_loc().clone())
+                //             } else {
+                //                 None
+                //             }
+                //         } else {
+                //             let i = wp_index - 1;
+                //             if let Some(wp) = &sector.borrow().get_waypoint(i) {
+                //                 Some(wp.get_loc().clone())
+                //             } else {
+                //                 None
+                //             }
+                //         }
+                //     }
+                //     _ => None
+                // }
+                None
             } else {
                 None
             }
@@ -536,44 +474,45 @@ mod imp {
         fn get_selected_airport(&self) -> Option<Arc<Airport>> {
             let plan = self.plan.borrow();
             // See if a sector or waypoint is selected
-            if let Some((model, iter)) = self.plan_tree.selection().selected() {
-                let path = model.path(&iter).indices();
-                // Sectors are at the top level
-                match path.len() {
-                    1 => { None }
-                    2 => {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        let sector = &sectors[sector_index];
-                        if wp_index == 0 {
-                            if let Some(wp) = &sector.borrow().get_start() {
-                                match wp {
-                                    Waypoint::Airport { airport, .. } => {
-                                        Some(airport.clone())
-                                    }
-                                    _ => None
-                                }
-                            } else {
-                                None
-                            }
-                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            if let Some(wp) = &sector.borrow().get_end() {
-                                match wp {
-                                    Waypoint::Airport { airport, .. } => {
-                                        Some(airport.clone())
-                                    }
-                                    _ => None
-                                }
-                            } else {
-                                None
-                            }
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None
-                }
+            if let Some(object) = self.get_selection() {
+                // let path = model.path(&iter).indices();
+                // // Sectors are at the top level
+                // match path.len() {
+                //     1 => { None }
+                //     2 => {
+                //         let sector_index = path[0] as usize;
+                //         let wp_index = path[1] as usize;
+                //         let sectors = plan.get_sectors();
+                //         let sector = &sectors[sector_index];
+                //         if wp_index == 0 {
+                //             if let Some(wp) = &sector.borrow().get_start() {
+                //                 match wp {
+                //                     Waypoint::Airport { airport, .. } => {
+                //                         Some(airport.clone())
+                //                     }
+                //                     _ => None
+                //                 }
+                //             } else {
+                //                 None
+                //             }
+                //         } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
+                //             if let Some(wp) = &sector.borrow().get_end() {
+                //                 match wp {
+                //                     Waypoint::Airport { airport, .. } => {
+                //                         Some(airport.clone())
+                //                     }
+                //                     _ => None
+                //                 }
+                //             } else {
+                //                 None
+                //             }
+                //         } else {
+                //             None
+                //         }
+                //     }
+                //     _ => None
+                // }
+                None
             } else {
                 None
             }
@@ -656,6 +595,107 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
+            self.col_name.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label(&sector.imp().sector().borrow().get_name());
+                    label.set_xalign(0.0);
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    label.set_label(&waypoint.imp().waypoint().get_id());
+                    label.set_xalign(0.0);
+                }
+            )));
+            self.col_elev.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label("");
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    label.set_label(&waypoint.imp().waypoint().get_elevation().to_string());
+                    label.set_xalign(0.0);
+                }
+            )));
+            self.col_lat.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label("");
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    label.set_label(&waypoint.imp().waypoint().get_lat_as_string());
+                    label.set_xalign(0.0);
+                }
+            )));
+            self.col_lon.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label("");
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    label.set_label(&waypoint.imp().waypoint().get_long_as_string());
+                    label.set_xalign(0.0);
+                }
+            )));
+            self.col_freq.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label("");
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    label.set_label(&waypoint.imp().waypoint().get_freq().unwrap().to_string());
+                    label.set_xalign(0.0);
+                }
+            )));
+            self.col_time.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label("");
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    // let waypoint = &waypoint.imp().waypoint();
+                    // waypoint.
+                    //
+                    // &plan.get_time_to_as_string(wp)
+                    // label.set_label(&waypoint.imp().waypoint().get_ti().unwrap().to_string());
+                    // label.set_xalign(0.0);
+                }
+            )));
+            self.col_speed.set_factory(Some(&build_column_factory(
+                |label: Label, sector: &SectorObject|{
+                    label.set_label("");
+                },
+                |label: Label, waypoint: &WaypointObject|{
+                    // let waypoint = &waypoint.imp().waypoint();
+                    // waypoint.
+                    //
+                    // &plan.get_time_to_as_string(wp)
+                    // label.set_label(&waypoint.imp().waypoint().get_ti().unwrap().to_string());
+                    // label.set_xalign(0.0);
+                }
+            )));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             self.btn_make_plan
                 .connect_clicked(clone!(@weak self as view => move |_search| {
                     view.make_plan();
@@ -735,26 +775,26 @@ mod imp {
                 }
             }));
 
-
-            self.plan_tree.connect_cursor_changed(clone!(@weak self as view => move |tree_view| {
-                let plan = view.plan.borrow();
-                view.btn_move_up.set_sensitive(false);
-                view.btn_move_down.set_sensitive(false);
-                if let Some((model, iter)) = tree_view.selection().selected() {
-                    let path = model.path(&iter).indices();
-                    if path.len() > 1 {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        // Only if a waypoint.  index > 0 and < sectors.len() - 1
-                        if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
-                            view.btn_move_up.set_sensitive(true);
-                        }
-                        if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
-                            view.btn_move_down.set_sensitive(true);
-                        }
-                    }
-                }
+            // Todo Change to track changes in selecction vi the model
+            self.plan_tree.connect_cursor_notify(clone!(@weak self as view => move |tree_view| {
+                // let plan = view.plan.borrow();
+                // view.btn_move_up.set_sensitive(false);
+                // view.btn_move_down.set_sensitive(false);
+                // if let Some(object) = self.get_selection() {
+                //     let path = model.path(&iter).indices();
+                //     if path.len() > 1 {
+                //         let sector_index = path[0] as usize;
+                //         let wp_index = path[1] as usize;
+                //         let sectors = plan.get_sectors();
+                //         // Only if a waypoint.  index > 0 and < sectors.len() - 1
+                //         if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
+                //             view.btn_move_up.set_sensitive(true);
+                //         }
+                //         if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
+                //             view.btn_move_down.set_sensitive(true);
+                //         }
+                //     }
+                // }
             }));
 
             // Set up the popup menu
@@ -873,4 +913,50 @@ impl Default for PlanView {
     fn default() -> Self {
         Self::new()
     }
+}
+
+pub(super) fn build_column_factory(fs: fn(Label, &SectorObject), fw: fn(Label, &WaypointObject)) -> SignalListItemFactory {
+    let factory = SignalListItemFactory::new();
+    factory.connect_setup(move |_, list_item| {
+        let label = Label::new(None);
+        list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .set_child(Some(&label));
+    });
+
+    factory.connect_bind(move |_, list_item| {
+        // Get `Label` from `ListItem`
+        let label = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .child()
+            .and_downcast::<Label>()
+            .expect("The child has to be a `Label`.");
+
+
+        // Get the object type
+        // if list_item.is::<SectorObject>() {
+            let obj = list_item
+                .downcast_ref::<ListItem>()
+                .expect("Needs to be ListItem")
+                .item()
+                .and_downcast::<SectorObject>()
+                .expect("The item has to be an <SectorObject>.");
+
+            // Set "label" to "number"
+            fs(label, &obj);
+        // } else if list_item.is::<WaypointObject>() {
+        //     let obj = list_item
+        //         .downcast_ref::<ListItem>()
+        //         .expect("Needs to be ListItem")
+        //         .item()
+        //         .and_downcast::<WaypointObject>()
+        //         .expect("The item has to be an <WaypointObject>.");
+        //
+        //     // Set "label" to "number"
+        //     fw(label, &obj);
+        // }
+    });
+    factory
 }
