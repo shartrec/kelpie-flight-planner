@@ -26,6 +26,7 @@ rust-embed = "8.0.0"
 ureq = { version = "2.9.1", features = ["json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 scheduling = "0.1.2"
+home = "0.5.9"
 
 [build-dependencies]
 glib-build-tools = "0.17.10"

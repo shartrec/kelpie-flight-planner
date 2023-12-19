@@ -100,20 +100,30 @@ fn init_opengl() {
 }
 
 fn init_logger() {
-    CombinedLogger::init(vec![
-        TermLogger::new(
+    if let Some(home_path) = home::home_dir() {
+        let log_path = home_path.join("kelpie-planner.log");
+        CombinedLogger::init(vec![
+            TermLogger::new(
+                LevelFilter::Warn,
+                Config::default(),
+                TerminalMode::Mixed,
+                ColorChoice::Auto,
+            ),
+            WriteLogger::new(
+                LevelFilter::Info,
+                Config::default(),
+                std::fs::File::create(log_path).unwrap(),
+            ),
+        ])
+        .expect("Unable to initiate logger.");
+    } else {
+        TermLogger::init(
             LevelFilter::Warn,
             Config::default(),
             TerminalMode::Mixed,
             ColorChoice::Auto,
-        ),
-        WriteLogger::new(
-            LevelFilter::Info,
-            Config::default(),
-            std::fs::File::create("kelpie-planner.log").unwrap(),
-        ),
-    ])
-    .expect("Unable to initiate logger.");
+        ).expect("Unable to initiate logger.");
+    }
 }
 
 fn load_css() {
