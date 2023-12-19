@@ -105,6 +105,22 @@ impl Sector {
         }
     }
 
+    pub fn move_waypoint_up(&mut self, index: usize) {
+        if let Ok(mut vec) = self.waypoints.write() {
+            if index > 0 && index < vec.len() {
+                vec.swap(index - 1, index);
+            }
+        }
+    }
+
+    pub fn move_waypoint_down(&mut self, index: usize) {
+        if let Ok(mut vec) = self.waypoints.write() {
+            if index < vec.len() - 1{
+                vec.swap(index, index + 1);
+            }
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         ! (self.airport_start.borrow().is_some()
             || self.airport_end.borrow().is_some()

@@ -79,6 +79,14 @@ impl Plan {
         self.sectors.remove(pos);
     }
 
+    pub fn move_sector_up(&mut self, pos: usize) {
+        self.sectors.swap(pos - 1, pos);
+    }
+
+    pub fn move_sector_down(&mut self, pos: usize) {
+        self.sectors.swap(pos, pos + 1);
+    }
+
     pub fn get_sectors(&self) -> &Vec<RefCell<Sector>> {
         &self.sectors
     }
@@ -128,7 +136,7 @@ impl Plan {
         if self.path.borrow().is_none() {
             let mut start: String = "".to_string();
             let mut end: String = "".to_string();
-            let sectors = self.get_sectors();
+            let sectors = &self.sectors;
             if sectors.len() > 0 {
                 if let Some(airport_start) = sectors[0].borrow().get_start() {
                     start = airport_start.get_id().to_string();
@@ -154,7 +162,7 @@ impl Plan {
     //	 @return previous location
 
     pub fn get_previous_location(&self, wp: &Waypoint) -> Option<Coordinate> {
-        for s in self.get_sectors().deref() {
+        for s in &self.sectors {
             let wp_comp = wp.clone();
             let s_borrowed = s.borrow();
             if let Some(start_wp) = s_borrowed.get_start() {
@@ -282,7 +290,7 @@ impl Plan {
             let cruise = aircraft.get_cruise_speed();
             let sink = aircraft.get_sink_speed();
 
-            for s in self.get_sectors().deref() {
+            for s in &self.sectors {
                 let mut speed = climb.clone();
                 let s_borrowed = s.borrow();
                 if let Some(start_wp) = s_borrowed.get_start() {

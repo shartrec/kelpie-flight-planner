@@ -31,7 +31,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, ListItem, PopoverMenu, ScrolledWindow, SignalListItemFactory, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
+    use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
@@ -48,7 +48,7 @@ mod imp {
     use crate::model::waypoint::Waypoint;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
-    use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view};
+    use crate::window::util::{build_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view};
 
     use super::*;
 
@@ -262,7 +262,7 @@ mod imp {
                     },
                     _ => (),
                 }
-                glib::source::Continue(true)
+                Continue(true)
             }));
             // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
@@ -369,7 +369,7 @@ mod imp {
         }
 
         fn move_selected_up(&self) {
-            let plan = self.plan.borrow_mut();
+            let mut plan = self.plan.borrow_mut();
             let mut tree_path: Option<TreePath> = None;
 
             // See if a sector or waypoint is selected
@@ -377,24 +377,23 @@ mod imp {
                 let path = model.path(&iter).indices();
                 // Sectors are at the top level
                 match path.len() {
-                    1 => (),
+                    1 => {
+                        let sector_index = path[0] as usize;
+                        plan.move_sector_up(sector_index);
+                        tree_path = Some(TreePath::from_indices(&[sector_index as i32 - 1]));
+                    },
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        let mut s_clone = sector.borrow().deref().clone();
+                        let mut sector = sectors[sector_index].borrow_mut();
                         if wp_index > 1
-                            && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1
+                            && wp_index < sector.get_waypoint_count() + 1
                         {
                             let i = wp_index - 1;
-                            if let Some(wp) = s_clone.remove_waypoint(i) {
-                                let _ = s_clone.insert_waypoint(i - 1, wp.clone());
-                                tree_path =
-                                    Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
-                            }
-                            sector.replace(s_clone);
+                            sector.move_waypoint_up(i);
+                            tree_path = Some(TreePath::from_indices(&[sector_index as i32, i as i32]));
                         }
                     }
                     _ => {}
@@ -406,33 +405,30 @@ mod imp {
         }
 
         fn move_selected_down(&self) {
-            let plan = self.plan.borrow_mut();
+            let mut plan = self.plan.borrow_mut();
             let mut tree_path: Option<TreePath> = None;
             // See if a sector or waypoint is selected
             if let Some((model, iter)) = self.plan_tree.selection().selected() {
                 let path = model.path(&iter).indices();
                 // Sectors are at the top level
                 match path.len() {
-                    1 => (),
+                    1 => {
+                        let sector_index = path[0] as usize;
+                        plan.move_sector_down(sector_index);
+                        tree_path = Some(TreePath::from_indices(&[sector_index as i32 + 1]));
+                    },
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        let mut s_clone = sector.borrow().deref().clone();
+                        let mut sector = sectors[sector_index].borrow_mut();
                         if wp_index > 0
-                            && wp_index < sectors[sector_index].borrow().get_waypoint_count()
+                            && wp_index < sector.get_waypoint_count()
                         {
                             let i = wp_index - 1;
-                            if let Some(wp) = s_clone.remove_waypoint(i) {
-                                let _ = s_clone.insert_waypoint(i + 1, wp.clone());
-                                tree_path = Some(TreePath::from_indices(&[
-                                    sector_index as i32,
-                                    (i + 2) as i32,
-                                ]));
-                            }
-                            sector.replace(s_clone);
+                            sector.move_waypoint_down(i);
+                            tree_path = Some(TreePath::from_indices(&[sector_index as i32, i as i32 + 2]));
                         }
                     }
                     _ => {}
@@ -580,21 +576,16 @@ mod imp {
         }
 
         fn setup_aircraft_combo(&self) {
-            let factory = SignalListItemFactory::new();
-            factory.connect_setup(move |_, list_item| {
-                let label = Label::new(None);
-                list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .set_child(Some(&label));
-            });
+            self.aircraft_combo.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject|{
+                label.set_label(&string_object.string().to_string());
+                label.set_xalign(0.0);
+            })));
 
             let selection_model = SingleSelection::new(Some(get_hangar().clone()));
-            self.aircraft_combo.set_factory(Some(&factory));
             self.aircraft_combo.set_model(Some(&selection_model));
 
             self.aircraft_combo.connect_selected_notify(clone!(@weak self.plan as plan => move | combo | {
-                // Get the selectiion
+                // Get the selection
                 let index = combo.selected();
                 if let Some(aircraft) = get_hangar().imp().aircraft_at(index) {
                     let mut plan = plan.borrow_mut();
@@ -602,27 +593,6 @@ mod imp {
                 }
             }));
 
-            factory.connect_bind(move |_, list_item| {
-                // Get `StringObject` from `ListItem`
-                let string_object = list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .item()
-                    .and_downcast::<StringObject>()
-                    .expect("The item has to be an `StringObject`.");
-
-                // Get `Label` from `ListItem`
-                let label = list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .child()
-                    .and_downcast::<Label>()
-                    .expect("The child has to be a `Label`.");
-
-                // Set "label" to "number"
-                label.set_label(&string_object.string().to_string());
-                label.set_xalign(0.0);
-            });
 
             // set the selection initially to the default
             let hangar = get_hangar().imp();
@@ -653,6 +623,7 @@ mod imp {
     }
 
     impl ObjectImpl for PlanView {
+        //noinspection DuplicatedCode
         fn constructed(&self) {
             self.parent_constructed();
 
@@ -742,7 +713,16 @@ mod imp {
                 view.btn_move_down.set_sensitive(false);
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let path = model.path(&iter).indices();
-                    if path.len() > 1 {
+                    if path.len() == 1 {
+                        let sector_index = path[0] as usize;
+                        let sectors = plan.get_sectors();
+                        if sector_index > 0 && sector_index < sectors.len() {
+                            view.btn_move_up.set_sensitive(true);
+                        }
+                        if sector_index < sectors.len() - 1 {
+                            view.btn_move_down.set_sensitive(true);
+                        }
+                    } else if path.len() > 1 {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
                         let sectors = plan.get_sectors();
