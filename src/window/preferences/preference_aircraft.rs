@@ -27,8 +27,8 @@ use gtk::{self, glib};
 mod imp {
     use std::cell::RefCell;
     use std::ops::Deref;
-    use gtk::{Button, CompositeTemplate, glib, Label, ListItem, ListView, SignalListItemFactory, SingleSelection, StringObject, TemplateChild, Window};
-    use gtk::glib::{Cast, CastNone, clone};
+    use gtk::{Button, CompositeTemplate, glib, Label, ListView, SingleSelection, StringObject, TemplateChild, Window};
+    use gtk::glib::{Cast, clone};
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::{GtkWindowExt, SelectionModelExt};
     use gtk::subclass::prelude::{BoxImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt, WidgetClassSubclassExt};
@@ -37,6 +37,7 @@ mod imp {
 
     use crate::hangar::hangar::get_hangar;
     use crate::window::preferences::preference_edit_aircraft::AircraftDialog;
+    use crate::window::util::build_column_factory;
 
     #[derive(CompositeTemplate, Default)]
     #[template(resource = "/com/shartrec/kelpie_planner/preference_aircraft.ui")]
@@ -57,40 +58,14 @@ mod imp {
 
     impl PreferenceAircraftPage {
         fn setup_aircraft_list(&self) {
-            let factory = SignalListItemFactory::new();
-            factory.connect_setup(move |_, list_item| {
-                let label = Label::new(None);
-                list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .set_child(Some(&label));
-            });
-
-            let selection_model = SingleSelection::new(Some(get_hangar().clone()));
-            self.aircraft_list.set_factory(Some(&factory));
-            self.aircraft_list.set_model(Some(&selection_model));
-
-            factory.connect_bind(move |_, list_item| {
-                // Get `IntegerObject` from `ListItem`
-                let string_object = list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .item()
-                    .and_downcast::<StringObject>()
-                    .expect("The item has to be an `IntegerObject`.");
-
-                // Get `Label` from `ListItem`
-                let label = list_item
-                    .downcast_ref::<ListItem>()
-                    .expect("Needs to be ListItem")
-                    .child()
-                    .and_downcast::<Label>()
-                    .expect("The child has to be a `Label`.");
-
-                // Set "label"
+            self.aircraft_list.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject|{
                 label.set_label(&string_object.string().to_string());
                 label.set_xalign(0.0);
-            });
+            })));
+
+            let selection_model = SingleSelection::new(Some(get_hangar().clone()));
+            self.aircraft_list.set_model(Some(&selection_model));
+
         }
     }
 
@@ -136,7 +111,7 @@ mod imp {
             self.aircraft_edit.connect_clicked(clone!(@weak self as view => move | button | {
                 let dialog_ref = view.aircraft_dialog.borrow();
                 if let Some(dialog) = dialog_ref.deref() {
-                    // Get the selectiion
+                    // Get the selection
                     if let Some(selection) = view.aircraft_list.model() {
                         let s = selection.selection();
                         if !s.is_empty() {
@@ -156,7 +131,7 @@ mod imp {
             self.aircraft_add.connect_clicked(clone!(@weak self as view => move | button | {
                 let dialog_ref = view.aircraft_dialog.borrow();
                 if let Some(dialog) = dialog_ref.deref() {
-                    // Get the selectiion
+                    // Get the selection
                     dialog.imp().set_aircraft(None);
                     let r = button.root().unwrap();
                     let our_window = r.clone().downcast::<Window>().unwrap();
@@ -166,7 +141,7 @@ mod imp {
             }));
 
             self.aircraft_delete.connect_clicked(clone!(@weak self as view => move | _button | {
-                    // Get the selectiion
+                    // Get the selection
                     if let Some(selection) = view.aircraft_list.model() {
                         let s = selection.selection();
                         if !s.is_empty() {
@@ -179,7 +154,7 @@ mod imp {
             }));
 
             self.aircraft_default.connect_clicked(clone!(@weak self as view => move | _button | {
-                    // Get the selectiion
+                    // Get the selection
                     if let Some(selection) = view.aircraft_list.model() {
                         let s = selection.selection();
                         if !s.is_empty() {
