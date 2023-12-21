@@ -72,7 +72,7 @@ mod imp {
                     let hangar = get_hangar().imp();
                     match hangar.get(name.as_str()) {
                         Some(aircraft) => {
-                            self.ac_name.set_text(&aircraft.get_name());
+                            self.ac_name.set_text(aircraft.get_name());
                             self.ac_cruise_speed.set_text(&aircraft.get_cruise_speed().to_string());
                             self.ac_cruise_alt.set_text(&aircraft.get_cruise_altitude().to_string());
                             self.ac_climb_speed.set_text(&aircraft.get_climb_speed().to_string());
@@ -112,8 +112,7 @@ mod imp {
         fn save_aircraft(&self) -> bool {
             // Check we have a name
             if self.ac_name.text().is_empty() {
-                let mut buttons = Vec::<String>::new();
-                buttons.push("Ok".to_string());
+                let buttons = vec!["Ok".to_string()];
                 let alert = AlertDialog::builder()
                     .message("Please enter a name")
                     .buttons(buttons)
@@ -165,11 +164,8 @@ mod imp {
             }));
 
             self.btn_ok.connect_clicked(clone!( @weak self as window => move |_button| {
-
-                if window.validate() {
-                    if window.save_aircraft() {
-                        window.obj().close();
-                    }
+                if window.validate() && window.save_aircraft() {
+                    window.obj().close();
                 }
             }));
         }
@@ -193,6 +189,12 @@ impl AircraftDialog {
     }
 }
 
+impl Default for AircraftDialog {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn number_from(entry: &Entry) -> i32 {
     entry.text().as_str().parse::<i32>().unwrap_or(0)
 }
@@ -207,7 +209,7 @@ fn validate_numeric(entry: &Entry, name: &str) -> bool {
 }
 
 fn validate_not_empty(entry: &Entry, name: &str) -> bool {
-    if entry.text().as_str().len() < 1 {
+    if entry.text().as_str().is_empty() {
         show_error_dialog(&entry.root(), format!("{} is required", name).as_str());
         false
     } else {

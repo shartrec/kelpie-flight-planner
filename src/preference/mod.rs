@@ -111,38 +111,34 @@ impl PreferenceManager {
             None => None,
         }
     }
-    pub fn put<T: ToString>(&self, key: &str, value: T) -> () {
+    pub fn put<T: ToString>(&self, key: &str, value: T) {
         {
             let mut prefs = self.preferences.write().unwrap();
             prefs.insert(key.to_string(), value.to_string());
         }
         self.store();
         event::manager().notify_listeners(Event::PreferencesChanged);
-        ()
     }
 
-    pub fn remove(&self, key: &str) -> () {
+    pub fn remove(&self, key: &str) {
         {
             let mut prefs = self.preferences.write().unwrap();
             let _e = prefs.remove(key);
         }
         self.store();
-        ()
     }
 
-    pub fn clear(&self) -> () {
+    pub fn clear(&self) {
         {
             let mut prefs = self.preferences.write().unwrap();
             prefs.clear();
         }
         self.store();
-        ()
     }
 
     fn store(&self) {
         let prefs = self.preferences.read().unwrap();
         let _ = prefs.save(&APP_INFO, self.path);
-        ()
     }
 }
 
@@ -166,8 +162,8 @@ mod tests {
         };
 
         manager.put("Test_KEY 1", "First");
-        manager.put("Test_KEY 2", 1 as i32);
-        manager.put("Test_KEY 3", 24.66 as f64);
+        manager.put("Test_KEY 2", 1);
+        manager.put("Test_KEY 3", 24.66);
 
         assert_eq!(
             manager.get::<String>("Test_KEY 1"),

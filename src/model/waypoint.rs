@@ -80,9 +80,9 @@ impl Waypoint {
             Waypoint::Simple { .. } => "GPS",
             Waypoint::Toc { .. } => "TOC",
             Waypoint::Bod { .. } => "BOD",
-            Waypoint::Navaid { navaid, .. } => &navaid.get_id(),
-            Waypoint::Fix { fix, .. } => &fix.get_id(),
-            Waypoint::Airport { airport, .. } => &airport.get_id(),
+            Waypoint::Navaid { navaid, .. } => navaid.get_id(),
+            Waypoint::Fix { fix, .. } => fix.get_id(),
+            Waypoint::Airport { airport, .. } => airport.get_id(),
         }
     }
 
@@ -91,9 +91,9 @@ impl Waypoint {
             Waypoint::Simple { .. } => "GPS Waypoint",
             Waypoint::Toc { .. } => "Top of climb",
             Waypoint::Bod { .. } => "Beginning of descent",
-            Waypoint::Navaid { navaid, .. } => &navaid.get_name(),
-            Waypoint::Fix { fix, .. } => &fix.get_name(),
-            Waypoint::Airport { airport, .. } => &airport.get_name(),
+            Waypoint::Navaid { navaid, .. } => navaid.get_name(),
+            Waypoint::Fix { fix, .. } => fix.get_name(),
+            Waypoint::Airport { airport, .. } => airport.get_name(),
         }
     }
 
@@ -101,38 +101,38 @@ impl Waypoint {
         match self {
             Waypoint::Simple {
                 loc: _, elevation, ..
-            } => elevation.get().clone(),
+            } => elevation.get(),
             Waypoint::Toc {
                 loc: _, elevation, ..
-            } => elevation.get().clone(),
+            } => elevation.get(),
             Waypoint::Bod {
                 loc: _, elevation, ..
-            } => elevation.get().clone(),
+            } => elevation.get(),
             Waypoint::Navaid {
                 navaid: _,
                 elevation,
                 ..
-            } => elevation.get().clone(),
+            } => elevation.get(),
             Waypoint::Fix {
                 fix: _, elevation, ..
-            } => elevation.get().clone(),
-            Waypoint::Airport { airport, .. } => airport.get_elevation().clone(),
+            } => elevation.get(),
+            Waypoint::Airport { airport, .. } => *airport.get_elevation(),
         }
     }
 
     pub(crate) fn get_loc(&self) -> &Coordinate {
         match self {
-            Waypoint::Simple { loc, .. } => &loc,
-            Waypoint::Toc { loc, .. } => &loc,
-            Waypoint::Bod { loc, .. } => &loc,
-            Waypoint::Navaid { navaid, .. } => &navaid.get_loc(),
-            Waypoint::Fix { fix, .. } => &fix.get_loc(),
-            Waypoint::Airport { airport, .. } => &airport.get_loc(),
+            Waypoint::Simple { loc, .. } => loc,
+            Waypoint::Toc { loc, .. } => loc,
+            Waypoint::Bod { loc, .. } => loc,
+            Waypoint::Navaid { navaid, .. } => navaid.get_loc(),
+            Waypoint::Fix { fix, .. } => fix.get_loc(),
+            Waypoint::Airport { airport, .. } => airport.get_loc(),
         }
     }
 
     pub fn get_lat(&self) -> &f64 {
-        &self.get_loc().get_latitude()
+        self.get_loc().get_latitude()
     }
 
     pub fn get_freq(&self) -> Option<&f64> {
@@ -146,7 +146,7 @@ impl Waypoint {
     }
 
     pub fn get_long(&self) -> &f64 {
-        &self.get_loc().get_longitude()
+        self.get_loc().get_longitude()
     }
 
     pub(crate) fn get_long_as_string(&self) -> String {
@@ -160,28 +160,31 @@ impl Waypoint {
                 loc: _,
                 elevation: _,
                 locked,
-            } => &locked,
+            } => locked,
             Waypoint::Toc {
                 loc: _,
                 elevation: _,
                 locked,
-            } => &locked,
+            } => locked,
             Waypoint::Bod {
                 loc: _,
                 elevation: _,
                 locked,
-            } => &locked,
+            } => locked,
             Waypoint::Navaid {
                 navaid: _,
                 elevation: _,
                 locked,
-            } => &locked,
+            } => locked,
             Waypoint::Fix {
                 fix: _,
                 elevation: _,
                 locked,
-            } => &locked,
-            Waypoint::Airport { airport: _, locked } => &locked,
+            } => locked,
+            Waypoint::Airport {
+                airport: _,
+                locked
+            } => locked,
         }
     }
 
@@ -199,29 +202,29 @@ impl Waypoint {
             Waypoint::Simple {
                 loc: _, elevation, ..
             } => {
-                elevation.set(elev.clone());
+                elevation.set(*elev);
             }
             Waypoint::Toc {
                 loc: _, elevation, ..
             } => {
-                elevation.set(elev.clone());
+                elevation.set(*elev);
             }
             Waypoint::Bod {
                 loc: _, elevation, ..
             } => {
-                elevation.set(elev.clone());
+                elevation.set(*elev);
             }
             Waypoint::Navaid {
                 navaid: _,
                 elevation,
                 ..
             } => {
-                elevation.set(elev.clone());
+                elevation.set(*elev);
             }
             Waypoint::Fix {
                 fix: _, elevation, ..
             } => {
-                elevation.set(elev.clone());
+                elevation.set(*elev);
             }
             Waypoint::Airport { airport: _, .. } => {}
         }

@@ -60,12 +60,9 @@ mod imp {
 
             let da = self.airport_map_window.clone();
             rx.attach(None, clone!(@weak self as view => @default-return Continue(true), move |ev: Event| {
-                match ev {
-                    Event::AirportsLoaded => {
-                        view.airport.set(Some(airport.clone()));
-                        da.queue_draw()
-                    },
-                    _ => (),
+                if let Event::AirportsLoaded = ev {
+                    view.airport.set(Some(airport.clone()));
+                    da.queue_draw()
                 }
                 Continue(true)
             }));
@@ -74,23 +71,18 @@ mod imp {
             // &self.airport_map_window.queue_draw();
         }
 
-        pub fn initialise(&self) -> () {}
+        pub fn initialise(&self) {}
 
         fn draw_function(&self, area: &gtk::DrawingArea, cr: &Context) {
             let maybe_airport = self.airport.clone().into_inner();
-            match maybe_airport {
-                Some(airport) => {
-                    let airport_painter = AirportPainter {
-                        draw_taxiways: true,
-                        draw_runways: true,
-                        draw_runway_list: true,
-                        draw_compass_rose: true,
-                    };
-                    airport_painter.draw_airport(&airport, area, cr);
-                }
-                _ => {
-                    ();
-                }
+            if let Some(airport) = maybe_airport {
+                let airport_painter = AirportPainter {
+                    draw_taxiways: true,
+                    draw_runways: true,
+                    draw_runway_list: true,
+                    draw_compass_rose: true,
+                };
+                airport_painter.draw_airport(&airport, area, cr);
             }
         }
     }
@@ -118,7 +110,7 @@ mod imp {
 
             self.airport_map_window.set_draw_func(
                 clone!(@weak self as view => move |area, cr, _x, _y| {
-                    view.draw_function(&area, cr);
+                    view.draw_function(area, cr);
                 }),
             );
         }

@@ -113,7 +113,7 @@ impl LatLongFormat {
 
                 let tokens: Vec<&str> = tokenizer.collect();
 
-                if let Some(deg_tok) = tokens.get(0) {
+                if let Some(deg_tok) = tokens.first() {
                     deg = match f64::from_str(deg_tok) {
                         Ok(num) => num,
                         Err(_) => return Err("Invalid coordinate format"),

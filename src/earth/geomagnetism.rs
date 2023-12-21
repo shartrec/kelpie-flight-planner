@@ -35,8 +35,8 @@ use std::str::SplitWhitespace;
 
 use chrono::{Datelike, DateTime, Utc};
 
-/**    The input string array which contains each line of input for the wmm.cof input file.
-*	The columns in this file are as follows:	n,	m,	gnm,	hnm,	dgnm,	dhnm*/
+/** The input string array which contains each line of input for the wmm.cof input file.
+* The columns in this file are as follows:    n,    m,    gnm,    hnm,    dgnm,    dhnm*/
 const WMM_COF: [&str; 91] = [
     "    2020.0            WMM-2020        12/10/2019",
     "  1  0  -29404.5       0.0        6.7        0.0",
@@ -199,9 +199,9 @@ pub struct Geomagnetism {
     k: [[f64; 13]; 13],
 
     /** The variables otime (old time), oalt (old altitude),
-     *	olat (old latitude), olon (old longitude), are used to
-     *	store the values used from the previous calculation to
-     *	save on calculation time if some inputs don't change*/
+     * olat (old latitude), olon (old longitude), are used to
+     * store the values used from the previous calculation to
+     * save on calculation time if some inputs don't change*/
     otime: f64,
     oalt: f64,
     olat: f64,
@@ -240,7 +240,6 @@ impl Geomagnetism {
         let tc = [[0.0; 13]; 13];
 
         let epoch = WMM_COF[0]
-            .trim()
             .split_whitespace()
             .next()
             .unwrap()
@@ -257,7 +256,7 @@ impl Geomagnetism {
             let mut n: usize;
             while i < WMM_COF.len() {
                 {
-                    tokens = WMM_COF[i].trim().split_whitespace();
+                    tokens = WMM_COF[i].split_whitespace();
                     n = tokens.next().unwrap().parse::<usize>().unwrap_or(0);
                     m = tokens.next().unwrap().parse::<usize>().unwrap_or(0);
                     gnm = tokens.next().unwrap().parse::<f64>().unwrap_or(0.0);
@@ -300,11 +299,11 @@ impl Geomagnetism {
                                     flnmj = ((n - m + 1) * j) as f64 / (n + m) as f64;
                                     snorm[n + m * 13] = snorm[n + (m - 1) * 13] * flnmj.sqrt();
                                     j = 1;
-                                    c[n][m - 1] = snorm[n + m * 13] * c[n][m - 1];
-                                    cd[n][m - 1] = snorm[n + m * 13] * cd[n][m - 1];
+                                    c[n][m - 1] *= snorm[n + m * 13];
+                                    cd[n][m - 1] *= snorm[n + m * 13];
                                 }
-                                c[m][n] = snorm[n + m * 13] * c[m][n];
-                                cd[m][n] = snorm[n + m * 13] * cd[m][n];
+                                c[m][n] *= snorm[n + m * 13];
+                                cd[m][n] *= snorm[n + m * 13];
                             }
                             d2 -= 1;
                             m += d1;
@@ -355,10 +354,10 @@ impl Geomagnetism {
     }
 
     /** Initialise the instance and calculate for given location, altitude and date
-     *	@param latitude		Latitude in decimal degrees
-     *	@param longitude	Longitude in decimal degrees
-     *	@param altitude		Altitude in metres (with respect to WGS-1984 ellipsoid)
-     *	@param calendar		Calendar for date of calculation*/
+     * @param latitude Latitude in decimal degrees
+     * @param longitude Longitude in decimal degrees
+     * @param altitude Altitude in metres (with respect to WGS-1984 ellipsoid)
+     * @param calendar Calendar for date of calculation*/
     pub fn new(
         latitude: f64,
         longitude: f64,
@@ -371,10 +370,10 @@ impl Geomagnetism {
     }
 
     /** Calculate for given location, altitude and date
-     *	@param latitude		Latitude in decimal degrees
-     *	@param longitude	Longitude in decimal degrees
-     *	@param altitude		Altitude in metres (with respect to WGS-1984 ellipsoid)
-     *	@param calendar		Calendar for date of calculation*/
+     * @param latitude Latitude in decimal degrees
+     * @param longitude Longitude in decimal degrees
+     * @param altitude Altitude in metres (with respect to WGS-1984 ellipsoid)
+     * @param calendar Calendar for date of calculation*/
     fn calculate(
         &mut self,
         latitude: f64,
@@ -451,7 +450,7 @@ impl Geomagnetism {
             let mut n: usize = 1;
             while n <= self.maxord {
                 {
-                    ar = ar * aor;
+                    ar *= aor;
                     {
                         let mut m: usize = 0;
                         let d3: usize = 1;
@@ -508,7 +507,7 @@ impl Geomagnetism {
                                     temp2 =
                                         self.tc[m][n] * self.sp[m] - self.tc[n][m - 1] * self.cp[m];
                                 }
-                                bt = bt - ar * temp1 * self.dp[m][n];
+                                bt -= ar * temp1 * self.dp[m][n];
                                 bp += self.fm[m] * temp2 * par;
                                 br += self.fn_[n] * temp1 * par;
                                 // Special case: north/south geographic poles
@@ -560,37 +559,37 @@ impl Geomagnetism {
 
     /** @return Geomagnetic declination (degrees) [opposite of variation, positive Eastward/negative Westward]*/
     pub fn get_declination(&self) -> f64 {
-        return self.declination;
+        self.declination
     }
 
     /** @return Geomagnetic inclination/dip angle (degrees) [positive downward]*/
     pub fn get_inclination(&self) -> f64 {
-        return self.inclination;
+        self.inclination
     }
 
     /** @return Geomagnetic field intensity/strength (nano Teslas)*/
     pub fn get_intensity(&self) -> f64 {
-        return self.intensity;
+        self.intensity
     }
 
     /** @return Geomagnetic horizontal field intensity/strength (nano Teslas)*/
     pub fn get_horizontal_intensity(&self) -> f64 {
-        return self.bh;
+        self.bh
     }
 
     /** @return Geomagnetic vertical field intensity/strength (nano Teslas) [positive downward]*/
     pub fn get_vertical_intensity(&self) -> f64 {
-        return self.bz;
+        self.bz
     }
 
     /** @return Geomagnetic North South (northerly component) field intensity/strength (nano Tesla)*/
     pub fn get_north_intensity(&self) -> f64 {
-        return self.bx;
+        self.bx
     }
 
     /** @return Geomagnetic East West (easterly component) field intensity/strength (nano Teslas)*/
     pub fn get_east_intensity(&self) -> f64 {
-        return self.by;
+        self.by
     }
 }
 

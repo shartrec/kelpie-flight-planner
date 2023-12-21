@@ -65,8 +65,8 @@ impl AirportPainter {
         let true_width = width_feet / scale;
         let true_height = height_feet / scale;
         // Rectangle to draw in is
-        let offset_x = ((width - true_width) / 2.0) as f64;
-        let offset_y = ((height - true_height) / 2.0) as f64;
+        let offset_x = (width - true_width) / 2.0;
+        let offset_y = (height - true_height) / 2.0;
 
         let bounding_box = GdkRectangle {
             x: offset_x as i32,
@@ -87,7 +87,7 @@ impl AirportPainter {
                 .expect("Could not get airport lock")
                 .iter()
             {
-                self.draw_taxiway(cr, &bounding_box, scale, &extents, &taxiway, airport);
+                self.draw_taxiway(cr, &bounding_box, scale, &extents, taxiway, airport);
             }
             let _ = cr.restore();
         }
@@ -101,7 +101,7 @@ impl AirportPainter {
                 .expect("Could not get airport lock")
                 .iter()
             {
-                self.draw_runway(cr, &bounding_box, scale, &extents, &runway, airport);
+                self.draw_runway(cr, &bounding_box, scale, &extents, runway, airport);
             }
             self.draw_airport_name(cr, 0.0, 0.0, width, height, airport);
             let _ = cr.restore();

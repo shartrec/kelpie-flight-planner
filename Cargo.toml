@@ -29,4 +29,4 @@ scheduling = "0.1.2"
 home = "0.5.9"
 
 [build-dependencies]
-glib-build-tools = "0.17.10"
+glib-build-tools = "0.18.0"

@@ -72,7 +72,7 @@ impl Plan {
         sector.set_start(start);
         sector.set_end(end);
         self.sectors
-            .insert(pos as usize, RefCell::new(sector));
+            .insert(pos, RefCell::new(sector));
     }
 
     pub fn remove_sector_at(&mut self, pos: usize) {
@@ -104,17 +104,14 @@ impl Plan {
     }
 
     pub fn get_max_altitude(&self) -> Option<i32> {
-        self.max_altitude.borrow().clone()
+        *self.max_altitude.borrow()
     }
 
     pub fn get_plan_altitude(&self) -> i32 {
-        match self.max_altitude.borrow().clone() {
-            Some(a) => a,
-            None => match self.aircraft.borrow().deref() {
-                Some(a) => a.get_cruise_altitude().clone(),
-                None => 0,
-            },
-        }
+        (*self.max_altitude.borrow()).unwrap_or_else(|| match self.aircraft.borrow().deref() {
+            Some(a) => *a.get_cruise_altitude(),
+            None => 0,
+        })
     }
 
     pub fn get_duration(&self) -> f64 {
@@ -129,7 +126,7 @@ impl Plan {
     //	persistent storage.
     //	@return
     pub fn is_dirty(&self) -> bool {
-        self.dirty.borrow().clone()
+        *self.dirty.borrow()
     }
 
     pub fn get_name(&self) -> String {
@@ -137,7 +134,7 @@ impl Plan {
             let mut start: String = "".to_string();
             let mut end: String = "".to_string();
             let sectors = &self.sectors;
-            if sectors.len() > 0 {
+            if !sectors.is_empty() {
                 if let Some(airport_start) = sectors[0].borrow().get_start() {
                     start = airport_start.get_id().to_string();
                 }
@@ -233,7 +230,7 @@ impl Plan {
         let mut heading = 0.0;
 
         if let Some(prev) = self.get_previous_location(wp) {
-            heading = prev.bearing_to_deg(&wp.get_loc());
+            heading = prev.bearing_to_deg(wp.get_loc());
             if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
                 let geo = Geomagnetism::new(*wp.get_lat(), *wp.get_long(), None, None);
                 heading -= geo.get_declination()
@@ -252,7 +249,7 @@ impl Plan {
      */
     pub fn get_leg_distance_to(&self, wp: &Waypoint) -> f64 {
         match self.get_previous_location(wp) {
-            Some(prev) => prev.distance_to(&wp.get_loc()),
+            Some(prev) => prev.distance_to(wp.get_loc()),
             None => 0.0,
         }
     }
@@ -275,7 +272,7 @@ impl Plan {
             return 0.0;
         }
         let leg_distance = self.get_leg_distance_to(waypoint);
-        leg_distance as f64 / speed as f64
+        leg_distance / speed as f64
     }
 
     pub fn get_time_to_as_string(&self, waypoint: &Waypoint) -> String {
@@ -291,7 +288,7 @@ impl Plan {
             let sink = aircraft.get_sink_speed();
 
             for s in &self.sectors {
-                let mut speed = climb.clone();
+                let mut speed = *climb;
                 let s_borrowed = s.borrow();
                 if let Some(start_wp) = s_borrowed.get_start() {
                     if compare_wp(&start_wp, waypoint) {
@@ -309,14 +306,14 @@ impl Plan {
                         return speed;
                     }
                     speed = match wp {
-                        Waypoint::Toc { .. } => cruise.clone(),
-                        Waypoint::Bod { .. } => sink.clone(),
+                        Waypoint::Toc { .. } => *cruise,
+                        Waypoint::Bod { .. } => *sink,
                         _ => speed,
                     };
                 }
                 if let Some(end_wp) = s_borrowed.get_end() {
                     if compare_wp(&end_wp, waypoint) {
-                        return sink.clone();
+                        return *sink;
                     }
                 }
             }

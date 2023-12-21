@@ -198,6 +198,12 @@ impl Sector {
     }
 }
 
+impl Default for Sector {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;

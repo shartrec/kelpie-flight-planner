@@ -50,6 +50,7 @@ pub struct Airport {
 }
 
 impl Airport {
+    //noinspection RsExternalLinter
     pub fn new(
         id: String,
         latitude: f64,
@@ -127,10 +128,8 @@ impl Airport {
         {
             if longest.is_none() {
                 longest = Some(runway.clone())
-            } else {
-                if runway.get_length() > longest.clone().unwrap().get_length() {
+            } else if runway.get_length() > longest.clone().unwrap().get_length() {
                     longest = Some(runway.clone());
-                }
             }
         }
         longest
@@ -179,9 +178,8 @@ impl Airport {
                 let decoder = read::GzDecoder::new(input);
                 let mut reader = BufReader::new(decoder);
                 let result = parser.load_runways(self, runway_offsets, &mut reader);
-                match result {
-                    Err(e) => warn!("{}", e),
-                    _ => (),
+                if let Err(e) = result {
+                    warn!("{}", e)
                 }
             }
             Err(_e) => warn!("Unable to open airport data"),
@@ -198,10 +196,10 @@ impl Airport {
 
     pub fn calc_airport_extent(&self) -> [f64; 4] {
         // Start of by assuming just the airport with no runways or taxiways
-        let mut min_lat = self.get_lat().clone();
-        let mut max_lat = self.get_lat().clone();
-        let mut min_long = self.get_long().clone();
-        let mut max_long = self.get_long().clone();
+        let mut min_lat = *self.get_lat();
+        let mut max_lat = *self.get_lat();
+        let mut min_long = *self.get_long();
+        let mut max_long = *self.get_long();
 
         // for each runway get its extent
         for runway in self.runways.read().expect("Can't get airport lock").iter() {
@@ -322,11 +320,11 @@ impl Location for Airport {
     }
 
     fn get_id(&self) -> &str {
-        &self.id.as_str()
+        self.id.as_str()
     }
 
     fn get_lat(&self) -> &f64 {
-        &self.coordinate.get_latitude()
+        self.coordinate.get_latitude()
     }
 
     fn get_lat_as_string(&self) -> String {
@@ -334,7 +332,7 @@ impl Location for Airport {
     }
 
     fn get_long(&self) -> &f64 {
-        &self.coordinate.get_longitude()
+        self.coordinate.get_longitude()
     }
 
     fn get_long_as_string(&self) -> String {
@@ -353,10 +351,6 @@ impl Location for Airport {
 impl PartialEq for Airport {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
-    }
-
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(other)
     }
 }
 
@@ -391,6 +385,7 @@ pub struct Runway {
 }
 
 impl Runway {
+    //noinspection RsExternalLinter
     pub fn new(
         number: String,
         lat: f64,
@@ -545,19 +540,19 @@ impl LayoutNode {
 
 #[derive(Clone, PartialEq)]
 pub enum AirportType {
-    AIRPORT,
-    SEABASE,
-    HELIPORT,
+    Airport,
+    SeaBase,
+    Heliport,
 }
 
 impl AirportType {
     pub fn type_for(airport_type: &str) -> Option<AirportType> {
         if airport_type == "1" {
-            Some(AirportType::AIRPORT)
+            Some(AirportType::Airport)
         } else if airport_type == "16" {
-            Some(AirportType::SEABASE)
+            Some(AirportType::SeaBase)
         } else if airport_type == "17" {
-            Some(AirportType::HELIPORT)
+            Some(AirportType::Heliport)
         } else {
             None
         }

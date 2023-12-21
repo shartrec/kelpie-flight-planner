@@ -81,20 +81,12 @@ impl Window {
         let view = PlanView::new();
         view.imp().new_plan();
         self.plan_stack
-            .add_titled(&view, Some("newxx"), &"New Plan");
+            .add_titled(&view, Some("newxx"), "New Plan");
         self.plan_stack.set_visible_child(&view);
     }
 
     pub(crate) fn open_plan(&self) {
-        let win = match self.plan_stack.root() {
-            Some(r) => {
-                let window = r.downcast::<gtk::Window>().unwrap().clone();
-                Some(window)
-            }
-            _ => {
-                None
-            }
-        };
+        let win = self.get_window_handle();
 
         let dialog = FileDialog::new();
         dialog.set_modal(true);
@@ -107,19 +99,16 @@ impl Window {
 
         dialog.open(x, Some(&Cancellable::default()),
                     clone!(@weak self as window, => move | result: Result<File, _>| {
-                match result {
-                    Ok(file) => {
-                        if let Some(path) = file.path() {
-                            if let Ok(plan) = read_plan(&path) {
-                                let view = PlanView::new();
-                                window.plan_stack
-                                    .add_titled(&view, Some(plan.get_name().as_str()), plan.get_name().as_str());
-                                window.plan_stack.set_visible_child(&view);
-                                view.imp().set_plan(plan);
-                            }
-                        };
-                    }
-                    _ => {}
+                if let Ok(file) = result {
+                    if let Some(path) = file.path() {
+                        if let Ok(plan) = read_plan(&path) {
+                            let view = PlanView::new();
+                            window.plan_stack
+                                .add_titled(&view, Some(plan.get_name().as_str()), plan.get_name().as_str());
+                            window.plan_stack.set_visible_child(&view);
+                            view.imp().set_plan(plan);
+                        }
+                    };
                 }
             }));
     }
@@ -148,7 +137,7 @@ impl Window {
                 SaveTyoe::FgRouteManager => "xml",
             };
             let mut name = plan.get_name();
-            name.push_str(".");
+            name.push('.');
             name.push_str(ext);
             dialog.set_initial_name(Some(name.as_str()));
             let store = get_plan_file_filter(ext);
@@ -161,8 +150,7 @@ impl Window {
             dialog.save(x, Some(&Cancellable::default()),
                         clone!(@weak view, => move | result: Result<File, _>| {
 
-                    match result {
-                    Ok(file) => {
+                    if let Ok(file) = result {
                         let writer = match save_tyoe {
                                     SaveTyoe::Native => plan_writer_xml::write_plan,
                                     SaveTyoe::FgRouteManager => plan_writer_route_manager::export_plan_fg,
@@ -172,10 +160,9 @@ impl Window {
                             match writer(&plan.borrow(), &path) {
                                 Ok(_) => {}
                                 Err(s) => {
-                                    let mut buttons = Vec::<String>::new();
-                                    buttons.push("Ok".to_string());
+                                    let buttons = vec!["Ok".to_string()];
                                     let alert = AlertDialog::builder()
-                                        .message(format!("Failed to save plan: {}", s.to_string()))
+                                        .message(format!("Failed to save plan: {}", s))
                                         .buttons(buttons)
                                         .build();
 
@@ -185,14 +172,12 @@ impl Window {
                             };
                         };
                     }
-                    _ => {}
-                }
             }));
         }
     }
 
     fn get_window_handle(&self) -> Option<gtk::Window> {
-        let win = match self.plan_stack.root() {
+        match self.plan_stack.root() {
             Some(r) => {
                 let window = r.downcast::<gtk::Window>().unwrap().clone();
                 Some(window)
@@ -200,8 +185,7 @@ impl Window {
             _ => {
                 None
             }
-        };
-        win
+        }
     }
 
     fn layout_panels(&self) {
@@ -261,11 +245,10 @@ impl ObjectImpl for Window {
                 let win = self.get_window_handle();
                 let win_clone = win.clone();
 
-                let mut buttons = Vec::<String>::new();
-                buttons.push("Ok".to_string());
+                let buttons = vec!["Ok".to_string()];
                 let alert = AlertDialog::builder()
                     .modal(true)
-                    .message(format!("Please set paths to flightgear Airport and Navaid files" ))
+                    .message("Please set paths to flightgear Airport and Navaid files".to_string())
                     .buttons(buttons)
                     .build();
                 alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {

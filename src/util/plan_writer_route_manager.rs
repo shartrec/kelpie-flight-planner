@@ -63,20 +63,18 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
                 plan_element.children.push(XMLNode::Element(to));
             }
         }
-        if let Some(cruise) = make_cruise(&plan) {
+        if let Some(cruise) = make_cruise(plan) {
             plan_element.children.push(XMLNode::Element(cruise));
         }
 
 
         let mut route = Element::new("route"); //$NON-NLS-1$
-        let mut wp_ordinal = 0;
-        for wp in s.get_waypoints()
+        for (wp_ordinal, wp) in s.get_waypoints()
             .read()
             .expect("Can't get read lock on sectors")
-            .deref() {
-            let wpt = make_waypoint(wp, wp_ordinal, plan);
+            .deref().iter().enumerate() {
+            let wpt = make_waypoint(wp, wp_ordinal as i32, plan);
             route.children.push(XMLNode::Element(wpt));
-            wp_ordinal += 1;
         }
         plan_element.children.push(XMLNode::Element(route));
     }

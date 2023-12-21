@@ -69,7 +69,7 @@ impl Coordinate {
     }
 
     pub fn coordinate_at(&self, distance: f64, heading: f64) -> Coordinate {
-        let d = distance as f64 / Self::EARTH_RADIUS;
+        let d = distance / Self::EARTH_RADIUS;
         let lat1 = self.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
         let tc = heading.to_radians();

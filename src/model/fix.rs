@@ -47,11 +47,11 @@ impl Location for Fix {
     }
 
     fn get_id(&self) -> &str {
-        &self.id.as_str()
+        self.id.as_str()
     }
 
     fn get_lat(&self) -> &f64 {
-        &self.coordinate.get_latitude()
+        self.coordinate.get_latitude()
     }
 
     fn get_lat_as_string(&self) -> String {
@@ -59,7 +59,7 @@ impl Location for Fix {
     }
 
     fn get_long(&self) -> &f64 {
-        &self.coordinate.get_longitude()
+        self.coordinate.get_longitude()
     }
 
     fn get_long_as_string(&self) -> String {
@@ -71,6 +71,6 @@ impl Location for Fix {
     }
 
     fn get_name(&self) -> &str {
-        &self.get_id()
+        self.get_id()
     }
 }

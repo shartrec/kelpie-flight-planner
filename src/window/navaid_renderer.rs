@@ -159,11 +159,11 @@ impl NavaidRenderer {
 
         for navaid in navaids.iter() {
             let position = projector.project(navaid.get_lat(), navaid.get_long());
-            vertices.push(Vertex { position: position });
+            vertices.push(Vertex { position });
 
             // Now indices
             match navaid.get_type() {
-                NavaidType::VOR => {
+                NavaidType::Vor => {
                     indices_vor.push(vertices.len() as u32 - 1);
                 }
                 _ => {

@@ -120,12 +120,7 @@ mod imp {
         }
 
         pub fn get(&self, name: &str) -> Option<Arc<Aircraft>> {
-            match self.aircraft.read().expect("Can't get aiscraft lock").get(name) {
-                Some(a) => {
-                    Some(a.clone())
-                }
-                None => None
-            }
+            self.aircraft.read().expect("Can't get aiscraft lock").get(name).cloned()
         }
 
         pub fn put(&self, aircraft: Aircraft) {
@@ -158,12 +153,12 @@ mod imp {
             if let Some(a) = self.get_default_aircraft() {
                 let prior_default = Aircraft::new(
                     a.get_name().to_string(),
-                    a.get_cruise_speed().clone(),
-                    a.get_cruise_altitude().clone(),
-                    a.get_climb_speed().clone(),
-                    a.get_climb_rate().clone(),
-                    a.get_sink_speed().clone(),
-                    a.get_sink_rate().clone(),
+                    *a.get_cruise_speed(),
+                    *a.get_cruise_altitude(),
+                    *a.get_climb_speed(),
+                    *a.get_climb_rate(),
+                    *a.get_sink_speed(),
+                    *a.get_sink_rate(),
                     false,
                 );
                 self.put(prior_default);
@@ -174,12 +169,12 @@ mod imp {
             if let Some(a) = self.get(name) {
                 let new_default = Aircraft::new(
                     a.get_name().to_string(),
-                    a.get_cruise_speed().clone(),
-                    a.get_cruise_altitude().clone(),
-                    a.get_climb_speed().clone(),
-                    a.get_climb_rate().clone(),
-                    a.get_sink_speed().clone(),
-                    a.get_sink_rate().clone(),
+                    *a.get_cruise_speed(),
+                    *a.get_cruise_altitude(),
+                    *a.get_climb_speed(),
+                    *a.get_climb_rate(),
+                    *a.get_sink_speed(),
+                    *a.get_sink_rate(),
                     true,
                 );
                 self.put(new_default);
@@ -198,12 +193,10 @@ mod imp {
                 .aircraft
                 .read()
                 .expect("Unable to get a lock on the aircraft hangar");
-            let mut i: u32 = 0;
-            for name in aircraft.keys() {
+            for (i, name) in (0_u32..).zip(aircraft.keys()) {
                 if name == plane {
                     return Some(i)
                 }
-                i += 1;
             }
             None
         }
@@ -213,10 +206,7 @@ mod imp {
                 .aircraft
                 .read()
                 .expect("Unable to get a lock on the aircraft hangar");
-            match aircraft.values().nth(position as usize) {
-                Some(a) => Some(a.clone()),
-                None => None
-            }
+            aircraft.values().nth(position as usize).cloned()
         }
 
     }
@@ -259,7 +249,7 @@ mod imp {
                     let mut name_string = plane.get_name().to_string();
                     // Get the aircraft and see if it is the default
                     if *plane.is_default() {
-                        name_string.push_str("*");
+                        name_string.push('*');
                     }
                     Some(glib::Object::from(StringObject::new(name_string.as_str())))
                 }
@@ -270,14 +260,14 @@ mod imp {
     }
 
 }
-const KEY_NAME: &'static str = "name";
-const KEY_CRUISE_SPEED: &'static str = "cruise-speed";
-const KEY_CRUISE_ALTITUDE: &'static str = "cruise-altitude";
-const KEY_CLIMB_SPEED: &'static str = "climb-speed";
-const KEY_CLIMB_RATE: &'static str = "climb-rate";
-const KEY_SINK_SPEED: &'static str = "sink-speed";
-const KEY_SINK_RATE: &'static str = "sink-rate";
-const KEY_IS_DEFAULT: &'static str = "is-default";
+const KEY_NAME: &str = "name";
+const KEY_CRUISE_SPEED: &str = "cruise-speed";
+const KEY_CRUISE_ALTITUDE: &str = "cruise-altitude";
+const KEY_CLIMB_SPEED: &str = "climb-speed";
+const KEY_CLIMB_RATE: &str = "climb-rate";
+const KEY_SINK_SPEED: &str = "sink-speed";
+const KEY_SINK_RATE: &str = "sink-rate";
+const KEY_IS_DEFAULT: &str = "is-default";
 
 pub fn get_hangar() -> &'static Hangar {
     &HANGAR
@@ -390,7 +380,7 @@ pub fn save_hangar() {
 
 #[allow(dead_code)]
 fn put_bool(map: &mut Hash, key: &str, v: &bool) {
-    map.insert(Yaml::String(key.to_string()), Yaml::Boolean(v.clone()));
+    map.insert(Yaml::String(key.to_string()), Yaml::Boolean(*v));
 }
 
 #[allow(dead_code)]

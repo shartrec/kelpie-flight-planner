@@ -66,14 +66,13 @@ mod imp {
             self.planner_max_leg.set_text(prefs.get::<String>(MAX_LEG_LENGTH).unwrap_or("100".to_string()).as_str());
             self.planner_min_leg.set_text(prefs.get::<String>(MIN_LEG_LENGTH).unwrap_or("10".to_string()).as_str());
             self.planner_deviation.set_text(prefs.get::<String>(MAX_DEVIATION).unwrap_or("10".to_string()).as_str());
-            match prefs.get::<String>(PLAN_TYPE) {
-                Some(_type) => match _type.as_str() {
+            if let Some(_type) = prefs.get::<String>(PLAN_TYPE) {
+                match _type.as_str() {
                     USE_RADIO_BEACONS => self.btn_use_radios.set_active(true),
                     USE_FIXES => self.btn_use_fixes.set_active(true),
                     USE_GPS => self.btn_use_gps.set_active(true),
                     _ => ()
                 }
-                None => ()
             }
             self.btn_vor_only.set_active(prefs.get::<bool>(VOR_ONLY).unwrap_or(false));
             self.btn_vor_preferred.set_active(prefs.get::<bool>(VOR_PREFERED).unwrap_or(false));

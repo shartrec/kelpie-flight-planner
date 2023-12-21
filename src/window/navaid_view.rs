@@ -82,34 +82,31 @@ mod imp {
     }
 
     impl NavaidView {
-        pub fn initialise(&self) -> () {
+        pub fn initialise(&self) {
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
             let index = event::manager().register_listener(tx);
             rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                match ev {
-                    Event::NavaidsLoaded => {
-                        view.navaid_search.set_sensitive(true);
+                if let Event::NavaidsLoaded = ev {
+                    view.navaid_search.set_sensitive(true);
 
-                        let fm = FilterListModel::new(Some(Navaids::new()), Some(new_navaid_filter(Box::new(NilFilter::new()))));
+                    let fm = FilterListModel::new(Some(Navaids::new()), Some(new_navaid_filter(Box::new(NilFilter::new()))));
 
-                        view.filter_list_model.replace(Some(fm.clone()));
+                    view.filter_list_model.replace(Some(fm.clone()));
 
-                         // Add a sorter
-                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                        view.col_name.set_sorter(Some(&Self::get_name_sorter()));
-                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+                     // Add a sorter
+                    view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                    view.col_name.set_sorter(Some(&Self::get_name_sorter()));
+                    view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                    view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
 
-                        let sorter = view.navaid_list.sorter();
+                    let sorter = view.navaid_list.sorter();
 
-                        let slm = SortListModel::new(Some(fm), sorter);
-                        slm.set_incremental(true);
+                    let slm = SortListModel::new(Some(fm), sorter);
+                    slm.set_incremental(true);
 
-                        let selection_model = SingleSelection::new(Some(slm));
-                        selection_model.set_autoselect(false);
-                        view.navaid_list.set_model(Some(&selection_model));
-                    },
-                    _ => (),
+                    let selection_model = SingleSelection::new(Some(slm));
+                    selection_model.set_autoselect(false);
+                    view.navaid_list.set_model(Some(&selection_model));
                 }
                 glib::source::Continue(true)
             }));
@@ -137,24 +134,22 @@ mod imp {
                     );
                     return;
                 } else {
-                    let lat_as_float;
                     let lat_format = LatLongFormat::lat_format();
-                    match lat_format.parse(lat.as_str()) {
-                        Ok(latitude) => lat_as_float = latitude,
+                    let lat_as_float= match lat_format.parse(lat.as_str()) {
+                        Ok(latitude) => latitude,
                         Err(_) => {
                             show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
                             return;
                         }
-                    }
-                    let long_as_float;
+                    };
                     let long_format = LatLongFormat::long_format();
-                    match long_format.parse(long.as_str()) {
-                        Ok(longitude) => long_as_float = longitude,
+                    let long_as_float = match long_format.parse(long.as_str()) {
+                        Ok(longitude) => longitude,
                         Err(_) => {
                             show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
                             return;
                         }
-                    }
+                    };
                     if let Some(filter) = RangeFilter::new(lat_as_float, long_as_float, 100.0) {
                         combined_filter.add(Box::new(filter));
                     }
@@ -181,16 +176,13 @@ mod imp {
         }
 
         fn add_to_plan(&self, navaid: Arc<Navaid>) {
-            match get_plan_view(&self.navaid_window.get()) {
-                Some(ref mut plan_view) => {
-                    // get the plan
-                    plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {
-                        navaid: navaid.clone(),
-                        elevation: Cell::new(0),
-                        locked: true,
-                    });
-                }
-                None => (),
+            if let Some(ref mut plan_view) = get_plan_view(&self.navaid_window.get()) {
+                // get the plan
+                plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {
+                    navaid: navaid.clone(),
+                    elevation: Cell::new(0),
+                    locked: true,
+                });
             }
         }
 
@@ -285,12 +277,12 @@ mod imp {
             self.initialise();
 
             self.col_id.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(&navaid.imp().navaid().get_id());
+                label.set_label(navaid.imp().navaid().get_id());
                 label.set_xalign(0.0);
             })));
 
             self.col_name.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(&navaid.imp().navaid().get_name());
+                label.set_label(navaid.imp().navaid().get_name());
                 label.set_xalign(0.0);
             })));
 
@@ -372,13 +364,9 @@ mod imp {
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                     if let Some(navaid) = view.get_selection() {
-                        match get_airport_view(&view.navaid_window.get()) {
-                            Some(airport_view) => {
-                                show_airport_view(&view.navaid_window.get());
-                                airport_view.imp().search_near(&navaid.get_loc());
-                                ()
-                            },
-                            None => (),
+                        if let Some(airport_view) = get_airport_view(&view.navaid_window.get()) {
+                            show_airport_view(&view.navaid_window.get());
+                            airport_view.imp().search_near(navaid.get_loc());
                         }
                     }
             }));
@@ -387,7 +375,7 @@ mod imp {
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some(navaid) = view.get_selection() {
-                    view.search_near(&navaid.get_loc());
+                    view.search_near(navaid.get_loc());
                 }
             }));
             actions.add_action(&action);
@@ -395,13 +383,9 @@ mod imp {
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some(navaid) = view.get_selection() {
-                        match get_fix_view(&view.navaid_window.get()) {
-                            Some(fix_view) => {
-                                show_fix_view(&view.navaid_window.get());
-                                fix_view.imp().search_near(&navaid.get_loc());
-                                ()
-                            },
-                            None => (),
+                        if let Some(fix_view) = get_fix_view(&view.navaid_window.get()) {
+                            show_fix_view(&view.navaid_window.get());
+                            fix_view.imp().search_near(navaid.get_loc());
                         }
                }
             }));

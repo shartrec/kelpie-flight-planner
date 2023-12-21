@@ -88,20 +88,17 @@ mod imp {
     const MAX_ZOOM: f32 = 20.;
 
     impl WorldMapView {
-        pub fn initialise(&self) -> () {
+        pub fn initialise(&self) {
             self.zoom_level.replace(1.0);
 
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
             let index = event::manager().register_listener(tx);
             rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                match ev {
-                    Event::PlanChanged => {
-                        if let Some(renderer) = view.renderer.borrow().as_ref() {
-                            renderer.plan_changed();
-                        }
-                        view.gl_area.queue_draw();
-                    },
-                    _ => (),
+                if let Event::PlanChanged = ev {
+                    if let Some(renderer) = view.renderer.borrow().as_ref() {
+                        renderer.plan_changed();
+                    }
+                    view.gl_area.queue_draw();
                 }
                 glib::source::Continue(true)
             }));
@@ -215,7 +212,7 @@ mod imp {
                 let airport = airports.iter().filter(|a| {
                     (f64::abs(pos.get_latitude() - a.get_lat()) < range as f64)
                         && (f64::abs(pos.get_longitude() - a.get_long()) < range as f64)
-                        && (a.get_max_runway_length() > rwl || (inc_heli && a.get_type().unwrap() != AirportType::HELIPORT))
+                        && (a.get_max_runway_length() > rwl || (inc_heli && a.get_type().unwrap() != AirportType::Heliport))
                 })
                     .min_by(|a, b| {
                         a.get_loc().distance_to(&pos)
@@ -302,7 +299,7 @@ mod imp {
                 let airports = window.btn_show_airports.is_active();
                 let navaids = window.btn_show_navaids.is_active();
                 window.renderer.borrow().as_ref().unwrap().draw(area, airports, navaids);
-                Inhibit{ 0: false }
+                Inhibit(false)
             }));
 
             // Set double click to centre map
@@ -362,10 +359,9 @@ mod imp {
                     let x_start = map_drag_start[0];
                     let y_start = map_drag_start[1];
                         if let Some(map_drag_last) = view.drag_last.borrow().as_ref() {
-                            let old_lat_long: Coordinate;
-                            match view.unproject(map_drag_last[0], map_drag_last[1]) {
+                            let old_lat_long = match view.unproject(map_drag_last[0], map_drag_last[1]) {
                                 Ok(old_pos) => {
-                                    old_lat_long = old_pos;
+                                    old_pos
                                 }
                                 Err(_) => {
                                     // Not in map, we don't care
@@ -373,10 +369,9 @@ mod imp {
                                 }
                             };
 
-                            let lat_long: Coordinate;
-                            match view.unproject(x_start + x, y_start + y) {
+                            let lat_long= match view.unproject(x_start + x, y_start + y) {
                                 Ok(pos) => {
-                                    lat_long = pos;
+                                    pos
                                 }
                                 Err(_) => {
                                     // Not in map, we don't care
@@ -461,12 +456,9 @@ mod imp {
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(airport) = view.find_location_for_point(loc) {
-                            match get_airport_map_view(&view.map_window.get()) {
-                                Some(airport_map_view) => {
-                                    show_airport_map_view(&view.map_window.get());
-                                    airport_map_view.imp().set_airport(airport);
-                                },
-                                None => (),
+                            if let Some(airport_map_view) = get_airport_map_view(&view.map_window.get()) {
+                                show_airport_map_view(&view.map_window.get());
+                                airport_map_view.imp().set_airport(airport);
                             }
                         }
                     }
@@ -481,13 +473,9 @@ mod imp {
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(airport) = view.find_location_for_point(loc) {
-                            match get_plan_view(&view.map_window.get()) {
-                            Some(ref mut plan_view) => {
+                            if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
                                 // get the plan
                                 plan_view.imp().add_airport_to_plan(airport);
-                                ()
-                            }
-                            None => (),
                             }
                         }
                     }
@@ -501,13 +489,9 @@ mod imp {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        match get_airport_view(&view.map_window.get()) {
-                            Some(airport_view) => {
-                                show_airport_view(&view.map_window.get());
-                                airport_view.imp().search_near(&loc);
-                                ()
-                            },
-                            None => (),
+                        if let Some(airport_view) = get_airport_view(&view.map_window.get()) {
+                            show_airport_view(&view.map_window.get());
+                            airport_view.imp().search_near(&loc);
                         }
                     }
                 }
@@ -519,13 +503,9 @@ mod imp {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        match get_navaid_view(&view.map_window.get()) {
-                            Some(navaid_view) => {
-                                show_navaid_view(&view.map_window.get());
-                                navaid_view.imp().search_near(&loc);
-                                ()
-                            },
-                            None => (),
+                        if let Some(navaid_view) = get_navaid_view(&view.map_window.get()) {
+                            show_navaid_view(&view.map_window.get());
+                            navaid_view.imp().search_near(&loc);
                         }
                     }
                 }
@@ -537,13 +517,9 @@ mod imp {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        match get_fix_view(&view.map_window.get()) {
-                            Some(fix_view) => {
-                                show_fix_view(&view.map_window.get());
-                                fix_view.imp().search_near(&loc);
-                                ()
-                            },
-                            None => (),
+                        if let Some(fix_view) = get_fix_view(&view.map_window.get()) {
+                            show_fix_view(&view.map_window.get());
+                            fix_view.imp().search_near(&loc);
                         }
                     }
                 }

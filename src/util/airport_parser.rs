@@ -61,7 +61,6 @@ impl AirportParserFG850 {
                 }
                 Err(msg) => {
                     error!("{}", msg.to_string());
-                    ()
                 }
             }
         }
@@ -89,8 +88,8 @@ impl AirportParserFG850 {
                     // Store the offset so we can load the runways later
                     let mut name = String::new();
                     name.push_str(tokenizer.next().unwrap_or(""));
-                    for token in tokenizer.into_iter() {
-                        name.push_str(&" ");
+                    for token in tokenizer {
+                        name.push(' ');
                         name.push_str(token);
                     }
                     runway_offsets.insert(id.to_string(), offset);
@@ -113,11 +112,10 @@ impl AirportParserFG850 {
                         }
                         Err(msg) => {
                             error!("{}", msg.to_string());
-                            ()
                         }
                     }
                     loop {
-                        if buf2.len() > 0 {
+                        if !buf2.is_empty() {
                             //                            let s = buf.clone();
                             let mut tokenizer = buf2.split_whitespace();
                             let r_type = tokenizer.next().unwrap_or("");
@@ -187,7 +185,6 @@ impl AirportParserFG850 {
                                 }
                                 Err(msg) => {
                                     error!("{}", msg.to_string());
-                                    ()
                                 }
                             }
                         }
@@ -213,7 +210,6 @@ impl AirportParserFG850 {
                         Ok(_bytes) => (),
                         Err(msg) => {
                             error!("{}", msg.to_string());
-                            ()
                         }
                     }
                 }
@@ -226,7 +222,6 @@ impl AirportParserFG850 {
                     }
                     Err(msg) => {
                         error!("{}", msg.to_string());
-                        ()
                     }
                 }
             }
@@ -236,7 +231,7 @@ impl AirportParserFG850 {
     fn read_ascii_line(reader: &mut BufReader<GzDecoder<File>>, buf: &mut String) -> Result<usize, Error> {
         let mut byte_buf = Vec::<u8>::new();
         match reader.read_until(b'\n', &mut byte_buf) {
-            Ok(0) => return Ok(0), // EOF
+            Ok(0) => Ok(0), // EOF
             Ok(bytes) => unsafe {
                 let ccc = std::str::from_utf8_unchecked(&byte_buf);
                 buf.push_str(ccc);
@@ -260,23 +255,20 @@ impl AirportParserFG850 {
             .expect("Couldn't get lock on runway offsets");
         let offset = offsets.get(airport.get_id());
 
-        match offset {
-            Some(o) => {
-                // We want to quickly read upto the airport we want
-                let mut byte_buf = Vec::<u8>::new();
-                for _ in 0..o - 2 {
-                    buf.clear();
-                    match reader.read_until(b'\n', &mut byte_buf) {
-                        Ok(0) => return Ok(()), // EOF
-                        Ok(_bytes) => (),
-                        Err(_) => {
-                            warn!("Seeking for airport runways failed");
-                            return Ok(())
-                        }
+        if let Some(o) = offset {
+            // We want to quickly read upto the airport we want
+            let mut byte_buf = Vec::<u8>::new();
+            for _ in 0..o - 2 {
+                buf.clear();
+                match reader.read_until(b'\n', &mut byte_buf) {
+                    Ok(0) => return Ok(()), // EOF
+                    Ok(_bytes) => (),
+                    Err(_) => {
+                        warn!("Seeking for airport runways failed");
+                        return Ok(())
                     }
                 }
-            },
-            _ => (),
+            }
         }
 
 
@@ -300,7 +292,7 @@ impl AirportParserFG850 {
                         tokenizer.next();
                         let id = tokenizer.next().unwrap_or("");
                         if airport.get_id() == id {
-                            self.load_runways_for_airport(&airport, reader)?;
+                            self.load_runways_for_airport(airport, reader)?;
                             return Ok(());
                         }
                     }

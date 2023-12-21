@@ -39,6 +39,7 @@ pub struct Navaid {
 }
 
 impl Navaid {
+    //noinspection RsExternalLinter
     pub fn new(
         id: String,
         type_: NavaidType,
@@ -84,16 +85,16 @@ impl Location for Navaid {
         &self.elevation
     }
     fn get_id(&self) -> &str {
-        &self.id.as_str()
+        self.id.as_str()
     }
     fn get_lat(&self) -> &f64 {
-        &self.coordinate.get_latitude()
+        self.coordinate.get_latitude()
     }
     fn get_lat_as_string(&self) -> String {
         self.coordinate.get_latitude_as_string().clone()
     }
     fn get_long(&self) -> &f64 {
-        &self.coordinate.get_longitude()
+        self.coordinate.get_longitude()
     }
     fn get_long_as_string(&self) -> String {
         self.coordinate.get_longitude_as_string().clone()
@@ -108,19 +109,19 @@ impl Location for Navaid {
 
 #[derive(Clone, PartialEq)]
 pub enum NavaidType {
-    VOR,
-    NDB,
-    DME,
+    Vor,
+    Ndb,
+    Dme,
 }
 
 impl NavaidType {
     pub fn type_for(navaid_type: &str) -> Option<NavaidType> {
         if navaid_type == "0" {
-            Some(NavaidType::DME)
+            Some(NavaidType::Dme)
         } else if navaid_type == "2" {
-            Some(NavaidType::NDB)
+            Some(NavaidType::Ndb)
         } else if navaid_type == "3" {
-            Some(NavaidType::VOR)
+            Some(NavaidType::Vor)
         } else {
             None
         }

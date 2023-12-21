@@ -117,12 +117,12 @@ pub(crate) fn show_help_about(window: &Window) {
 
     let mut builder = glib::Object::builder::<AboutDialog>();
 
-    builder = builder.property("program-name", &util::info::PROGRAM_NAME);
-    builder = builder.property("version", &util::info::VERSION);
-    builder = builder.property("website", &util::info::WEBSITE);
-    builder = builder.property("license-type", &util::info::LICENSE_TYPE);
-    builder = builder.property("title", &util::info::ABOUT_TITLE);
-    builder = builder.property("authors", &[util::info::AUTHOR].as_ref());
+    builder = builder.property("program-name", util::info::PROGRAM_NAME);
+    builder = builder.property("version", util::info::VERSION);
+    builder = builder.property("website", util::info::WEBSITE);
+    builder = builder.property("license-type", util::info::LICENSE_TYPE);
+    builder = builder.property("title", util::info::ABOUT_TITLE);
+    builder = builder.property("authors", [util::info::AUTHOR].as_ref());
     builder = builder.property("logo", &icon);
 
     let about_dialog = builder.build();
@@ -156,20 +156,17 @@ pub(crate) fn get_world_map_view(widget: &ScrolledWindow) -> Option<WorldMapView
     }
 }
 pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
-    match widget.root() {
-        Some(r) => {
-            let our_window = r.downcast::<Window>().unwrap();
-            if let Some(notebook) = our_window.imp().map_notebook.try_get() {
-                if let Some(view) = our_window.imp().world_map_view.try_get() {
-                    let page_num = notebook.page_num(&view);
-                    notebook.set_current_page(page_num);
-                }
+    if let Some(r) = widget.root() {
+        let our_window = r.downcast::<Window>().unwrap();
+        if let Some(notebook) = our_window.imp().map_notebook.try_get() {
+            if let Some(view) = our_window.imp().world_map_view.try_get() {
+                let page_num = notebook.page_num(&view);
+                notebook.set_current_page(page_num);
             }
-            ()
         }
-        None => (),
     }
-}pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
+}
+pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -179,18 +176,14 @@ pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
     }
 }
 pub(crate) fn show_airport_map_view(widget: &ScrolledWindow) {
-    match widget.root() {
-        Some(r) => {
-            let our_window = r.downcast::<Window>().unwrap();
-            if let Some(notebook) = our_window.imp().map_notebook.try_get() {
-                if let Some(view) = our_window.imp().airport_map_view.try_get() {
-                    let page_num = notebook.page_num(&view);
-                    notebook.set_current_page(page_num);
-                }
+    if let Some(r) = widget.root() {
+        let our_window = r.downcast::<Window>().unwrap();
+        if let Some(notebook) = our_window.imp().map_notebook.try_get() {
+            if let Some(view) = our_window.imp().airport_map_view.try_get() {
+                let page_num = notebook.page_num(&view);
+                notebook.set_current_page(page_num);
             }
-            ()
         }
-        None => (),
     }
 }
 
@@ -204,18 +197,14 @@ pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
     }
 }
 pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
-    match widget.root() {
-        Some(r) => {
-            let our_window = r.downcast::<Window>().unwrap();
-            if let Some(notebook) = our_window.imp().search_notebook.try_get() {
-                if let Some(view) = our_window.imp().airport_view.try_get() {
-                    let page_num = notebook.page_num(&view);
-                    notebook.set_current_page(page_num);
-                }
+    if let Some(r) = widget.root() {
+        let our_window = r.downcast::<Window>().unwrap();
+        if let Some(notebook) = our_window.imp().search_notebook.try_get() {
+            if let Some(view) = our_window.imp().airport_view.try_get() {
+                let page_num = notebook.page_num(&view);
+                notebook.set_current_page(page_num);
             }
-            ()
         }
-        None => (),
     }
 }
 pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
@@ -228,18 +217,14 @@ pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
     }
 }
 pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
-    match widget.root() {
-        Some(r) => {
-            let our_window = r.downcast::<Window>().unwrap();
-            if let Some(notebook) = our_window.imp().search_notebook.try_get() {
-                if let Some(view) = our_window.imp().navaid_view.try_get() {
-                    let page_num = notebook.page_num(&view);
-                    notebook.set_current_page(page_num);
-                }
+    if let Some(r) = widget.root() {
+        let our_window = r.downcast::<Window>().unwrap();
+        if let Some(notebook) = our_window.imp().search_notebook.try_get() {
+            if let Some(view) = our_window.imp().navaid_view.try_get() {
+                let page_num = notebook.page_num(&view);
+                notebook.set_current_page(page_num);
             }
-            ()
         }
-        None => (),
     }
 }
 pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
@@ -252,17 +237,13 @@ pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
     }
 }
 pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
-    match widget.root() {
-        Some(r) => {
-            let our_window = r.downcast::<Window>().unwrap();
-            if let Some(notebook) = our_window.imp().search_notebook.try_get() {
-                if let Some(view) = our_window.imp().fix_view.try_get() {
-                    let page_num = notebook.page_num(&view);
-                    notebook.set_current_page(page_num);
-                }
+    if let Some(r) = widget.root() {
+        let our_window = r.downcast::<Window>().unwrap();
+        if let Some(notebook) = our_window.imp().search_notebook.try_get() {
+            if let Some(view) = our_window.imp().fix_view.try_get() {
+                let page_num = notebook.page_num(&view);
+                notebook.set_current_page(page_num);
             }
-            ()
         }
-        None => (),
     }
 }

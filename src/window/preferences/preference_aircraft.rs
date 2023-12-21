@@ -59,7 +59,7 @@ mod imp {
     impl PreferenceAircraftPage {
         fn setup_aircraft_list(&self) {
             self.aircraft_list.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject|{
-                label.set_label(&string_object.string().to_string());
+                label.set_label(string_object.string().as_ref());
                 label.set_xalign(0.0);
             })));
 

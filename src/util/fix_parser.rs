@@ -56,7 +56,6 @@ impl FixParserFG {
                         }
                     }
                     info!("{}", msg.kind());
-                    () // We ignore the error on the first two rows - NOT UTF-8
                 }
             }
         }
@@ -122,7 +121,7 @@ mod tests {
                     Err(msg) => panic! {"{}", msg},
                 }
             }
-            Err(e) => panic!("Unable to open test fix data {}", e.to_string()),
+            Err(e) => panic!("Unable to open test fix data {}", e),
         }
 
         assert_eq!(fixs.len(), 97);

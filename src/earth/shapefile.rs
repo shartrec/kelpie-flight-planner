@@ -54,7 +54,6 @@ pub fn read_shapes() -> Option<Vec<Polygon>> {
                                 Shape::Polygon(pts) => world.push(pts.clone()),
                                 _ => {
                                     error!("World shoreline data in file is not polygons as expected: ");
-                                    ()
                                 },
                             }
                         }
@@ -62,7 +61,6 @@ pub fn read_shapes() -> Option<Vec<Polygon>> {
                 }
                 _ => {
                     error! ("Unable to open file for world shoreline data");
-                    ()
                 }
             }
             Some(world)
@@ -86,18 +84,15 @@ mod tests {
         let vec = v.unwrap();
         assert!(!vec.is_empty());
         println!("Num Polylines - {}", vec.len());
-        for poly in vec {
+        if let Some(poly) = vec.into_iter().next() {
             println!("Bounds {:?}", poly.bbox());
             println!("Poly has {} rings", poly.rings().len());
-            for ring in poly.rings() {
+            if let Some(ring) = poly.rings().iter().next() {
                 println!("Ring has {} points", ring.len());
-                for point in ring.points() {
+                if let Some(point) = ring.points().iter().next() {
                     print!("Point - {}", point);
-                    break;
                 }
-                break;
             }
-            break;
-        }
+        };
     }
 }

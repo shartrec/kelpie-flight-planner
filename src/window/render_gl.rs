@@ -23,13 +23,11 @@
  */
 extern crate nalgebra_glm as glm;
 
-use std;
 use std::cell::{Cell, RefCell};
 use std::ffi::{CStr, CString};
 use std::rc::Rc;
 use std::time::Duration;
 
-use gl;
 use glm::{*};
 use gtk::{GLArea, glib};
 use gtk::glib::timeout_add_local;
@@ -248,8 +246,8 @@ impl Renderer {
     }
 
     pub fn set_zoom_level(&self, zoom: f32) {
-        self.zoom_level.replace(zoom.clone());
-        self.aircraft_renderer.borrow().set_zoom_level(zoom.clone());
+        self.zoom_level.replace(zoom);
+        self.aircraft_renderer.borrow().set_zoom_level(zoom);
     }
 
     pub fn get_map_centre(&self) -> Coordinate {
@@ -299,14 +297,14 @@ impl Renderer {
             gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
         }
 
-        let color = vec!(0.90, 1.0, 1.0f32);
+        let color = [0.90, 1.0, 1.0f32];
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
         }
         self.sphere_renderer.draw(area);
 
-        let color = vec!(0.0, 0.4, 0.0f32);
+        let color = [0.0, 0.4, 0.0f32];
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
@@ -314,7 +312,7 @@ impl Renderer {
         self.shore_line_renderer.draw(area);
 
         if with_airports {
-            let color = vec!(1.0, 0.0, 0.0f32);
+            let color = [1.0, 0.0, 0.0f32];
             unsafe {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
@@ -323,7 +321,7 @@ impl Renderer {
         }
 
         if with_navaids {
-            let color = vec!(0.2, 0.2, 1.0f32);
+            let color = [0.2, 0.2, 1.0f32];
             unsafe {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
@@ -332,7 +330,7 @@ impl Renderer {
         }
 
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
-            let color = vec!(0.0, 0.0, 0.0f32);
+            let color = [0.0, 0.0, 0.0f32];
             unsafe {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
@@ -340,7 +338,7 @@ impl Renderer {
             plan_renderer.draw(area);
         }
 
-        let color = vec!(1.0, 0.1, 0.1f32);
+        let color = [1.0, 0.1, 0.1f32];
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
@@ -405,7 +403,7 @@ impl Renderer {
         let depth = earth_radius;
 
         let r_squared = (x1 * x1 + y1 * y1) as f32;
-        let earth_r_squared = (earth_radius * earth_radius) as f32;
+        let earth_r_squared = earth_radius * earth_radius;
         if r_squared > earth_r_squared {
             return Err("not in map".to_string());
         }
@@ -416,17 +414,17 @@ impl Renderer {
         // Now we need to transform this into model coordinates.
         // get_matrix_and_unwind();
         let aspect_ratio = if height < width {
-            [height as f32 / width as f32, 1.0]
+            [height / width, 1.0]
         } else {
-            [1.0, width as f32 / height as f32]
+            [1.0, width / height ]
         };
         let mat = self.build_matrix(aspect_ratio);
 
         match mat.try_inverse() {
             Some(transform) => {
                 let pt = TVec4::new(
-                    2. * x as f32 / width - 1.,
-                    -(2. * y as f32 / height - 1.),
+                    2. * x / width - 1.,
+                    -(2. * y / height - 1.),
                     -normal_z,
                     1.,
                 );
@@ -444,12 +442,12 @@ impl Renderer {
         // This updates the last_centre position which is where we actually draw
         // and returns true if we have reached the true centre as requested
 
-        let req_lat = self.map_centre.borrow().get_latitude().clone();
-        let mut last_lat = self.last_map_centre.borrow().get_latitude().clone();
+        let req_lat = *self.map_centre.borrow().get_latitude();
+        let mut last_lat = *self.last_map_centre.borrow().get_latitude();
         let mut r_lat_inc = (req_lat - last_lat) / 20.0;
 
-        let req_long = self.map_centre.borrow().get_longitude().clone();
-        let mut last_long = self.last_map_centre.borrow().get_longitude().clone();
+        let req_long = *self.map_centre.borrow().get_longitude();
+        let mut last_long = *self.last_map_centre.borrow().get_longitude();
 
         let mut r_long_inc = req_long - last_long;
         if r_long_inc < -180.0 {
@@ -475,12 +473,12 @@ impl Renderer {
             if (req_lat - last_lat).abs() > lat_inc.abs() {
                 last_lat += lat_inc;
             } else {
-                last_lat = req_lat.clone();
+                last_lat = req_lat;
             }
             if (req_long - last_long).abs() > long_inc.abs() {
                 last_long += long_inc;
             } else {
-                last_long = req_long.clone();
+                last_long = req_long;
             }
             if last_long < -180.0 {
                 last_long += 360.0;

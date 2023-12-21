@@ -72,14 +72,13 @@ mod imp {
         fn initialise(&self) {
             let prefs = crate::preference::manager();
             self.btn_use_mag_hdg.set_active(prefs.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false));
-            match prefs.get::<String>(UNITS) {
-                Some(unit) => match unit.as_str() {
+            if let Some(unit) = prefs.get::<String>(UNITS) {
+                match unit.as_str() {
                     UNITS_NM => self.btn_dist_nm.set_active(true),
                     UNITS_MI => self.btn_dist_mi.set_active(true),
                     UNITS_KM => self.btn_dist_km.set_active(true),
                     _ => ()
                 }
-                None => ()
             }
             self.btn_use_dft_paths.set_active(prefs.get::<bool>(FGFS_USE_DFT_PATH).unwrap_or(false));
             self.fg_path.set_text(prefs.get::<String>(FGFS_DIR).unwrap_or("".to_string()).as_str());

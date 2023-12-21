@@ -189,7 +189,7 @@ impl AirportRenderer {
 
         for airport in airports.iter() {
             let position = projector.project(airport.get_lat(), airport.get_long());
-            vertices.push(Vertex { position: position });
+            vertices.push(Vertex { position });
 
             // Now indices
             if airport.get_max_runway_length() > 10000 {

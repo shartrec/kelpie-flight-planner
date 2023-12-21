@@ -26,6 +26,7 @@ use gtk::gio;
 
 mod imp {
     use std::cell::RefCell;
+    use std::cmp::Ordering;
     use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
@@ -252,15 +253,12 @@ mod imp {
             event::manager().notify_listeners(Event::PlanChanged);
         }
 
-        pub fn initialise(&self) -> () {
+        pub fn initialise(&self) {
             let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
             let index = event::manager().register_listener(tx);
             rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                match ev {
-                    Event::PreferencesChanged => {
-                        view.refresh(None);
-                    },
-                    _ => (),
+                if let Event::PreferencesChanged = ev {
+                    view.refresh(None);
                 }
                 Continue(true)
             }));
@@ -278,10 +276,10 @@ mod imp {
                 if path.len() == 1 {
                     let sector_index = path[0] as usize;
                     let sector = &plan.get_sectors()[sector_index];
-                    if sector.borrow().get_start() == None {
+                    if sector.borrow().get_start().is_none() {
                         sector.borrow_mut().set_start(Some(loc.clone()));
                         added = true;
-                    } else if sector.borrow().get_end() == None {
+                    } else if sector.borrow().get_end().is_none() {
                         sector.borrow_mut().set_end(Some(loc.clone()));
                         added = true;
                     }
@@ -313,9 +311,7 @@ mod imp {
                         let sector_index = path[0] as usize;
                         let mut wp_index = path[1] as usize;
                         // The airport is the first subitem of the plan
-                        if wp_index != 0 {
-                            wp_index -= 1;
-                        }
+                        wp_index = wp_index.saturating_sub(1);
                         let sector = &plan.get_sectors()[sector_index];
                         sector
                             .borrow_mut()
@@ -328,10 +324,8 @@ mod imp {
                         }
                     }
                 }
-            } else {
-                if let Some(s) = plan.get_sectors().last() {
-                    s.borrow_mut().add_waypoint(waypoint);
-                }
+            } else if let Some(s) = plan.get_sectors().last() {
+                s.borrow_mut().add_waypoint(waypoint);
             }
             drop(plan);
             let _ = &self.refresh(None);
@@ -345,12 +339,9 @@ mod imp {
 
             if let Some(prev_sector) = plan.get_sectors().last() {
                 if let Some(wp) = prev_sector.borrow().get_end() {
-                    match wp {
-                        Waypoint::Airport { airport, .. } => {
-                            prev_airport_id = airport.get_id().to_string().clone();
-                            prev = true;
-                        }
-                        _ => (),
+                    if let Waypoint::Airport { airport, .. } = wp {
+                        prev_airport_id = airport.get_id().to_string().clone();
+                        prev = true;
                     }
                 }
             }
@@ -459,9 +450,9 @@ mod imp {
                         let sector = &sectors[sector_index];
                         let mut s_clone = sector.borrow().deref().clone();
                         if wp_index == 0 {
-                            let _ = s_clone.set_start(None);
+                            s_clone.set_start(None);
                         } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            let _ = s_clone.set_end(None);
+                            s_clone.set_end(None);
                         } else {
                             let i = wp_index - 1;
                             let _ = s_clone.remove_waypoint(i);
@@ -489,10 +480,8 @@ mod imp {
                         let sector = &sectors[sector_index];
                         if let Some(wp) = &sector.borrow().get_start() {
                             Some(wp.get_loc().clone())
-                        } else if let Some(wp) = &sector.borrow().get_end() {
-                            Some(wp.get_loc().clone())
                         } else {
-                            None
+                            sector.borrow().get_end().as_ref().map(|wp| wp.get_loc().clone())
                         }
                     }
                     2 => {
@@ -502,24 +491,12 @@ mod imp {
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
                         if wp_index == 0 {
-                            if let Some(wp) = &sector.borrow().get_start() {
-                                Some(wp.get_loc().clone())
-                            } else {
-                                None
-                            }
+                            sector.borrow().get_start().as_ref().map(|wp| wp.get_loc().clone())
                         } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            if let Some(wp) = &sector.borrow().get_end() {
-                                Some(wp.get_loc().clone())
-                            } else {
-                                None
-                            }
+                            sector.borrow().get_end().as_ref().map(|wp| wp.get_loc().clone())
                         } else {
                             let i = wp_index - 1;
-                            if let Some(wp) = &sector.borrow().get_waypoint(i) {
-                                Some(wp.get_loc().clone())
-                            } else {
-                                None
-                            }
+                            sector.borrow().get_waypoint(i).as_ref().map(|wp| wp.get_loc().clone())
                         }
                     }
                     _ => None
@@ -575,9 +552,10 @@ mod imp {
             }
         }
 
+        //noinspection RsExternalLinter
         fn setup_aircraft_combo(&self) {
             self.aircraft_combo.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject|{
-                label.set_label(&string_object.string().to_string());
+                label.set_label(string_object.string().as_ref());
                 label.set_xalign(0.0);
             })));
 
@@ -596,12 +574,10 @@ mod imp {
 
             // set the selection initially to the default
             let hangar = get_hangar().imp();
-            let mut i = 0;
-            for (_k, a) in hangar.get_all().read().expect("could not get hangar lock").iter() {
+            for (i, (_k, a)) in hangar.get_all().read().expect("could not get hangar lock").iter().enumerate() {
                 if *a.is_default() {
-                    self.aircraft_combo.set_selected(i);
+                    self.aircraft_combo.set_selected(i as u32);
                 }
-                i += 1;
             }
         }
     }
@@ -713,8 +689,9 @@ mod imp {
                 view.btn_move_down.set_sensitive(false);
                 if let Some((model, iter)) = tree_view.selection().selected() {
                     let path = model.path(&iter).indices();
-                    if path.len() == 1 {
-                        let sector_index = path[0] as usize;
+                    match path.len().cmp(&1) {
+                        Ordering::Equal => {
+                                                    let sector_index = path[0] as usize;
                         let sectors = plan.get_sectors();
                         if sector_index > 0 && sector_index < sectors.len() {
                             view.btn_move_up.set_sensitive(true);
@@ -722,18 +699,24 @@ mod imp {
                         if sector_index < sectors.len() - 1 {
                             view.btn_move_down.set_sensitive(true);
                         }
-                    } else if path.len() > 1 {
-                        let sector_index = path[0] as usize;
-                        let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
-                        // Only if a waypoint.  index > 0 and < sectors.len() - 1
-                        if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
-                            view.btn_move_up.set_sensitive(true);
+
                         }
-                        if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
-                            view.btn_move_down.set_sensitive(true);
-                        }
+                        Ordering::Greater => {
+                            let sector_index = path[0] as usize;
+                            let wp_index = path[1] as usize;
+                            let sectors = plan.get_sectors();
+                            // Only if a waypoint.  index > 0 and < sectors.len() - 1
+                            if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
+                                view.btn_move_up.set_sensitive(true);
+                            }
+                            if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
+                                view.btn_move_down.set_sensitive(true);
+                            }
+
+                        },
+                        _ => {}
                     }
+
                 }
             }));
 
@@ -752,12 +735,9 @@ mod imp {
             let action = SimpleAction::new("view", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                if let Some(airport) = view.get_selected_airport() {
-                    match get_airport_map_view(&view.plan_window.get()) {
-                        Some(airport_map_view) => {
-                            show_airport_map_view(&view.plan_window.get());
-                            airport_map_view.imp().set_airport(airport);
-                        }
-                        None => (),
+                    if let Some(airport_map_view) = get_airport_map_view(&view.plan_window.get()) {
+                        show_airport_map_view(&view.plan_window.get());
+                        airport_map_view.imp().set_airport(airport);
                     }
                 }
             }));
@@ -778,13 +758,9 @@ mod imp {
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
-                    match get_airport_view(&view.plan_window.get()) {
-                        Some(airport_view) => {
-                            show_airport_view(&view.plan_window.get());
-                            airport_view.imp().search_near(&loc);
-                            ()
-                        },
-                        None => (),
+                    if let Some(airport_view) = get_airport_view(&view.plan_window.get()) {
+                        show_airport_view(&view.plan_window.get());
+                        airport_view.imp().search_near(&loc);
                     }
                }
             }));
@@ -793,13 +769,9 @@ mod imp {
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
-                    match get_navaid_view(&view.plan_window.get()) {
-                        Some(navaid_view) => {
-                            show_navaid_view(&view.plan_window.get());
-                            navaid_view.imp().search_near(&loc);
-                            ()
-                        },
-                        None => (),
+                    if let Some(navaid_view) = get_navaid_view(&view.plan_window.get()) {
+                        show_navaid_view(&view.plan_window.get());
+                        navaid_view.imp().search_near(&loc);
                     }
                     }
             }));
@@ -808,13 +780,9 @@ mod imp {
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
-                    match get_fix_view(&view.plan_window.get()) {
-                        Some(fix_view) => {
-                            show_fix_view(&view.plan_window.get());
-                            fix_view.imp().search_near(&loc);
-                            ()
-                        },
-                        None => (),
+                    if let Some(fix_view) = get_fix_view(&view.plan_window.get()) {
+                        show_fix_view(&view.plan_window.get());
+                        fix_view.imp().search_near(&loc);
                     }
                 }
             }));

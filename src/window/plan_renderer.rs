@@ -148,7 +148,7 @@ impl PlanRenderer {
             let s = binding.deref();
             if let Some(airport) = s.get_start() {
                 let position = projector.project(airport.get_lat(), airport.get_long());
-                vertices.push(Vertex { position: position });
+                vertices.push(Vertex { position });
                 indices_airports.push(vertices.len() as u32 - 1);
                 let mut last_p = position;
 
@@ -163,7 +163,7 @@ impl PlanRenderer {
                     for v in arc {
                         vertices.push(v);
                     }
-                    vertices.push(Vertex { position: position });
+                    vertices.push(Vertex { position });
                     last_p = position;
                 }
 
@@ -173,7 +173,7 @@ impl PlanRenderer {
                     for v in arc {
                         vertices.push(v);
                     }
-                    vertices.push(Vertex { position: position });
+                    vertices.push(Vertex { position });
                     indices_airports.push(vertices.len() as u32 - 1);
                 }
             }

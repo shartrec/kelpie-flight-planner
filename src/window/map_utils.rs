@@ -42,8 +42,8 @@ pub(super) struct GLSphereBuilder {
 // to describe the triangles. This reduces the Vertex count by 1/3rd.
 impl GLSphereBuilder {
     pub fn new() -> Self {
-        let x = 0.525731112119133606;
-        let z = 0.850650808352039932;
+        let x = 0.525_731_1;
+        let z = 0.850_650_8;
         Self {
             // Statically define the starting regular isocahedron with "radius" = 1
             vdata: [
@@ -117,6 +117,7 @@ impl GLSphereBuilder {
         (vertices, indeces)
     }
 
+    //noinspection RsExternalLinter
     fn subdivide(&mut self, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32) {
         let mut v12: [f32; 3] = [0.0; 3];
         let mut v23: [f32; 3] = [0.0; 3];
@@ -139,17 +140,17 @@ impl GLSphereBuilder {
         self.normalize(&mut v23);
         self.normalize(&mut v31);
 
-        vertices.push(Vertex { position: self.scale(&v12, &radius)});
+        vertices.push(Vertex { position: self.scale(&v12, radius)});
         let i12 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v23, &radius)});
+        vertices.push(Vertex { position: self.scale(&v23, radius)});
         let i23 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v31, &radius)});
+        vertices.push(Vertex { position: self.scale(&v31, radius)});
         let i31 = vertices.len() - 1;
 
-        self.subdivide(vertices, indices, i1, i12, i31, depth - 1, &radius);
-        self.subdivide(vertices, indices, i2, i23, i12, depth - 1, &radius);
-        self.subdivide(vertices, indices, i3, i31, i23, depth - 1, &radius);
-        self.subdivide(vertices, indices, i12, i23, i31, depth - 1, &radius);
+        self.subdivide(vertices, indices, i1, i12, i31, depth - 1, radius);
+        self.subdivide(vertices, indices, i2, i23, i12, depth - 1, radius);
+        self.subdivide(vertices, indices, i3, i31, i23, depth - 1, radius);
+        self.subdivide(vertices, indices, i12, i23, i31, depth - 1, radius);
     }
 
     fn normalize(&self, v: &mut [f32; 3]) {
@@ -199,7 +200,7 @@ impl GLShorelineBuilder {
                     let ring_len = ring.len();
                     for point in ring.points() {
                         let position = self.projector.project(&point.y, &point.x);
-                        vertices.push(Vertex { position: position });
+                        vertices.push(Vertex { position });
                     }
                     rings.push((ring_start, ring_len));
                 }

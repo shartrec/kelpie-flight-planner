@@ -176,7 +176,7 @@ impl NameIdFilter {
         match RegexBuilder::new(term).case_insensitive(true).build() {
             Ok(regex) => Some(Self {
                 term: term.to_string(),
-                regex: regex,
+                regex,
             }),
             Err(_) => None,
         }

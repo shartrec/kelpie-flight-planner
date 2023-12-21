@@ -58,7 +58,6 @@ impl NavaidParserFG {
                         }
                     }
                     info!("{}", msg.kind());
-                    () // We ignore the error on the first two rows - NOT UTF-8
                 }
             }
         }
@@ -87,7 +86,7 @@ impl NavaidParserFG {
 
                     let mut frequency = token_number::<f64>(tokenizer.next());
 
-                    if navaid_type.as_ref().unwrap_or(&NavaidType::NDB) == &NavaidType::VOR {
+                    if navaid_type.as_ref().unwrap_or(&NavaidType::Ndb) == &NavaidType::Vor {
                         frequency /= 100.;
                     }
 
@@ -98,14 +97,14 @@ impl NavaidParserFG {
 
                     let mut name = String::new();
                     name.push_str(tokenizer.next().unwrap_or(""));
-                    for token in tokenizer.into_iter() {
-                        name.push_str(&" ");
+                    for token in tokenizer {
+                        name.push(' ');
                         name.push_str(token);
                     }
 
                     let navaid = Navaid::new(
                         id.to_string(),
-                        navaid_type.unwrap_or(NavaidType::NDB),
+                        navaid_type.unwrap_or(NavaidType::Ndb),
                         latitude,
                         longitude,
                         elevation,
@@ -134,8 +133,7 @@ impl NavaidParserFG {
                                     list.push((runway_id.to_string(), frequency));
                                 }
                                 None => {
-                                    let mut list = Vec::new();
-                                    list.push((runway_id.to_string(), frequency));
+                                    let list = vec![(runway_id.to_string(), frequency)];
                                     ils.insert(airport_id.to_string(), list);
                                 }
                             }
@@ -184,14 +182,14 @@ mod tests {
                     Err(msg) => panic! {"{}", msg},
                 }
             }
-            Err(e) => panic!("Unable to open test navaid data {}", e.to_string()),
+            Err(e) => panic!("Unable to open test navaid data {}", e),
         }
 
         assert_eq!(navaids.len(), 97);
         assert_eq!(navaids[0].get_id(), "APH");
         assert_eq!(navaids[21].get_id(), "AB");
         match navaids[21].get_type() {
-            NavaidType::NDB => (),
+            NavaidType::Ndb => (),
             _ => panic!("navaid type is not NDB"),
         }
     }

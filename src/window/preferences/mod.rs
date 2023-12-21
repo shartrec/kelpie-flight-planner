@@ -97,7 +97,11 @@ impl PreferenceDialog {
         glib::Object::new::<PreferenceDialog>()
     }
 }
-
+impl Default for PreferenceDialog {
+    fn default() -> Self {
+        PreferenceDialog::new()
+    }
+}
 
 pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder: bool) {
 
@@ -133,18 +137,15 @@ pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder
     };
 
     let closure = move | result: Result<File, _>| {
-        match result {
-            Ok(file) => {
-                if let Some(path) = file.path() {
-                    let s = path.to_str();
-                    {
-                        if let Some(s) = s {
-                            field.set_text(s);
-                        };
-                    }
+        if let Ok(file) = result {
+            if let Some(path) = file.path() {
+                let s = path.to_str();
+                {
+                    if let Some(s) = s {
+                        field.set_text(s);
+                    };
                 }
             }
-            _ => (),
         }
     };
     if is_folder {
