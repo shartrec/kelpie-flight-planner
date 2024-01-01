@@ -120,13 +120,13 @@ mod imp {
         }
 
         pub fn get(&self, name: &str) -> Option<Arc<Aircraft>> {
-            self.aircraft.read().expect("Can't get aiscraft lock").get(name).cloned()
+            self.aircraft.read().expect("Can't get aircraft lock").get(name).cloned()
         }
 
         pub fn put(&self, aircraft: Aircraft) {
             let name = aircraft.get_name().to_string().clone();
             let old_p = self.get_item_position(&name);
-            let mut binding = self.aircraft.write().expect("Can't get aiscraft lock");
+            let mut binding = self.aircraft.write().expect("Can't get aircraft lock");
             binding.insert(aircraft.get_name().to_string(), Arc::new(aircraft));
             drop(binding);
             self.save();
@@ -139,7 +139,7 @@ mod imp {
 
         pub fn remove(&self, name: &str) {
             let p = self.get_item_position(name);
-            let mut binding = self.aircraft.write().expect("Can't get aiscraft lock");
+            let mut binding = self.aircraft.write().expect("Can't get aircraft lock");
             binding.remove(name);
             drop(binding);
             self.save();

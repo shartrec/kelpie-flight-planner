@@ -28,5 +28,8 @@ serde = { version = "1.0.193", features = ["derive"] }
 scheduling = "0.1.2"
 home = "0.5.9"
 
+[profile.release]
+opt-level = "z"
+
 [build-dependencies]
 glib-build-tools = "0.18.0"
