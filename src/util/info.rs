@@ -27,7 +27,7 @@ use gtk::License;
 pub const PROGRAM_NAME: &str = "Kelpie Flight Planner";
 //The following string is provided this way to allow proper translation
 pub const ABOUT_TITLE: &str = "About Kelpie Flight Planner";
-pub const VERSION: &str = "2.0.0";
+pub const VERSION: &str = "2.0.0-alpha2";
 pub const AUTHOR: &str = "Trevor Campbell";
 pub const WEBSITE: &str = "https://github.com/shartrec/kelpie-flight-planner";
 pub const DOCSITE: &str = "https://shartrec.github.io/kelpie-flight-planner/";
