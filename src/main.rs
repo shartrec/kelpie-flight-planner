@@ -23,6 +23,7 @@
  */
 
 #![allow(deprecated)]
+#![windows_subsystem = "windows"]
 
 use std::ptr;
 
