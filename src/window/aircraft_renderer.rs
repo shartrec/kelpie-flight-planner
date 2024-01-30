@@ -34,7 +34,6 @@ use crate::window::map_utils::Vertex;
 
 pub struct AircraftRenderer {
     aircraft_vertex_buffer: GLuint,
-    fg_link_up: Cell<bool>,
     aircraft_position: RefCell<Option<AircraftPositionInfo>>,
     zoom_level: Cell<f32>,
 
@@ -49,7 +48,6 @@ impl AircraftRenderer {
 
         AircraftRenderer {
             aircraft_vertex_buffer,
-            fg_link_up: Cell::new(false),
             aircraft_position: RefCell::new(None),
             zoom_level: Cell::new(1.0),
         }
@@ -57,16 +55,14 @@ impl AircraftRenderer {
 
     pub fn set_aircraft_position(&self, aircraft_position: Option<AircraftPositionInfo>) {
         self.aircraft_position.replace(aircraft_position);
-        let fg_link_up = self.load_buffers(&self.aircraft_position, self.aircraft_vertex_buffer);
-        self.fg_link_up.replace(fg_link_up);
+        self.load_buffers(&self.aircraft_position, self.aircraft_vertex_buffer);
     }
     pub fn set_zoom_level(&self, zoom: f32) {
         self.zoom_level.replace(zoom);
-        let index_count = self.load_buffers(&self.aircraft_position, self.aircraft_vertex_buffer);
-        self.fg_link_up.replace(index_count);
+        self.load_buffers(&self.aircraft_position, self.aircraft_vertex_buffer);
     }
 
-    fn load_buffers(&self, aircraft_position: &RefCell<Option<AircraftPositionInfo>>, aircraft_vertex_buffer: GLuint) -> bool {
+    fn load_buffers(&self, aircraft_position: &RefCell<Option<AircraftPositionInfo>>, aircraft_vertex_buffer: GLuint) {
         if let Some(api) = aircraft_position.borrow().deref() {
             let vertices = self.build_aircraft_vertices(api);
             unsafe {
@@ -78,12 +74,8 @@ impl AircraftRenderer {
                     gl::DYNAMIC_DRAW, // usage
                 );
 
-
                 gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             }
-            true
-        } else {
-            false
         }
     }
 
