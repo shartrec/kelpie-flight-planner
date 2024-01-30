@@ -39,7 +39,7 @@ use crate::window::plan_view::PlanView;
 use crate::window::preferences::PreferenceDialog;
 use crate::window::world_map_view::WorldMapView;
 
-enum SaveTyoe {
+enum SaveType {
     Native,
     FgRouteManager
 }
@@ -116,14 +116,14 @@ impl Window {
 
 
     pub(crate) fn save_plan(&self) {
-        self.do_save("Save Plan", SaveTyoe::Native);
+        self.do_save("Save Plan", SaveType::Native);
     }
 
     pub(crate) fn export_plan(&self) {
-        self.do_save("Export Plan", SaveTyoe::FgRouteManager);
+        self.do_save("Export Plan", SaveType::FgRouteManager);
     }
 
-    fn do_save(&self, title: &str, save_tyoe: SaveTyoe) {
+    fn do_save(&self, title: &str, save_type: SaveType) {
         if let Ok(view) = self.plan_stack.visible_child().expect("No plan").downcast::<PlanView>() {
             let win = self.get_window_handle();
 
@@ -132,9 +132,9 @@ impl Window {
             let dialog = FileDialog::new();
             dialog.set_modal(true);
             dialog.set_title(title);
-            let ext = match save_tyoe {
-                SaveTyoe::Native => "fgfp",
-                SaveTyoe::FgRouteManager => "xml",
+            let ext = match save_type {
+                SaveType::Native => "fgfp",
+                SaveType::FgRouteManager => "xml",
             };
             let mut name = plan.get_name();
             name.push('.');
@@ -151,9 +151,9 @@ impl Window {
                         clone!(@weak view, => move | result: Result<File, _>| {
 
                     if let Ok(file) = result {
-                        let writer = match save_tyoe {
-                                    SaveTyoe::Native => plan_writer_xml::write_plan,
-                                    SaveTyoe::FgRouteManager => plan_writer_route_manager::export_plan_fg,
+                        let writer = match save_type {
+                                    SaveType::Native => plan_writer_xml::write_plan,
+                                    SaveType::FgRouteManager => plan_writer_route_manager::export_plan_fg,
                                 };
                         if let Some(path) = file.path() {
                             let plan = view.imp().get_plan();
