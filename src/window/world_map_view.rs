@@ -244,6 +244,7 @@ mod imp {
 
             let popover = PopoverMenu::builder()
                 .menu_model(&model)
+                .has_arrow(false)
                 .build();
             popover.set_parent(&self.map_window.get());
             popover

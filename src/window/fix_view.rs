@@ -291,6 +291,7 @@ mod imp {
                 Some(popover) => {
                     let popover = PopoverMenu::builder()
                         .menu_model(&popover)
+                        .has_arrow(false)
                         .build();
                     popover.set_parent(&self.fix_window.get());
                     let _ = self.popover.replace(Some(popover));
