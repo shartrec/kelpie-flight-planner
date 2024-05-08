@@ -126,10 +126,13 @@ impl Airport {
             .expect("Can't get airport lock")
             .iter()
         {
-            if longest.is_none() {
-                longest = Some(runway.clone())
-            } else if runway.get_length() > longest.clone().unwrap().get_length() {
-                    longest = Some(runway.clone());
+            match &longest {
+                Some(r_longest) => {
+                    if runway.get_length() > r_longest.get_length() {
+                        longest = Some(runway.clone());
+                    }
+                }
+                None => longest = Some(runway.clone())
             }
         }
         longest
