@@ -242,7 +242,7 @@ impl Geomagnetism {
         let epoch = WMM_COF[0]
             .split_whitespace()
             .next()
-            .unwrap()
+            .unwrap_or("")
             .parse::<f64>()
             .unwrap_or(0.0);
         let mut tokens: SplitWhitespace;
@@ -257,12 +257,12 @@ impl Geomagnetism {
             while i < WMM_COF.len() {
                 {
                     tokens = WMM_COF[i].split_whitespace();
-                    n = tokens.next().unwrap().parse::<usize>().unwrap_or(0);
-                    m = tokens.next().unwrap().parse::<usize>().unwrap_or(0);
-                    gnm = tokens.next().unwrap().parse::<f64>().unwrap_or(0.0);
-                    hnm = tokens.next().unwrap().parse::<f64>().unwrap_or(0.0);
-                    dgnm = tokens.next().unwrap().parse::<f64>().unwrap_or(0.0);
-                    dhnm = tokens.next().unwrap().parse::<f64>().unwrap_or(0.0);
+                    n = tokens.next().unwrap_or("").parse::<usize>().unwrap_or(0);
+                    m = tokens.next().unwrap_or("").parse::<usize>().unwrap_or(0);
+                    gnm = tokens.next().unwrap_or("").parse::<f64>().unwrap_or(0.0);
+                    hnm = tokens.next().unwrap_or("").parse::<f64>().unwrap_or(0.0);
+                    dgnm = tokens.next().unwrap_or("").parse::<f64>().unwrap_or(0.0);
+                    dhnm = tokens.next().unwrap_or("").parse::<f64>().unwrap_or(0.0);
                     if m <= n {
                         c[m][n] = gnm;
                         cd[m][n] = dgnm;
