@@ -81,7 +81,7 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            match get_earth_model().airports.clone()
+            match get_earth_model().airports
                 .read()
                 .expect("Unable to get a lock on the airports")
                 .iter().nth(position as usize) {
