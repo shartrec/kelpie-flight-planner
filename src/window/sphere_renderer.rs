@@ -29,18 +29,16 @@ use crate::window::map_utils::Vertex;
 
 pub struct SphereRenderer {
     sphere_vertex_buffer: GLuint,
-    sphere_vertex_arrays: GLuint,
     sphere_index_buffer: GLuint,
     sphere_triangles: usize,
 }
 
 impl SphereRenderer {
-    //todo drop buffers at end of program
+
     pub fn new() -> Self {
         let mut sphere_builder = map_utils::GLSphereBuilder::new();
         let (vertices, indices) = sphere_builder.draw_sphere(0.995);
         let mut sphere_vertex_buffer: GLuint = 0;
-        let mut sphere_vertex_arrays: GLuint = 0;
         let mut sphere_index_buffer: GLuint = 0;
         unsafe {
             gl::GenBuffers(1, &mut sphere_vertex_buffer);
@@ -51,9 +49,6 @@ impl SphereRenderer {
                 vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
-
-            gl::GenVertexArrays(1, &mut sphere_vertex_arrays);
-            gl::BindVertexArray(sphere_vertex_arrays);
 
             gl::GenBuffers(1, &mut sphere_index_buffer);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, sphere_index_buffer);
@@ -71,7 +66,6 @@ impl SphereRenderer {
 
         SphereRenderer {
             sphere_vertex_buffer,
-            sphere_vertex_arrays,
             sphere_index_buffer,
             sphere_triangles: indices.len(),
         }
@@ -91,7 +85,6 @@ impl SphereRenderer {
                 std::ptr::null(), // offset of the first component
             );
 
-            gl::BindVertexArray(self.sphere_index_buffer);
             gl::DrawElements(
                 gl::TRIANGLES, // mode
                 self.sphere_triangles as gl::types::GLsizei,
@@ -109,8 +102,6 @@ impl SphereRenderer {
             gl::DeleteBuffers(1, &self.sphere_index_buffer.clone());
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
-            gl::BindVertexArray(0);
-            gl::DeleteVertexArrays(1, &self.sphere_vertex_arrays);
         }
     }
 }
