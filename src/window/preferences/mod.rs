@@ -87,7 +87,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct PreferenceDialog(ObjectSubclass<imp::PreferenceDialog>)
-        @extends gtk::Window, gtk::Widget,
+        @extends Window, gtk::Widget,
         @implements gio::ActionGroup, gio::ActionMap, gtk::Accessible, gtk::Buildable,
                     gtk::ConstraintTarget, gtk::Native, gtk::Root, gtk::ShortcutManager;
 }

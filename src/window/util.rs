@@ -116,7 +116,7 @@ pub(crate) fn show_help_about(window: &Window) {
     let icon = Texture::from_resource(
         "/com/shartrec/kelpie_planner/images/kelpiedog_120x120_transparent.png");
 
-    let mut builder = glib::Object::builder::<AboutDialog>();
+    let mut builder = Object::builder::<AboutDialog>();
 
     builder = builder.property("program-name", util::info::PROGRAM_NAME);
     builder = builder.property("version", util::info::VERSION);

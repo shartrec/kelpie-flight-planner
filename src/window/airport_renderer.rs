@@ -111,7 +111,7 @@ impl AirportRenderer {
         }
     }
 
-    pub fn draw(&self, _area: &GLArea, medium: bool, small: bool, shader_program_id: gl::types::GLuint) {
+    pub fn draw(&self, _area: &GLArea, medium: bool, small: bool, shader_program_id: GLuint) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.airport_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader

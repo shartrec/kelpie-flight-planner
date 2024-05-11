@@ -35,7 +35,7 @@ mod imp {
     use std::sync::Arc;
 
     use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton};
-    use gtk::gdk::{GLAPI, Rectangle};
+    use gtk::gdk::Rectangle;
     use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, Propagation};
     use gtk::glib::subclass::InitializingObject;

@@ -81,7 +81,7 @@ mod imp {
             get_earth_model().airports.read().expect("Can't get Airport lock").len() as u32
         }
 
-        fn item(&self, position: u32) -> Option<glib::Object> {
+        fn item(&self, position: u32) -> Option<Object> {
             match get_earth_model().airports
                 .read()
                 .expect("Unable to get a lock on the airports")

@@ -83,7 +83,7 @@ mod imp {
             get_earth_model().fixes.read().expect("Can't get Fix lock").len() as u32
         }
 
-        fn item(&self, position: u32) -> Option<glib::Object> {
+        fn item(&self, position: u32) -> Option<Object> {
             match get_earth_model().fixes.clone()
                 .read()
                 .expect("Unable to get a lock on the fixes")

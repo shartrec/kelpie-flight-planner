@@ -24,6 +24,7 @@
 
 use std::cell::RefCell;
 use std::ops::Deref;
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
 use gtk::glib::property::PropertySet;
@@ -40,7 +41,7 @@ use super::waypoint::Waypoint;
 pub struct Sector {
     airport_start: RefCell<Option<Waypoint>>,
     airport_end: RefCell<Option<Waypoint>>,
-    waypoints: Arc<RwLock<Vec<Waypoint>>>,
+    waypoints: Rc<RwLock<Vec<Waypoint>>>,
 }
 
 impl Sector {
@@ -48,7 +49,7 @@ impl Sector {
         Sector {
             airport_start: RefCell::new(None),
             airport_end: RefCell::new(None),
-            waypoints: Arc::new(RwLock::new(Vec::with_capacity(10))),
+            waypoints: Rc::new(RwLock::new(Vec::with_capacity(10))),
         }
     }
 
@@ -151,7 +152,7 @@ impl Sector {
         self.airport_end.borrow().clone()
     }
 
-    pub fn get_waypoints(&self) -> &Arc<RwLock<Vec<Waypoint>>> {
+    pub fn get_waypoints(&self) -> &Rc<RwLock<Vec<Waypoint>>> {
         &self.waypoints
     }
 

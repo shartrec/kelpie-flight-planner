@@ -70,7 +70,7 @@ mod imp {
     impl PreferenceGeneralPage {
 
         fn initialise(&self) {
-            let prefs = crate::preference::manager();
+            let prefs = manager();
             self.btn_use_mag_hdg.set_active(prefs.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false));
             if let Some(unit) = prefs.get::<String>(UNITS) {
                 match unit.as_str() {
@@ -113,19 +113,19 @@ mod imp {
             self.initialise();
 
             self.btn_use_dft_paths.connect_toggled(| button| {
-                    crate::preference::manager().put(FGFS_USE_DFT_PATH, button.is_active());
+                    manager().put(FGFS_USE_DFT_PATH, button.is_active());
             });
             self.btn_use_mag_hdg.connect_toggled(|button| {
-                    crate::preference::manager().put(USE_MAGNETIC_HEADINGS, button.is_active());
+                    manager().put(USE_MAGNETIC_HEADINGS, button.is_active());
             });
             self.btn_dist_nm.connect_toggled(| button | {
                 if button.is_active() {
-                    crate::preference::manager().put(UNITS, UNITS_NM);
+                    manager().put(UNITS, UNITS_NM);
                 }
             });
             self.btn_dist_mi.connect_toggled(| button | {
                 if button.is_active() {
-                    crate::preference::manager().put(UNITS, UNITS_MI);
+                    manager().put(UNITS, UNITS_MI);
                 }
             });
             self.btn_dist_km.connect_toggled( | button| {
@@ -134,16 +134,16 @@ mod imp {
                 }
             });
             self.fg_path.connect_changed(| editable | {
-                crate::preference::manager().put(FGFS_DIR, editable.text());
+                manager().put(FGFS_DIR, editable.text());
             });
             self.apt_path.connect_changed(| editable | {
-                crate::preference::manager().put(AIRPORTS_PATH, editable.text());
+                manager().put(AIRPORTS_PATH, editable.text());
             });
             self.nav_path.connect_changed(| editable | {
-                crate::preference::manager().put(NAVAIDS_PATH, editable.text());
+                manager().put(NAVAIDS_PATH, editable.text());
             });
             self.fix_path.connect_changed(| editable | {
-                crate::preference::manager().put(FIXES_PATH, editable.text());
+                manager().put(FIXES_PATH, editable.text());
             });
             self.fg_browse.connect_clicked(clone!(@weak self as view => move | button | {
                 process_file_browse(view.fg_path.clone(), button.clone(), "Flightgear data directory", true);

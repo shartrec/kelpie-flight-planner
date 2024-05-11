@@ -69,7 +69,7 @@ mod imp {
 
         pub fn initialise(&self) {}
 
-        fn draw_function(&self, area: &gtk::DrawingArea, cr: &Context) {
+        fn draw_function(&self, area: &DrawingArea, cr: &Context) {
             let maybe_airport = self.airport.clone().into_inner();
             if let Some(airport) = maybe_airport {
                 let airport_painter = AirportPainter {

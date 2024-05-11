@@ -71,7 +71,7 @@ impl ShorelineRenderer {
                 3, // the number of components per generic vertex attribute
                 gl::FLOAT, // data type
                 gl::FALSE, // normalized (int-to-float conversion)
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (3 * std::mem::size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
                 std::ptr::null(), // offset of the first component
             );
 

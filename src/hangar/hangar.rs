@@ -395,7 +395,7 @@ fn put_string(map: &mut Hash, key: &str, v: &str) {
 
 pub fn get_hangar_path() -> PathBuf {
     get_app_dir(
-        app_dirs::AppDataType::UserConfig,
+        AppDataType::UserConfig,
         &APP_INFO,
         "aircraft.yaml",
     )

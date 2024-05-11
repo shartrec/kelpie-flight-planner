@@ -96,7 +96,7 @@ impl NavaidRenderer {
         }
     }
 
-    pub fn draw(&self, _area: &GLArea, ndb: bool, shader_program_id: gl::types::GLuint) {
+    pub fn draw(&self, _area: &GLArea, ndb: bool, shader_program_id: GLuint) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.navaid_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader

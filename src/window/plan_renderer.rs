@@ -90,7 +90,7 @@ impl PlanRenderer {
         self.waypoints.replace(vertices.len());
     }
 
-    pub fn draw(&self, _area: &GLArea, shader_program_id: gl::types::GLuint) {
+    pub fn draw(&self, _area: &GLArea, shader_program_id: GLuint) {
         unsafe {
             gl::LineWidth(2.0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.plan_vertex_buffer);
@@ -100,7 +100,7 @@ impl PlanRenderer {
                 3, // the number of components per generic vertex attribute
                 gl::FLOAT, // data type
                 gl::FALSE, // normalized (int-to-float conversion)
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (3 * std::mem::size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
                 std::ptr::null(), // offset of the first component
             );
 

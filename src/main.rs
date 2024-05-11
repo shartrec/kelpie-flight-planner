@@ -62,7 +62,7 @@ fn main() -> glib::ExitCode {
     // Create a new application
     let app = Application::builder()
         .application_id(APP_ID)
-        .flags(gtk::gio::ApplicationFlags::HANDLES_OPEN)
+        .flags(gio::ApplicationFlags::HANDLES_OPEN)
         .build();
 
     app.connect_startup(|_app| {

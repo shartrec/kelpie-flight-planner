@@ -54,7 +54,7 @@ impl AirportPainter {
         let height_feet = (extents[1] - extents[0]) * FEET_PER_DEGREE as f64;
         let width_feet = (extents[3] - extents[2])
             * FEET_PER_DEGREE as f64
-            * (airport.get_lat().to_radians()).cos().abs();
+            * airport.get_lat().to_radians().cos().abs();
 
         let scale_x = width_feet / width;
         let scale_y = height_feet / height;

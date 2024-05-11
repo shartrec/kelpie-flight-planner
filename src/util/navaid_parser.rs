@@ -145,7 +145,7 @@ impl NavaidParserFG {
     }
 }
 
-fn token_number<T: std::str::FromStr + std::default::Default>(t: Option<&str>) -> T {
+fn token_number<T: std::str::FromStr + Default>(t: Option<&str>) -> T {
     t.unwrap_or("0.0")
         .parse::<T>()
         .unwrap_or(Default::default())
