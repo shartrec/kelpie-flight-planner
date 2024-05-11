@@ -93,8 +93,8 @@ pub fn get_aircraft_position() -> Option<AircraftPositionInfo> {
         let latitude = fetch_property(&format!("{}/position/latitude-deg", base_url));
         let heading = fetch_property(&format!("{}/orientation/heading-deg", base_url));
         if longitude.is_ok() && latitude.is_ok() && heading.is_ok() {
-            let position = Coordinate::new(latitude.unwrap(), longitude.unwrap());
-            let heading = heading.unwrap();
+            let position = Coordinate::new(latitude.unwrap_or(0.0), longitude.unwrap_or(0.0));
+            let heading = heading.unwrap_or(0.0);
             return Some(AircraftPositionInfo{position, heading});
         }
     }

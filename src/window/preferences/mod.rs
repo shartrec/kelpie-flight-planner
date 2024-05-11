@@ -128,10 +128,10 @@ pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder
         store.append(&filter);
         dialog.set_filters(Some(&store));
     }
+
     let win = match &button.root() {
         Some(r) => {
-            let window = r.clone().downcast::<Window>().unwrap().clone();
-            Some(window)
+            r.clone().downcast::<Window>().ok().clone()
         }
         None => None,
     };

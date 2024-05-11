@@ -136,8 +136,8 @@ mod imp {
                     // Get the selection
                     dialog.imp().set_aircraft(None);
                     let r = button.root().unwrap();
-                    let our_window = r.clone().downcast::<Window>().unwrap();
-                    dialog.set_transient_for(Some(&our_window));
+                    let our_window = r.clone().downcast::<Window>().ok();
+                    dialog.set_transient_for(our_window.as_ref());
                     dialog.present();
                 }
             }));

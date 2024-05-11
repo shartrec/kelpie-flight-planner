@@ -278,7 +278,7 @@ pub fn load_hangar() -> Vec<Arc<Aircraft>> {
     let path = get_hangar_path();
 
     let mut contents = String::new();
-    match File::open(path) {
+    match File::open(&path) {
         Ok(mut file) => {
             file.read_to_string(&mut contents)
                 .expect("Unable to read file");
@@ -289,26 +289,33 @@ pub fn load_hangar() -> Vec<Arc<Aircraft>> {
     }
     let mut hangar: Vec<Arc<Aircraft>> = Vec::new();
 
-    let docs = YamlLoader::load_from_str(&contents).unwrap();
-    for doc in docs {
-        if let Some(all) = doc.as_vec() {
-            for each in all {
-                if let Some(map) = each.as_hash() {
-                    let aircraft = Aircraft::new(
-                        get_string(map, KEY_NAME),
-                        get_i32(map, KEY_CRUISE_SPEED),
-                        get_i32(map, KEY_CRUISE_ALTITUDE),
-                        get_i32(map, KEY_CLIMB_SPEED),
-                        get_i32(map, KEY_CLIMB_RATE),
-                        get_i32(map, KEY_SINK_SPEED),
-                        get_i32(map, KEY_SINK_RATE),
-                        get_bool(map, KEY_IS_DEFAULT),
-                    );
-                    hangar.push(Arc::new(aircraft));
+    match YamlLoader::load_from_str(&contents) {
+        Ok(docs) => {
+            for doc in docs {
+                if let Some(all) = doc.as_vec() {
+                    for each in all {
+                        if let Some(map) = each.as_hash() {
+                            let aircraft = Aircraft::new(
+                                get_string(map, KEY_NAME),
+                                get_i32(map, KEY_CRUISE_SPEED),
+                                get_i32(map, KEY_CRUISE_ALTITUDE),
+                                get_i32(map, KEY_CLIMB_SPEED),
+                                get_i32(map, KEY_CLIMB_RATE),
+                                get_i32(map, KEY_SINK_SPEED),
+                                get_i32(map, KEY_SINK_RATE),
+                                get_bool(map, KEY_IS_DEFAULT),
+                            );
+                            hangar.push(Arc::new(aircraft));
+                        }
+                    }
                 }
             }
         }
+        Err(_) => {
+            error!("Unable to load aircraft configuration from {:?}", &path);
+        }
     }
+
     hangar
 }
 
@@ -363,15 +370,20 @@ pub fn save_hangar() {
 
     let mut out_str = String::new();
     let mut emitter = YamlEmitter::new(&mut out_str);
-    emitter.dump(&doc).unwrap();
-
-    match File::create(path) {
-        Ok(mut f) => match f.write_all(out_str.as_bytes()) {
-            Ok(_) => {}
-            Err(err) => {
-                warn!("Unable to save aircraft config : {}", err);
+    match emitter.dump(&doc) {
+        Ok(_) => {
+            match File::create(path) {
+                Ok(mut f) => match f.write_all(out_str.as_bytes()) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        warn!("Unable to save aircraft config : {}", err);
+                    }
+                },
+                Err(err) => {
+                    error!("Unable to save aircraft config : {}", err);
+                }
             }
-        },
+        }
         Err(err) => {
             error!("Unable to save aircraft config : {}", err);
         }

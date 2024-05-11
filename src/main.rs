@@ -33,6 +33,7 @@ use gtk::gio::{Cancellable, File, SimpleAction};
 use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
+use log::error;
 use simplelog::*;
 
 use window::{preferences::PreferenceDialog, Window};
@@ -80,51 +81,66 @@ fn main() -> glib::ExitCode {
 
 fn init_opengl() {
     #[cfg(target_os = "macos")]
-        let library = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") }.unwrap();
+        let library = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") };
     #[cfg(all(unix, not(target_os = "macos")))]
-        let library = unsafe { libloading::os::unix::Library::new("libepoxy.so.0") }.unwrap();
+        let library = unsafe { libloading::os::unix::Library::new("libepoxy.so.0") };
     #[cfg(windows)]
         let library = libloading::os::windows::Library::open_already_loaded("libepoxy-0.dll")
-        .or_else(|_| libloading::os::windows::Library::open_already_loaded("epoxy-0.dll"))
-        .unwrap();
+        .or_else(|_| libloading::os::windows::Library::open_already_loaded("epoxy-0.dll"));
 
-    epoxy::load_with(|name| {
-        unsafe { library.get::<_>(name.as_bytes()) }
-            .map(|symbol| *symbol)
-            .unwrap_or(ptr::null())
-    });
+    match library {
+        Ok(library) => {
+            epoxy::load_with(|name| {
+                unsafe { library.get::<_>(name.as_bytes()) }
+                    .map(|symbol| *symbol)
+                    .unwrap_or(ptr::null())
+            });
 
-    gl::load_with(|name| {
-        epoxy::get_proc_addr(name)
-    });
-
+            gl::load_with(|name| {
+                epoxy::get_proc_addr(name)
+            });
+        }
+        Err(err) => {
+            error!("{}", err.to_string());
+            error!("Unable to load OpenGl library");
+        }
+    }
 }
+
 
 fn init_logger() {
     if let Some(home_path) = home::home_dir() {
         let log_path = home_path.join("kelpie-planner.log");
-        CombinedLogger::init(vec![
-            TermLogger::new(
-                LevelFilter::Warn,
-                Config::default(),
-                TerminalMode::Mixed,
-                ColorChoice::Auto,
-            ),
-            WriteLogger::new(
-                LevelFilter::Info,
-                Config::default(),
-                std::fs::File::create(log_path).unwrap(),
-            ),
-        ])
-        .expect("Unable to initiate logger.");
-    } else {
-        TermLogger::init(
-            LevelFilter::Warn,
-            Config::default(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        ).expect("Unable to initiate logger.");
+        match std::fs::File::create(log_path) {
+            Ok(file) => {
+                CombinedLogger::init(vec![
+                    TermLogger::new(
+                        LevelFilter::Warn,
+                        Config::default(),
+                        TerminalMode::Mixed,
+                        ColorChoice::Auto,
+                    ),
+                    WriteLogger::new(
+                        LevelFilter::Info,
+                        Config::default(),
+                        file,
+                    ),
+                ]).unwrap_or_else(|e| {
+                    println!("Unable to initiate logger: {}.", e)
+                });
+                return;
+            }
+            Err(e) => println!("Unable to initiate logger: {}", e)
+        }
     }
+    TermLogger::init(
+        LevelFilter::Warn,
+        Config::default(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    ).unwrap_or_else(|e| {
+        println!("Unable to initiate logger: {}.", e)
+    });
 }
 
 fn load_css() {

@@ -77,21 +77,22 @@ impl Earth {
     pub fn get_airport_by_id(&self, id: &str) -> Option<Arc<Airport>> {
         self.airports
             .read()
-            .unwrap()
+            .expect("Unable to get lock on Airports")
             .iter()
             .find(|airport| airport.get_id() == id)
             .cloned()
     }
 
     pub fn set_airports(&self, airports: Vec<Arc<Airport>>) {
-        self.airports.write().unwrap().clear();
-        self.airports.write().unwrap().extend(airports);
+        let mut aps = self.airports.write().expect("Unable to get lock on Airports");
+        aps.clear();
+        aps.extend(airports);
     }
 
     pub fn get_navaid_by_id_and_name(&self, id: &str, name: &str) -> Option<Arc<Navaid>> {
         self.navaids
             .read()
-            .unwrap()
+            .expect("Unable to get lock on Navaids")
             .iter()
             .find(|navaid| navaid.get_id() == id && navaid.get_name().eq_ignore_ascii_case(name))
             .cloned()
@@ -102,8 +103,9 @@ impl Earth {
     }
 
     pub fn set_navaids(&self, navaids: Vec<Arc<Navaid>>) {
-        self.navaids.write().unwrap().clear();
-        self.navaids.write().unwrap().extend(navaids);
+        let mut navs =self.navaids.write().expect("Unable to get lock on Navaids");
+        navs.clear();
+        navs.extend(navaids);
     }
 
     pub fn get_ils(&self) -> &Arc<RwLock<HashMap<String, Vec<(String, f64)>>>> {
@@ -111,14 +113,15 @@ impl Earth {
     }
 
     pub fn set_ils(&self, navaids: HashMap<String, Vec<(String, f64)>>) {
-        self.ils.write().unwrap().clear();
-        self.ils.write().unwrap().extend(navaids);
+        let mut ils = self.ils.write().expect("Unable to get lock on Ils");
+        ils.clear();
+        ils.extend(navaids);
     }
 
     pub fn get_fix_by_id(&self, id: &str) -> Option<Arc<Fix>> {
         self.fixes
             .read()
-            .unwrap()
+            .expect("Unable to get lock on Ils")
             .iter()
             .find(|fix| fix.get_id() == id)
             .cloned()
@@ -129,13 +132,15 @@ impl Earth {
     }
 
     pub fn set_fixes(&self, fixes: Vec<Arc<Fix>>) {
-        self.fixes.write().unwrap().clear();
-        self.fixes.write().unwrap().extend(fixes);
+        let mut fxs =self.fixes.write().expect("Unable to get lock on fixes");
+        fxs.clear();
+        fxs.extend(fixes);
     }
 
     pub fn set_runway_offsets(&self, runway_offsets: HashMap<String, usize>) {
-        self.runway_offsets.write().unwrap().clear();
-        self.runway_offsets.write().unwrap().extend(runway_offsets);
+        let mut rns = self.runway_offsets.write().expect("Unable to get lock on runways");
+        rns.clear();
+        rns.extend(runway_offsets);
     }
 
     pub fn get_runway_offsets(&self) -> &Arc<RwLock<HashMap<String, usize>>> {
@@ -154,19 +159,19 @@ pub fn initialise() -> Result<(), String> {
         Some(p) => load_airports(&p)?,
         None => return Err("Flightgear Airport path not set".to_string()),
     }
-    info!("{} Airports loaded in {:?}", get_earth_model().get_airports().read().unwrap().len(), timer.elapsed());
+    info!("{} Airports loaded in {:?}", get_earth_model().get_airports().read().expect("Unable to get lock on Airports").len(), timer.elapsed());
     let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
         Some(p) => load_navaids(&p)?,
         None => return Err("Flightgear Navaid path not set".to_string()),
     }
-    info!("{} Navaids loaded in {:?}", get_earth_model().get_navaids().read().unwrap().len(), timer.elapsed());
+    info!("{} Navaids loaded in {:?}", get_earth_model().get_navaids().read().expect("Unable to get lock on Navaids").len(), timer.elapsed());
     let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::FIXES_PATH) {
         Some(p) => load_fixes(&p)?,
         None => return Err("Flightgear Fix path not set".to_string()),
     }
-    info!("{} Fixes loaded in {:?}", get_earth_model().get_fixes().read().unwrap().len(), timer.elapsed());
+    info!("{} Fixes loaded in {:?}", get_earth_model().get_fixes().read().expect("Unable to get lock on Fixes").len(), timer.elapsed());
     Ok(())
 }
 
