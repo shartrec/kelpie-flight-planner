@@ -157,21 +157,21 @@
                     <property name="vexpand">true</property>
                     <property name="hexpand">true</property>
                     <child>
-                      <object class="AirportMapView" id="airport_map_view">
-                      </object>
-                    </child>
-                    <child type="tab">
-                      <object class="GtkLabel" id="tab_airport_map">
-                        <property name="label" translatable="yes">Airport Map</property>
-                      </object>
-                    </child>
-                    <child>
                       <object class="WorldMapView" id="world_map_view">
                       </object>
                     </child>
                     <child type="tab">
                       <object class="GtkLabel" id="tab_globe">
                         <property name="label" translatable="yes">Map</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AirportMapView" id="airport_map_view">
+                      </object>
+                    </child>
+                    <child type="tab">
+                      <object class="GtkLabel" id="tab_airport_map">
+                        <property name="label" translatable="yes">Airport Map</property>
                       </object>
                     </child>
                   </object>
