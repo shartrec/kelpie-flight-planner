@@ -143,7 +143,6 @@ fn get_gl_info() -> String {
     if let Some(s) = get_gl_string(gl::RENDERER) {
         gl_info = gl_info + "Open GL Renderer : "  + s.as_str() + "\n";
     }
-    println!("{}", gl_info);
     gl_info
 }
 

@@ -106,7 +106,6 @@ impl AircraftRenderer {
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DisableVertexAttribArray(0);
             gl::DeleteBuffers(1, &self.aircraft_vertex_buffer.clone());
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindVertexArray(0);

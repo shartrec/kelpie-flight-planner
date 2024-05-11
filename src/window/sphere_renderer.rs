@@ -97,7 +97,6 @@ impl SphereRenderer {
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DisableVertexAttribArray(0);
             gl::DeleteBuffers(1, &self.sphere_vertex_buffer.clone());
             gl::DeleteBuffers(1, &self.sphere_index_buffer.clone());
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer

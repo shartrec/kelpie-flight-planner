@@ -116,7 +116,10 @@ impl PlanRenderer {
                 std::ptr::null(),
             );
 
-            gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints.get() - 1) as GLint);
+            if self.waypoints.get() > 0 {
+                gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints.get() - 1) as GLint);
+            }
+
             let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(shader_program_id, c, 1.0);
 
@@ -129,7 +132,6 @@ impl PlanRenderer {
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DisableVertexAttribArray(0);
             gl::DeleteBuffers(1, &self.plan_vertex_buffer.clone());
             gl::DeleteBuffers(1, &self.plan_index_buffer.clone());
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer

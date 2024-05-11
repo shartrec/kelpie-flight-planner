@@ -173,7 +173,6 @@ impl AirportRenderer {
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DisableVertexAttribArray(0);
             gl::DeleteBuffers(1, &self.airport_vertex_buffer.clone());
             gl::DeleteBuffers(1, &self.airport_large_index_buffer.clone());
             gl::DeleteBuffers(1, &self.airport_medium_index_buffer.clone());
