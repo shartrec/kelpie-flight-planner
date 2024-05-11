@@ -32,7 +32,7 @@ mod imp {
     use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext};
     use log::error;
 
     use crate::earth::coordinate::Coordinate;
@@ -83,34 +83,35 @@ mod imp {
 
     impl NavaidView {
         pub fn initialise(&self) {
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
-            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                if let Event::NavaidsLoaded = ev {
-                    view.navaid_search.set_sensitive(true);
 
-                    let fm = FilterListModel::new(Some(Navaids::new()), Some(new_navaid_filter(Box::new(NilFilter::new()))));
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ev) = rx.recv().await {
+                    if let Event::NavaidsLoaded = ev {
+                        view.navaid_search.set_sensitive(true);
 
-                    view.filter_list_model.replace(Some(fm.clone()));
+                        let fm = FilterListModel::new(Some(Navaids::new()), Some(new_navaid_filter(Box::new(NilFilter::new()))));
 
-                     // Add a sorter
-                    view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                    view.col_name.set_sorter(Some(&Self::get_name_sorter()));
-                    view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                    view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+                        view.filter_list_model.replace(Some(fm.clone()));
 
-                    let sorter = view.navaid_list.sorter();
+                         // Add a sorter
+                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                        view.col_name.set_sorter(Some(&Self::get_name_sorter()));
+                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
 
-                    let slm = SortListModel::new(Some(fm), sorter);
-                    slm.set_incremental(true);
+                        let sorter = view.navaid_list.sorter();
 
-                    let selection_model = SingleSelection::new(Some(slm));
-                    selection_model.set_autoselect(false);
-                    view.navaid_list.set_model(Some(&selection_model));
+                        let slm = SortListModel::new(Some(fm), sorter);
+                        slm.set_incremental(true);
+
+                        let selection_model = SingleSelection::new(Some(slm));
+                        selection_model.set_autoselect(false);
+                        view.navaid_list.set_model(Some(&selection_model));
+                    }
                 }
-                glib::source::Continue(true)
             }));
-            // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
         }
 
@@ -135,7 +136,7 @@ mod imp {
                     return;
                 } else {
                     let lat_format = LatLongFormat::lat_format();
-                    let lat_as_float= match lat_format.parse(lat.as_str()) {
+                    let lat_as_float = match lat_format.parse(lat.as_str()) {
                         Ok(latitude) => latitude,
                         Err(_) => {
                             show_error_dialog(&self.obj().root(), "Invalid Latitude for search.");
@@ -215,35 +216,35 @@ mod imp {
         }
 
         fn get_id_sorter() -> CustomSorter {
-            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid>| {
                 Ordering::from(a.get_id().partial_cmp(b.get_id()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_name_sorter() -> CustomSorter {
-            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid>| {
                 Ordering::from(a.get_name().partial_cmp(b.get_name()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_lat_sorter() -> CustomSorter {
-            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid>| {
                 Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_long_sorter() -> CustomSorter {
-            let f = |a: Arc<Navaid>, b: Arc<Navaid> | {
+            let f = |a: Arc<Navaid>, b: Arc<Navaid>| {
                 Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_common_sorter(f: fn(Arc<Navaid>, Arc<Navaid>) -> Ordering) -> CustomSorter {
-            CustomSorter::new( move |a, b| {
+            CustomSorter::new(move |a, b| {
                 let navaid_a = a.clone().downcast::<NavaidObject>()
                     .expect("The item has to be an `Navaid`.");
                 let navaid_b = b.clone().downcast::<NavaidObject>()
@@ -252,7 +253,6 @@ mod imp {
                 f(navaid_a.imp().navaid(), navaid_b.imp().navaid())
             })
         }
-
     }
 
     #[glib::object_subclass]

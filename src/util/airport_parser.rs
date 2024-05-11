@@ -26,8 +26,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Error};
 use std::sync::{Arc, RwLock};
-use flate2::read::GzDecoder;
 
+use flate2::read::GzDecoder;
 use log::{error, warn};
 
 use crate::earth::coordinate::Coordinate;
@@ -464,6 +464,7 @@ mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
+
     use flate2::read;
 
     use crate::model::airport::Airport;

@@ -33,12 +33,12 @@ mod imp {
     use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext};
     use log::error;
 
-    use crate::event;
     use crate::earth::airport_list_model::Airports;
     use crate::earth::coordinate::Coordinate;
+    use crate::event;
     use crate::event::Event;
     use crate::model::airport::Airport;
     use crate::model::airport_object::AirportObject;
@@ -83,35 +83,35 @@ mod imp {
 
     impl AirportView {
         pub fn initialise(&self) {
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
-            rx.attach(None,clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                if let Event::AirportsLoaded = ev {
-                    view.airport_search.set_sensitive(true);
 
-                    let fm = FilterListModel::new(Some(Airports::new()), Some(new_airport_filter(Box::new(NilFilter::new()))));
-                    view.filter_list_model.replace(Some(fm.clone()));
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ev) = rx.recv().await {
+                    if let Event::AirportsLoaded = ev {
+                        view.airport_search.set_sensitive(true);
 
-                     // Add a sorter
-                    view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                    view.col_name.set_sorter(Some(&Self::get_name_sorter()));
-                    view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                    view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+                        let fm = FilterListModel::new(Some(Airports::new()), Some(new_airport_filter(Box::new(NilFilter::new()))));
+                        view.filter_list_model.replace(Some(fm.clone()));
 
-                    let sorter = view.airport_list.sorter();
+                         // Add a sorter
+                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                        view.col_name.set_sorter(Some(&Self::get_name_sorter()));
+                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
 
-                    let slm = SortListModel::new(Some(fm), sorter);
-                    slm.set_incremental(true);
+                        let sorter = view.airport_list.sorter();
 
-                    let selection_model = SingleSelection::new(Some(slm));
-                    selection_model.set_autoselect(false);
-                    view.airport_list.set_model(Some(&selection_model));
+                        let slm = SortListModel::new(Some(fm), sorter);
+                        slm.set_incremental(true);
+
+                        let selection_model = SingleSelection::new(Some(slm));
+                        selection_model.set_autoselect(false);
+                        view.airport_list.set_model(Some(&selection_model));
+                    }
                 }
-                glib::source::Continue(true)
             }));
-            // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
-
         }
 
         pub fn search(&self) {
@@ -212,35 +212,35 @@ mod imp {
         }
 
         fn get_id_sorter() -> CustomSorter {
-            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+            let f = |a: Arc<Airport>, b: Arc<Airport>| {
                 Ordering::from(a.get_id().partial_cmp(b.get_id()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_name_sorter() -> CustomSorter {
-            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+            let f = |a: Arc<Airport>, b: Arc<Airport>| {
                 Ordering::from(a.get_name().partial_cmp(b.get_name()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_lat_sorter() -> CustomSorter {
-            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+            let f = |a: Arc<Airport>, b: Arc<Airport>| {
                 Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_long_sorter() -> CustomSorter {
-            let f = |a: Arc<Airport>, b: Arc<Airport> | {
+            let f = |a: Arc<Airport>, b: Arc<Airport>| {
                 Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_common_sorter(f: fn(Arc<Airport>, Arc<Airport>) -> Ordering) -> CustomSorter {
-            CustomSorter::new( move |a, b| {
+            CustomSorter::new(move |a, b| {
                 let airport_a = a.clone().downcast::<AirportObject>()
                     .expect("The item has to be an `Airport`.");
                 let airport_b = b.clone().downcast::<AirportObject>()
@@ -249,7 +249,6 @@ mod imp {
                 f(airport_a.imp().airport(), airport_b.imp().airport())
             })
         }
-
     }
 
     #[glib::object_subclass]
@@ -273,27 +272,27 @@ mod imp {
             self.parent_constructed();
             self.initialise();
 
-            self.col_id.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject|{
+            self.col_id.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
                 label.set_label(airport.imp().airport().get_id());
                 label.set_xalign(0.0);
             })));
 
-            self.col_name.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject|{
+            self.col_name.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
                 label.set_label(airport.imp().airport().get_name());
                 label.set_xalign(0.0);
             })));
 
-            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject|{
+            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
                 label.set_label(&airport.imp().airport().get_lat_as_string());
                 label.set_xalign(0.0);
             })));
 
-            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject|{
+            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
                 label.set_label(&airport.imp().airport().get_long_as_string());
                 label.set_xalign(0.0);
             })));
 
-            self.col_elev.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject|{
+            self.col_elev.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
                 label.set_label(&airport.imp().airport().get_elevation().to_string());
                 label.set_xalign(1.0);
             })));
@@ -413,6 +412,7 @@ mod imp {
     }
 
     impl BoxImpl for AirportView {}
+
     impl WidgetImpl for AirportView {}
 }
 

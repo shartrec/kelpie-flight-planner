@@ -111,7 +111,7 @@ impl AirportRenderer {
         }
     }
 
-    pub fn draw(&self, _area: &GLArea, medium: bool, small: bool) {
+    pub fn draw(&self, _area: &GLArea, medium: bool, small: bool, shader_program_id: gl::types::GLuint) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.airport_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
@@ -126,7 +126,9 @@ impl AirportRenderer {
 
             let mut point_size = 2.0;
             if small {
-                gl::PointSize(point_size);
+                let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform1f(shader_program_id, c, point_size);
+
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_small_index_buffer);
                 gl::BindVertexArray(self.airport_small_index_buffer);
                 gl::DrawElements(
@@ -135,11 +137,13 @@ impl AirportRenderer {
                     gl::UNSIGNED_INT,
                     std::ptr::null(),
                 );
-                point_size *= 2.0;
+                point_size += 2.0;
             }
 
             if medium {
-                gl::PointSize(point_size);
+                let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform1f(shader_program_id, c, point_size);
+
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_medium_index_buffer);
                 gl::BindVertexArray(self.airport_medium_index_buffer);
                 gl::DrawElements(
@@ -148,10 +152,12 @@ impl AirportRenderer {
                     gl::UNSIGNED_INT,
                     std::ptr::null(),
                 );
-                point_size *= 2.0;
+                point_size += 2.0;
             }
 
-            gl::PointSize(point_size);
+            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(shader_program_id, c, point_size);
+
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_large_index_buffer);
             gl::BindVertexArray(self.airport_large_index_buffer);
             gl::DrawElements(

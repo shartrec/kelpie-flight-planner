@@ -32,7 +32,7 @@ mod imp {
     use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext};
     use log::error;
 
     use crate::earth::coordinate::Coordinate;
@@ -79,32 +79,33 @@ mod imp {
 
     impl FixView {
         pub fn initialise(&self) {
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
-            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                if let Event::FixesLoaded = ev {
-                    view.fix_search.set_sensitive(true);
-                    let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
 
-                    view.filter_list_model.replace(Some(fm.clone()));
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ev) = rx.recv().await {
+                    if let Event::FixesLoaded = ev {
+                        view.fix_search.set_sensitive(true);
+                        let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
 
-                     // Add a sorter
-                    view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                    view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                    view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+                        view.filter_list_model.replace(Some(fm.clone()));
 
-                    let sorter = view.fix_list.sorter();
+                         // Add a sorter
+                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
 
-                    let slm = SortListModel::new(Some(fm), sorter);
-                    slm.set_incremental(true);
+                        let sorter = view.fix_list.sorter();
 
-                    let selection_model = SingleSelection::new(Some(slm));
-                    selection_model.set_autoselect(false);
-                    view.fix_list.set_model(Some(&selection_model));
+                        let slm = SortListModel::new(Some(fm), sorter);
+                        slm.set_incremental(true);
+
+                        let selection_model = SingleSelection::new(Some(slm));
+                        selection_model.set_autoselect(false);
+                        view.fix_list.set_model(Some(&selection_model));
+                    }
                 }
-                glib::source::Continue(true)
             }));
-            // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
         }
 

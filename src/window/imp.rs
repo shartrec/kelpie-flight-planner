@@ -25,11 +25,11 @@
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned, Stack};
 use gtk::gio::{Cancellable, File};
-use gtk::glib::{Cast, clone};
+use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
 
-use crate::util::{get_plan_file_filter, plan_writer_xml, plan_writer_route_manager};
+use crate::util::{get_plan_file_filter, plan_writer_route_manager, plan_writer_xml};
 use crate::util::plan_reader::read_plan;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -92,7 +92,7 @@ impl Window {
         dialog.set_modal(true);
         dialog.set_title("Open Plan");
         let store = get_plan_file_filter("fgfp");
-        dialog.set_filters(&store);
+        dialog.set_filters(Some(&store));
 
         let x1 = &win.unwrap();
         let x = Some(x1);
@@ -141,7 +141,7 @@ impl Window {
             name.push_str(ext);
             dialog.set_initial_name(Some(name.as_str()));
             let store = get_plan_file_filter(ext);
-            dialog.set_filters(&store);
+            dialog.set_filters(Some(&store));
 
             let x1 = &win.unwrap();
             let xx = Some(x1.clone());
@@ -289,7 +289,7 @@ impl WidgetImpl for Window {
 // Trait shared by all windows
 impl WindowImpl for Window {
     // Save window state right before the window will be closed
-    fn close_request(&self) -> glib::signal::Inhibit {
+    fn close_request(&self) -> glib::signal::Propagation {
         self.save_panel_layout();
         // Save window size
         self.obj()

@@ -22,9 +22,11 @@
  *
  */
 use std::sync::Arc;
+
 use gtk::glib;
-use gtk::glib::Cast;
+use gtk::prelude::Cast;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
+
 use crate::model::navaid::Navaid;
 
 // To use the Navaid in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff

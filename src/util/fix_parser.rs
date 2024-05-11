@@ -25,8 +25,8 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
-use flate2::read::GzDecoder;
 
+use flate2::read::GzDecoder;
 use log::info;
 
 use crate::model::fix::Fix;
@@ -96,6 +96,7 @@ impl FixParserFG {
 mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
     use std::sync::Arc;
+
     use flate2::read;
 
     use crate::model::fix::Fix;

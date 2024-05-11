@@ -35,7 +35,7 @@ mod imp {
     use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext};
     use log::error;
 
     use crate::{earth, event};
@@ -254,15 +254,16 @@ mod imp {
         }
 
         pub fn initialise(&self) {
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
-            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                if let Event::PreferencesChanged = ev {
-                    view.refresh(None);
+
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ev) = rx.recv().await {
+                    if let Event::PreferencesChanged = ev {
+                        view.refresh(None);
+                    }
                 }
-                Continue(true)
             }));
-            // self.my_listener.replace(Some(rx));
             self.my_listener_id.replace(index);
         }
 

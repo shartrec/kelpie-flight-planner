@@ -96,7 +96,7 @@ impl NavaidRenderer {
         }
     }
 
-    pub fn draw(&self, _area: &GLArea, ndb: bool) {
+    pub fn draw(&self, _area: &GLArea, ndb: bool, shader_program_id: gl::types::GLuint) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.navaid_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
@@ -111,7 +111,9 @@ impl NavaidRenderer {
 
             let mut point_size = 2.0;
             if ndb {
-                gl::PointSize(point_size);
+                let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform1f(shader_program_id, c, point_size);
+
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_ndb_index_buffer);
                 gl::BindVertexArray(self.navaid_ndb_index_buffer);
                 gl::DrawElements(
@@ -123,7 +125,9 @@ impl NavaidRenderer {
                 point_size *= 2.0;
             }
 
-            gl::PointSize(point_size);
+            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(shader_program_id, c, point_size);
+
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_vor_index_buffer);
             gl::BindVertexArray(self.navaid_vor_index_buffer);
             gl::DrawElements(

@@ -26,7 +26,7 @@ use std::path::Path;
 
 use gtk::{self, Button, Entry, FileDialog, FileFilter, gio, glib, Window};
 use gtk::gio::{Cancellable, File, ListStore};
-use gtk::prelude::{Cast, EditableExt, FileExt, StaticType, WidgetExt};
+use gtk::prelude::{Cast, EditableExt, FileExt, WidgetExt};
 
 mod preference_general;
 mod preference_fglink;
@@ -37,7 +37,7 @@ mod preference_edit_aircraft;
 mod imp {
     use gtk::{CompositeTemplate, glib, TemplateChild};
     use gtk::glib::subclass::InitializingObject;
-    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassSubclassExt, WindowImpl};
+    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassExt, WindowImpl};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::window::preferences::preference_aircraft::PreferenceAircraftPage;
@@ -116,7 +116,7 @@ pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder
     dialog.set_modal(true);
     dialog.set_title(title);
     if !is_folder {
-        let store = ListStore::new(FileFilter::static_type());
+        let store = ListStore::new::<FileFilter>();
         let filter = FileFilter::new();
         filter.add_suffix("dat.gz");
         store.append(&filter);
@@ -126,7 +126,7 @@ pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder
         let filter = FileFilter::new();
         filter.add_pattern("*");
         store.append(&filter);
-        dialog.set_filters(&store);
+        dialog.set_filters(Some(&store));
     }
     let win = match &button.root() {
         Some(r) => {

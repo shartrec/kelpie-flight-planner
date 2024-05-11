@@ -90,7 +90,7 @@ impl PlanRenderer {
         self.waypoints.replace(vertices.len());
     }
 
-    pub fn draw(&self, _area: &GLArea) {
+    pub fn draw(&self, _area: &GLArea, shader_program_id: gl::types::GLuint) {
         unsafe {
             gl::LineWidth(2.0);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.plan_vertex_buffer);
@@ -104,7 +104,9 @@ impl PlanRenderer {
                 std::ptr::null(), // offset of the first component
             );
 
-            gl::PointSize(4.0);
+            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(shader_program_id, c, 4.0);
+
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.plan_index_buffer);
             gl::BindVertexArray(self.plan_index_buffer);
             gl::DrawElements(
@@ -115,7 +117,9 @@ impl PlanRenderer {
             );
 
             gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints.get() - 1) as GLint);
-            gl::PointSize(1.0);
+            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(shader_program_id, c, 1.0);
+
             gl::LineWidth(1.0);
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0); //Bind GL_ARRAY_BUFFER to our handle

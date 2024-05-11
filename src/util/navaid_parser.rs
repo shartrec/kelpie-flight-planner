@@ -26,8 +26,8 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::sync::Arc;
-use flate2::read::GzDecoder;
 
+use flate2::read::GzDecoder;
 use log::info;
 
 use crate::model::navaid::{Navaid, NavaidType};
@@ -156,6 +156,7 @@ mod tests {
     use std::{fs, io::BufReader, path::PathBuf};
     use std::collections::HashMap;
     use std::sync::Arc;
+
     use flate2::read;
 
     use crate::model::location::Location;

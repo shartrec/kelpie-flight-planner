@@ -26,7 +26,7 @@ use std::cell::RefCell;
 use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
-use gtk::glib::PropertySet;
+use gtk::glib::property::PropertySet;
 
 use crate::model::plan::Plan;
 use crate::preference::UNITS;

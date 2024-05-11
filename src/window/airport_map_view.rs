@@ -30,7 +30,7 @@ mod imp {
 
     use glib::subclass::InitializingObject;
     use gtk::{cairo::Context, DrawingArea};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT, PropertySet};
+    use gtk::glib::{clone, MainContext};
 
     use crate::event::Event;
     use crate::model::airport::Airport;
@@ -49,26 +49,22 @@ mod imp {
 
     impl AirportMapView {
         pub fn set_airport(&self, airport: Arc<Airport>) {
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
-
+            let (tx, rx) = async_channel::bounded::<Event>(1);
             // Ensure the runways & taxiways are loaded. This can happen in another thread.
             let ap = airport.clone();
             thread::spawn(move || {
                 let _ = ap.get_runways();
-                let _ = tx.clone().send(Event::AirportsLoaded);
+                let _ = tx.try_send(Event::AirportsLoaded);
             });
 
-            let da = self.airport_map_window.clone();
-            rx.attach(None, clone!(@weak self as view => @default-return Continue(true), move |ev: Event| {
-                if let Event::AirportsLoaded = ev {
-                    view.airport.set(Some(airport.clone()));
-                    da.queue_draw()
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ev) = rx.recv().await {
+                    if let Event::AirportsLoaded = ev {
+                        view.airport.replace(Some(airport.clone()));
+                        view.airport_map_window.queue_draw()
+                    }
                 }
-                Continue(true)
             }));
-
-            // let _ = airport.get_runways();
-            // &self.airport_map_window.queue_draw();
         }
 
         pub fn initialise(&self) {}

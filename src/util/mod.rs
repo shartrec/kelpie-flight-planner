@@ -24,7 +24,6 @@
 
 use gtk::FileFilter;
 use gtk::gio::ListStore;
-use gtk::prelude::StaticType;
 
 pub(crate) mod airport_painter;
 pub(crate) mod airport_parser;
@@ -43,7 +42,7 @@ pub(crate) mod info;
 
 pub fn get_plan_file_filter(ext: &str) -> ListStore {
 
-    let store = ListStore::new(FileFilter::static_type());
+    let store = ListStore::new::<FileFilter>();
     let filter = FileFilter::new();
     filter.add_suffix(ext);
     store.append(&filter);

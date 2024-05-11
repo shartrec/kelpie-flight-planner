@@ -27,13 +27,15 @@ use gtk::{self, glib};
 mod imp {
     use std::cell::RefCell;
     use std::ops::Deref;
+
     use gtk::{Button, CompositeTemplate, glib, Label, ListView, SingleSelection, StringObject, TemplateChild, Window};
-    use gtk::glib::{Cast, clone};
+    use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::{GtkWindowExt, SelectionModelExt};
-    use gtk::subclass::prelude::{BoxImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt, WidgetClassSubclassExt};
+    use gtk::prelude::{ButtonExt, WidgetExt};
+    use gtk::prelude::Cast;
+    use gtk::subclass::prelude::{BoxImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt, WidgetClassExt};
     use gtk::subclass::widget::{CompositeTemplate, CompositeTemplateInitializingExt, WidgetImpl};
-    use gtk::traits::{ButtonExt, WidgetExt};
 
     use crate::hangar::hangar::get_hangar;
     use crate::window::preferences::preference_edit_aircraft::AircraftDialog;

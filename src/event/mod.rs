@@ -26,7 +26,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 
-use gtk::glib::Sender;
+use async_channel::Sender;
 use lazy_static::lazy_static;
 
 #[derive(Clone)]
@@ -73,7 +73,7 @@ impl EventManager {
     pub fn notify_listeners(&self, ev: Event) {
         if let Ok(listeners) = self.listeners.read() {
             for listener in listeners.iter() {
-                let _ = listener.1.send(ev.clone());
+                let _ = listener.1.try_send(ev.clone());
             }
         }
     }

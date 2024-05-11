@@ -29,7 +29,7 @@ mod imp {
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::{ButtonExt, CheckButtonExt, EditableExt};
-    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassSubclassExt};
+    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::preference::*;

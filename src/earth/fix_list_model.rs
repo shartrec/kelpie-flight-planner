@@ -46,7 +46,8 @@ impl Default for Fixes {
 
 mod imp {
     use gtk::{gio, glib};
-    use gtk::glib::{Object, StaticType};
+    use gtk::glib::Object;
+    use gtk::prelude::StaticType;
     use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::earth::get_earth_model;

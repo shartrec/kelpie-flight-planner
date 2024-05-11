@@ -22,12 +22,13 @@
  *
  */
 
+use std::ffi::CStr;
+
+use gl::types;
 use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory};
 use gtk::gdk::Texture;
-use gtk::glib::{Cast, IsA, Object};
-use gtk::prelude::{
-    CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, WidgetExt,
-};
+use gtk::glib::Object;
+use gtk::prelude::{Cast, CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::util;
@@ -39,7 +40,7 @@ use crate::window::plan_view::PlanView;
 use crate::window::Window;
 use crate::window::world_map_view::WorldMapView;
 
-// The following allows us to test an entry field for numeric only chgaracters
+// The following allows us to test an entry field for numeric only characters
 // To use it
 // entry_disallow(&entry, is_numeric);
 #[allow(dead_code)]
@@ -123,6 +124,7 @@ pub(crate) fn show_help_about(window: &Window) {
     builder = builder.property("license-type", util::info::LICENSE_TYPE);
     builder = builder.property("title", util::info::ABOUT_TITLE);
     builder = builder.property("authors", [util::info::AUTHOR].as_ref());
+    builder = builder.property("system-information", get_gl_info());
     builder = builder.property("logo", &icon);
 
     let about_dialog = builder.build();
@@ -131,6 +133,33 @@ pub(crate) fn show_help_about(window: &Window) {
     about_dialog.set_destroy_with_parent(true);
 
     about_dialog.show();
+}
+
+fn get_gl_info() -> String {
+    let mut gl_info = String::new();
+    if let Some(s) = get_gl_string(gl::VERSION) {
+        gl_info = gl_info + "Open GL Version : " + s.as_str() + "\n";
+    }
+    if let Some(s) = get_gl_string(gl::RENDERER) {
+        gl_info = gl_info + "Open GL Renderer : "  + s.as_str() + "\n";
+    }
+    println!("{}", gl_info);
+    gl_info
+}
+
+
+pub(crate) fn get_gl_string(name: types::GLenum) -> Option<String> {
+    let _result = unsafe {
+        let string_ptr = gl::GetString(name);
+        match *string_ptr  {
+            0 => None,
+            _ => {
+                let c_str: &CStr = CStr::from_ptr(string_ptr as *const i8);
+                Some(c_str.to_str().unwrap().to_string())
+            }
+        }
+    };
+    _result
 }
 
 pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {

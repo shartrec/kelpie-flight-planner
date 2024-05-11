@@ -28,7 +28,7 @@ mod imp {
     use gtk::{CheckButton, CompositeTemplate, Entry, glib, TemplateChild};
     use gtk::glib::subclass::InitializingObject;
     use gtk::prelude::{CheckButtonExt, EditableExt};
-    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassSubclassExt};
+    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::preference::{FGFS_LINK_ENABLED, FGFS_LINK_HOST, FGFS_LINK_PORT};

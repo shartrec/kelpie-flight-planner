@@ -21,8 +21,8 @@
  *      Trevor Campbell
  *
  */
+use async_channel::Sender;
 use gtk::{self, Adjustment, CompositeTemplate, glib};
-use gtk::glib::Sender;
 use gtk::prelude::AdjustmentExt;
 
 use crate::util::fg_link::{AircraftPositionInfo, get_aircraft_position};
@@ -34,10 +34,10 @@ mod imp {
     use std::rc::Rc;
     use std::sync::Arc;
 
-    use gtk::{Button, GLArea, glib, Inhibit, PopoverMenu, ScrolledWindow, ToggleButton};
-    use gtk::gdk::Rectangle;
+    use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton};
+    use gtk::gdk::{GLAPI, Rectangle};
     use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, PRIORITY_DEFAULT};
+    use gtk::glib::{clone, MainContext, Propagation};
     use gtk::glib::subclass::InitializingObject;
     use gtk::graphene::Point;
     use gtk::prelude::*;
@@ -91,34 +91,36 @@ mod imp {
         pub fn initialise(&self) {
             self.zoom_level.replace(1.0);
 
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
+            let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
-            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ev: Event| {
-                if let Event::PlanChanged = ev {
-                    if let Some(renderer) = view.renderer.borrow().as_ref() {
-                        renderer.plan_changed();
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ev) = rx.recv().await {
+                    if let Event::PlanChanged = ev {
+                        if let Some(renderer) = view.renderer.borrow().as_ref() {
+                            renderer.plan_changed();
+                            view.gl_area.queue_draw();
+                        }
                     }
-                    view.gl_area.queue_draw();
                 }
-                glib::source::Continue(true)
             }));
-            // self.my_listener.replace(Some(rx));
+
             self.my_listener_id.replace(index);
 
             // Set up the scheduled tasks to query the aircraft position
-            let (tx, rx) = MainContext::channel(PRIORITY_DEFAULT);
-            rx.attach(None, clone!(@weak self as view => @default-return glib::source::Continue(true), move |ap: Option<AircraftPositionInfo> | {
-                if let Some(renderer) = view.renderer.borrow().as_ref() {
-                    renderer.set_aircraft_position(ap);
-                }
+            let (tx, rx) = async_channel::unbounded::<Option<AircraftPositionInfo>>();
+            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+                while let Ok(ap) = rx.recv().await {
+                    if let Some(renderer) = view.renderer.borrow().as_ref() {
+                        renderer.set_aircraft_position(ap);
+                    }
                 view.gl_area.queue_draw();
-                glib::source::Continue(true)
+                }
             }));
 
             let recurring_handle = scheduling::Scheduler::delayed_recurring(
                 std::time::Duration::from_secs(2),
                 std::time::Duration::from_secs(5),
-                move || get_aircraft_position_task(tx.clone()),
+                move || get_aircraft_position_task(tx.clone())
             )
                 .start();
             self.scheduler_handle.replace(Some(recurring_handle));
@@ -296,11 +298,11 @@ mod imp {
                 }
             }));
 
-            self.gl_area.connect_render(clone!(@weak self as window => @default-return Inhibit(false), move |area, _context| {
+            self.gl_area.connect_render(clone!(@weak self as window => @default-return Propagation::Proceed, move |area, _context| {
                 let airports = window.btn_show_airports.is_active();
                 let navaids = window.btn_show_navaids.is_active();
                 window.renderer.borrow().as_ref().unwrap().draw(area, airports, navaids);
-                Inhibit(false)
+                Propagation::Proceed
             }));
 
             // Set double click to centre map
@@ -571,5 +573,5 @@ fn center_scrollbar(adjustment: &Adjustment) {
 fn get_aircraft_position_task(tx: Sender<Option<AircraftPositionInfo>>) {
     // Your task implementation goes here
     let ap = get_aircraft_position();
-    let _ = tx.send(ap);
+    let _ = tx.try_send(ap);
 }

@@ -28,8 +28,9 @@ use std::ffi::{CStr, CString};
 use std::rc::Rc;
 use std::time::Duration;
 
-use glm::{*};
-use gtk::{GLArea, glib};
+use glm::*;
+use gtk::GLArea;
+use gtk::glib::ControlFlow;
 use gtk::glib::timeout_add_local;
 use gtk::prelude::WidgetExt;
 
@@ -292,6 +293,12 @@ impl Renderer {
 
         self.shader_program.gl_use();
 
+        let point_size = 1.0f32;
+        unsafe {
+            let c = gl::GetUniformLocation(self.shader_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(self.shader_program.id(), c, point_size);
+        }
+
         unsafe {
             let mat = gl::GetUniformLocation(self.shader_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
@@ -317,7 +324,7 @@ impl Renderer {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
             }
-            self.airport_renderer.borrow().draw(area, zoom > 3.0, zoom > 6.0);
+            self.airport_renderer.borrow().draw(area, zoom > 3.0, zoom > 6.0, self.shader_program.id());
         }
 
         if with_navaids {
@@ -326,7 +333,7 @@ impl Renderer {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
             }
-            self.navaid_renderer.borrow().draw(area, zoom > 3.0);
+            self.navaid_renderer.borrow().draw(area, zoom > 3.0, self.shader_program.id());
         }
 
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
@@ -335,7 +342,7 @@ impl Renderer {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
             }
-            plan_renderer.draw(area);
+            plan_renderer.draw(area, self.shader_program.id());
         }
 
         let color = [1.0, 0.1, 0.1f32];
@@ -349,7 +356,7 @@ impl Renderer {
             let my_area = area.clone();
             timeout_add_local(Duration::from_millis(20), move || {
                 my_area.queue_draw();
-                glib::Continue(false)
+                ControlFlow::Continue
             });
 
         }
