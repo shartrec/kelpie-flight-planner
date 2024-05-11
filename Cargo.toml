@@ -3,12 +3,12 @@ name = "kelpie_rust_planner"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html 
 
 [dependencies]
 app_dirs = "1.2.1"
 chrono = "0.4.31"
-gtk = { version = "0.6.6", package = "gtk4", features = ["v4_10"] }
+gtk = { version = "0.8.1", package = "gtk4", features = ["v4_10"] }
 lazy_static = "1.4.0"
 log = "0.4"
 preferences = "^1.1.0"
@@ -27,6 +27,7 @@ ureq = { version = "2.9.1", features = ["json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 scheduling = "0.1.2"
 home = "0.5.9"
+async-channel = "2.2.1"
 
 [profile.release]
 opt-level = "z"
