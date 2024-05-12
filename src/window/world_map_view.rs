@@ -50,7 +50,9 @@ mod imp {
     use crate::event::Event;
     use crate::model::airport::{Airport, AirportType};
     use crate::model::location::Location;
+    use crate::model::navaid::{Navaid, NavaidType};
     use crate::model::plan::Plan;
+    use crate::model::waypoint::Waypoint;
     use crate::util::fg_link::AircraftPositionInfo;
     use crate::window::render_gl::Renderer;
     use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
@@ -76,6 +78,7 @@ mod imp {
         popover: RefCell<Option<PopoverMenu>>,
         view_action: RefCell<Option<SimpleAction>>,
         add_action: RefCell<Option<SimpleAction>>,
+        add_nav_action: RefCell<Option<SimpleAction>>,
 
         my_listener_id: RefCell<usize>,
         renderer: RefCell<Option<Renderer>>,
@@ -195,7 +198,7 @@ mod imp {
             }
         }
 
-        fn find_location_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
+        fn find_airport_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
             let zoom = self.zoom_level.get();
             let range = 2.0 / zoom;
 
@@ -214,7 +217,7 @@ mod imp {
                 let airport = airports.iter().filter(|a| {
                     (f64::abs(pos.get_latitude() - a.get_lat()) < range as f64)
                         && (f64::abs(pos.get_longitude() - a.get_long()) < range as f64)
-                        && (a.get_max_runway_length() > rwl || (inc_heli && a.get_type().unwrap() != AirportType::Heliport))
+                        && (a.get_max_runway_length() > rwl || (inc_heli && a.get_type().unwrap() == AirportType::Heliport))
                 })
                     .min_by(|a, b| {
                         a.get_loc().distance_to(&pos)
@@ -228,15 +231,54 @@ mod imp {
 
             None
         }
+        fn find_navaid_for_point(&self, pos: Coordinate) -> Option<Arc<Navaid>> {
+            let zoom = self.zoom_level.get();
+            let range = 2.0 / zoom;
 
-        fn make_popup(&self, airport: Option<Arc<Airport>>) -> PopoverMenu {
-            let model = Menu::new();
+            // Collect any visible airport in a 2-degree radius and then sort them, returning the nearest
+            if self.btn_show_navaids.is_active() {
+                let inc_ndb = zoom > 6.0;
+
+                let navaids = earth::get_earth_model().get_navaids().read().unwrap();
+                let navaid = navaids.iter().filter(|a| {
+                    (f64::abs(pos.get_latitude() - a.get_lat()) < range as f64)
+                        && (f64::abs(pos.get_longitude() - a.get_long()) < range as f64)
+                        && (inc_ndb || a.get_type() == NavaidType::Vor)
+                })
+                    .min_by(|a, b| {
+                        a.get_loc().distance_to(&pos)
+                            .partial_cmp(&b.get_loc().distance_to(&pos))
+                            .unwrap_or(Equal)
+                    });
+                if let Some(navaid) = navaid {
+                    return Some(navaid.clone());
+                }
+            }
+
+            None
+        }
+
+        fn make_airport_popup(&self, model: &Menu, airport: Option<Arc<Airport>>) {
             if let Some(airport) = airport {
                 let item = MenuItem::new(Some(format!("View {} layout", airport.get_name()).as_str()), Some("world_map.view_airport"));
                 model.append_item(&item);
                 let item = MenuItem::new(Some(format!("Add {} to plan", airport.get_name()).as_str()), Some("world_map.add_to_plan"));
                 model.append_item(&item);
             }
+        }
+
+        fn make_navaid_popup(&self, model: &Menu, navaid: Option<Arc<Navaid>>) {
+            if let Some(navaid) = navaid {
+                let item = MenuItem::new(Some(format!("Add {} to plan", navaid.get_name()).as_str()), Some("world_map.add_nav_to_plan"));
+                model.append_item(&item);
+            }
+        }
+
+        fn make_popup(&self, airport: Option<Arc<Airport>>, navaid: Option<Arc<Navaid>>) -> PopoverMenu {
+            let model = Menu::new();
+            self.make_airport_popup(&model, airport);
+            self.make_navaid_popup(&model, navaid);
+
             let item = MenuItem::new(Some("Find airports near"), Some("world_map.find_airports_near"));
             model.append_item(&item);
             let item = MenuItem::new(Some("Find navaids near"), Some("world_map.find_navaids_near"));
@@ -328,13 +370,21 @@ mod imp {
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(x as f32, y as f32)) {
                     let airport = match view.unproject(point.x() as f64, point.y() as f64) {
                         Ok(pos) => {
-                            view.find_location_for_point(pos)
+                            view.find_airport_for_point(pos)
                         }
                         Err(_) => {
                             None
                         }
                     };
-                    let popover = view.make_popup(airport);
+                    let navaid = match view.unproject(point.x() as f64, point.y() as f64) {
+                        Ok(pos) => {
+                            view.find_navaid_for_point(pos)
+                        }
+                        Err(_) => {
+                            None
+                        }
+                    };
+                    let popover = view.make_popup(airport, navaid);
 
                     gesture.set_state(gtk::EventSequenceState::Claimed);
 
@@ -414,7 +464,7 @@ mod imp {
             self.gl_area.connect_query_tooltip(clone!(@weak self as view => @default-return false, move | _glarea, x, y, _kbm, tooltip | {
                 match view.unproject(x as f64,y as f64) {
                     Ok(pos) => {
-                        if let Some(airport) = view.find_location_for_point(pos) {
+                        if let Some(airport) = view.find_airport_for_point(pos) {
                             tooltip.set_text(Some(airport.get_name()));
                             true
 
@@ -458,7 +508,7 @@ mod imp {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(airport) = view.find_location_for_point(loc) {
+                        if let Some(airport) = view.find_airport_for_point(loc) {
                             if let Some(airport_map_view) = get_airport_map_view(&view.map_window.get()) {
                                 show_airport_map_view(&view.map_window.get());
                                 airport_map_view.imp().set_airport(airport);
@@ -475,7 +525,7 @@ mod imp {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(airport) = view.find_location_for_point(loc) {
+                        if let Some(airport) = view.find_airport_for_point(loc) {
                             if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
                                 // get the plan
                                 plan_view.imp().add_airport_to_plan(airport);
@@ -486,6 +536,23 @@ mod imp {
             }));
             actions.add_action(&action);
             self.add_action.replace(Some(action));
+
+            let action = SimpleAction::new("add_nav_to_plan", None);
+            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+                let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
+                        if let Some(navaid) = view.find_navaid_for_point(loc) {
+                            if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
+                                // get the plan
+                                plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {navaid: navaid.clone(), elevation: Cell::new(0), locked: true,});
+                            }
+                        }
+                    }
+                }
+            }));
+            actions.add_action(&action);
+            self.add_nav_action.replace(Some(action));
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
