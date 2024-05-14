@@ -81,12 +81,7 @@ impl Planner<'_> {
         if let Some(from) = from {
             if let Some(to) = to {
 
-                let mut last  = to.clone();
-
                 if self.plan_type == USE_RADIO_BEACONS {
-                    if let Some(wp) = self.get_arrival_beacon(&to) {
-                        last = wp;
-                    }
 
                     let mut prev_wp = from.clone();
                     // add all the manually added waypoints into the plan
@@ -98,7 +93,13 @@ impl Planner<'_> {
                             prev_wp = wp.clone();
                         }
                     }
-                    self.add_navaids_between(&prev_wp, &last.clone(), &mut plan);
+
+                    if let Some(wp) = self.get_arrival_beacon(&to) {
+                        self.add_navaids_between(&prev_wp, &wp, &mut plan);
+                        plan.push(wp);
+                    } else {
+                        self.add_navaids_between(&prev_wp, &to.clone(), &mut plan);
+                    }
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
@@ -114,7 +115,7 @@ impl Planner<'_> {
                             prev_wp = wp.clone();
                         }
                     }
-                    self.add_fixes_between(&prev_wp, &last.clone(), &mut plan);
+                    self.add_fixes_between(&prev_wp, &to, &mut plan);
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
                     }

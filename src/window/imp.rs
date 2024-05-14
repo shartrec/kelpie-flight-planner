@@ -206,7 +206,8 @@ impl Window {
         // Set the size of the window
         pref.put("vertical-split-pos", self.pane_1v.position());
         pref.put("horizontal-split-pos", self.pane_1h.position());
-}
+    }
+
 }
 
 // The central trait for subclassing a GObject
@@ -231,7 +232,6 @@ impl ObjectImpl for Window {
     fn constructed(&self) {
         // Call "constructed" on parent
         self.parent_constructed();
-        self.layout_panels();
 
         let obj = self.obj();
         obj.setup_actions();

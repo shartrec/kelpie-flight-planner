@@ -152,6 +152,14 @@ mod imp {
             }
         }
 
+        pub fn get_center_map(&self) -> Option<Coordinate> {
+            if let Some(renderer) = self.renderer.borrow().as_ref() {
+                Some(renderer.get_map_centre())
+            } else {
+                None
+            }
+        }
+
         pub fn set_plan(&self, plan: Rc<RefCell<Plan>>) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
                 renderer.set_plan(plan);
@@ -329,11 +337,28 @@ mod imp {
                     let renderer = Renderer::new();
                     renderer.set_zoom_level(1.0);
                     renderer.set_aircraft_position(None);
+
+                    let pref = crate::preference::manager();
+
+                    if let Some(long) = pref.get::<f64>("map-centre-long") {
+                        if let Some(lat) = pref.get::<f64>("map-centre-lat") {
+                            renderer.set_map_centre(Coordinate::new(lat, long), true);
+                        }
+                    }
+
                     window.renderer.replace(Some(renderer));
                 }
             }));
 
             self.gl_area.connect_unrealize(clone!(@weak self as window => move |area| {
+                let pref = crate::preference::manager();
+
+                if let Some(renderer) = window.renderer.borrow().as_ref(){
+                    let centre = renderer.get_map_centre();
+                    pref.put("map-centre-long", centre.get_longitude());
+                    pref.put("map-centre-lat", centre.get_latitude());
+                }
+
                 if let Some(context) = area.context() {
                     context.make_current();
                     window.renderer.borrow().as_ref().unwrap().drop_buffers();
