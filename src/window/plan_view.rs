@@ -236,7 +236,7 @@ mod imp {
             let plan = self.plan.borrow_mut();
             let mut loc = None;
             for s in plan.get_sectors().iter() {
-                let waypoints = planner.make_plan(s.borrow().get_start(), s.borrow().get_end());
+                let waypoints = planner.make_plan(s.borrow().deref());
                 let mut s_clone = s.borrow().deref().clone();
                 s_clone.add_all_waypoint(waypoints);
                 s.replace(s_clone);

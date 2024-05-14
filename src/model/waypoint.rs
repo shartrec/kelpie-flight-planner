@@ -154,7 +154,7 @@ impl Waypoint {
     }
 
     #[allow(dead_code)]
-    fn is_locked(&self) -> &bool {
+    pub fn is_locked(&self) -> &bool {
         match self {
             Waypoint::Simple {
                 loc: _,

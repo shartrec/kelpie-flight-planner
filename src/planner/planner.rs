@@ -32,6 +32,7 @@ use crate::model::fix::Fix;
 use crate::model::location::Location;
 use crate::model::navaid::{Navaid, NavaidType};
 use crate::model::plan::Plan;
+use crate::model::sector::Sector;
 use crate::model::waypoint::Waypoint;
 use crate::preference::*;
 use crate::util::location_filter::{Filter, RangeFilter};
@@ -70,24 +71,50 @@ impl Planner<'_> {
             fixes: earth::get_earth_model().get_fixes(),
         }
     }
-    pub(crate) fn make_plan(&self, from: Option<Waypoint>, to: Option<Waypoint>) -> Vec<Waypoint> {
+    pub(crate) fn make_plan(&self, sector: &Sector) -> Vec<Waypoint> {
+
         let mut plan: Vec<Waypoint> = Vec::new();
+
+        let from = sector.get_start();
+        let to = sector.get_end();
 
         if let Some(from) = from {
             if let Some(to) = to {
+
+                let mut last  = to.clone();
+
                 if self.plan_type == USE_RADIO_BEACONS {
-                    // We use an iterative process of finding the navaid
-                    // nearest to the midpoint and then do the same recursively
-                    // while the leg length is greater than MAX_LEG_LENGTH
-                    self.add_navaids_to_plan(&from, &to, &mut plan);
+                    if let Some(wp) = self.get_arrival_beacon(&to) {
+                        last = wp;
+                    }
+
+                    let mut prev_wp = from.clone();
+                    // add all the manually added waypoints into the plan
+                    let old_wps = sector.get_waypoints().read().expect("Can't get old sector lock");
+                    for wp in old_wps.iter() {
+                        if *wp.is_locked() {
+                            self.add_navaids_between(&prev_wp, &wp.clone(), &mut plan);
+                            plan.push(wp.clone());
+                            prev_wp = wp.clone();
+                        }
+                    }
+                    self.add_navaids_between(&prev_wp, &last.clone(), &mut plan);
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
+
                 } else if self.plan_type == USE_FIXES {
-                    // We use an iterative process of finding the fix
-                    // nearest to the midpoint and then do the same recursively
-                    // while the leg length is greater than MAX_LEG_LENGTH
-                    self.add_fixes_to_plan(&from, &to, &mut plan);
+                    let mut prev_wp = from.clone();
+                    // add all the manually added waypoints into the plan
+                    let old_wps = sector.get_waypoints().read().expect("Can't get old sector lock");
+                    for wp in old_wps.iter() {
+                        if *wp.is_locked() {
+                            self.add_fixes_between(&prev_wp, &wp.clone(), &mut plan);
+                            plan.push(wp.clone());
+                            prev_wp = wp.clone();
+                        }
+                    }
+                    self.add_fixes_between(&prev_wp, &last.clone(), &mut plan);
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
@@ -99,23 +126,16 @@ impl Planner<'_> {
         plan
     }
 
-    fn add_navaids_to_plan(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
+    fn get_arrival_beacon(&self, to: &Waypoint) -> Option<Waypoint> {
         if let Some(arrival_beacon) = self.get_navaid_nearest(to.get_loc(), ARRIVAL_BEACON_RANGE) {
-            let wp = Waypoint::Navaid {
+            Some(Waypoint::Navaid {
                 navaid: arrival_beacon.clone(),
                 elevation: Cell::new(0),
                 locked: false,
-            };
-
-            self.add_navaids_between(from, &wp.clone(), plan);
-            plan.push(wp);
+            })
         } else {
-            self.add_navaids_between(from, to, plan);
+            None
         }
-    }
-
-    fn add_fixes_to_plan(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
-        self.add_fixes_between(from, to, plan);
     }
 
     fn add_navaids_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
@@ -784,6 +804,7 @@ fn calc_climb_sink_distance(plan: &Plan, from: &Waypoint, to: &Waypoint, altitud
 #[cfg(test)]
 mod tests {
     use std::sync::{Arc, RwLock};
+    use crate::model::sector::Sector;
 
     use crate::model::test_utils::tests::make_airport_at;
     use crate::model::waypoint::Waypoint;
@@ -806,18 +827,14 @@ mod tests {
             fixes: &Arc::new(RwLock::new(Vec::new())),
         };
 
-        let ap = make_airport_at("YSSY", -34.0, 151.0);
-        let w1 = Waypoint::Airport {
-            airport: ap,
-            locked: false,
-        };
-        let ap = make_airport_at("YPER", -32.1, 120.5);
-        let w2 = Waypoint::Airport {
-            airport: ap,
-            locked: false,
-        };
+        let ap1 = make_airport_at("YSSY", -34.0, 151.0);
+        let ap2 = make_airport_at("YPER", -32.1, 120.5);
 
-        let plan = planner.make_plan(Some(w1), Some(w2));
+        let mut sector = Sector::new();
+        sector.set_start(Some(ap1));
+        sector.set_end(Some(ap2));
+        let plan = planner.make_plan(&sector);
+
 
         for wp in &plan {
             println!(
