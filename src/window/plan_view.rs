@@ -228,6 +228,7 @@ mod imp {
 
             if let Some(stack) = self.obj().parent().and_downcast_ref::<Stack>() {
                 stack.page(self.obj().as_ref()).set_title(&plan.get_name());
+                stack.page(self.obj().as_ref()).set_name(&plan.get_name());
             };
         }
 
