@@ -190,8 +190,13 @@ mod imp {
 
                 let h = self.gl_area.height();
                 let w = self.gl_area.width();
-                self.gl_area.set_width_request((w as f32 * z_factor) as i32);
-                self.gl_area.set_height_request((h as f32 * z_factor) as i32);
+                if zoom > 1.01 {
+                    self.gl_area.set_width_request((w as f32 * z_factor) as i32);
+                    self.gl_area.set_height_request((h as f32 * z_factor) as i32);
+                } else {
+                    self.gl_area.set_width_request(-1);
+                    self.gl_area.set_height_request(-1);
+                }
                 self.gl_area.queue_draw();
 
                 // adjust scroll position
