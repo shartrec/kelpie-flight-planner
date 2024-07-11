@@ -322,12 +322,12 @@ mod imp {
                     _ => {
                         // Add to end of last sector
                         if let Some(s) = plan.get_sectors().last() {
-                            s.borrow_mut().add_waypoint(waypoint);
+                            s.borrow_mut().add_waypoint_optimised(waypoint);
                         }
                     }
                 }
             } else if let Some(s) = plan.get_sectors().last() {
-                s.borrow_mut().add_waypoint(waypoint);
+                s.borrow_mut().add_waypoint_optimised(waypoint);
             }
             drop(plan);
             let _ = &self.refresh(None);

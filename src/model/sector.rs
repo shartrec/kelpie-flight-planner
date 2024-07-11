@@ -85,6 +85,58 @@ impl Sector {
         }
     }
 
+    pub fn add_waypoint_optimised(&mut self, waypoint: Waypoint) {
+        if let Ok(mut vec) = self.waypoints.write() {
+            if vec.len() == 0 {
+                vec.push(waypoint);
+            } else {
+                // Find the nearest waypoint in the sector to this waypoint
+                let mut min_distance = f64::MAX;
+                let mut close_wp_index = 0;
+                let mut close_wp = None;
+                for i in 0..vec.len() {
+                    let w = &vec.deref().as_slice()[i];
+                    let dist = w.get_loc().distance_to(waypoint.get_loc());
+                    if dist < min_distance {
+                        min_distance = dist;
+                        close_wp = Some(w);
+                        close_wp_index = i;
+                    }
+                }
+                if let Some(wp) = close_wp {
+                    // Now if the distance from the prior wp to the one to be inserted
+                    // is less that from the prior wp to the closest then insert before
+                    // else insert after
+                    let dist_before_cl = if close_wp_index == 0 {
+                            match self.get_start() {
+                                Some(airport) => airport.get_loc().distance_to(wp.get_loc()),
+                                None => 0.0
+                            }
+                        } else {
+                            let w = &vec.deref().as_slice()[close_wp_index - 1];
+                            w.get_loc().distance_to(wp.get_loc())
+                    };
+                    let dist_before_wp = if close_wp_index == 0 {
+                            match self.get_start() {
+                                Some(airport) => airport.get_loc().distance_to(waypoint.get_loc()),
+                                None => 0.0
+                            }
+                        } else {
+                            let w = &vec.deref().as_slice()[close_wp_index - 1];
+                            w.get_loc().distance_to(waypoint.get_loc())
+                    };
+                    if dist_before_wp < dist_before_cl {
+                        vec.insert(close_wp_index, waypoint);
+                    } else {
+                        vec.insert(close_wp_index + 1, waypoint);
+                    }
+                } else {
+                    vec.push(waypoint);
+                }
+            }
+        }
+    }
+
     pub fn add_all_waypoint(&mut self, waypoints: Vec<Waypoint>) {
         if let Ok(mut vec) = self.waypoints.write() {
             vec.clear();
