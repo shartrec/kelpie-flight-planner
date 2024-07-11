@@ -177,15 +177,15 @@ impl AirportParserFG850 {
                                     longitude = (r_long + r1_long) / 2.0;
                                 }
                             }
-                            buf2.clear();
-                            match Self::read_ascii_line(reader, &mut buf2) {
-                                Ok(0) => break, // EOF
-                                Ok(_bytes) => {
-                                    offset += 1;
-                                }
-                                Err(msg) => {
-                                    error!("{}", msg.to_string());
-                                }
+                        }
+                        buf2.clear();
+                        match Self::read_ascii_line(reader, &mut buf2) {
+                            Ok(0) => break, // EOF
+                            Ok(_bytes) => {
+                                offset += 1;
+                            }
+                            Err(msg) => {
+                                error!("{}", msg.to_string());
                             }
                         }
                     }
@@ -232,9 +232,14 @@ impl AirportParserFG850 {
         let mut byte_buf = Vec::<u8>::new();
         match reader.read_until(b'\n', &mut byte_buf) {
             Ok(0) => Ok(0), // EOF
-            Ok(bytes) => unsafe {
-                let ccc = std::str::from_utf8_unchecked(&byte_buf);
-                buf.push_str(ccc);
+            Ok(bytes) => {
+                match std::str::from_utf8(&byte_buf) {
+                    Ok(ccc) => {
+                        buf.push_str(ccc);
+                    }
+                    Err(e) => {
+                        warn!("{}", e);                    }
+                }
                 Ok(bytes)
             }
             Err(e) => Err(e)

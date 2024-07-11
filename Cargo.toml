@@ -10,7 +10,7 @@ app_dirs = "1.2.1"
 chrono = "0.4.31"
 gtk = { version = "0.8.1", package = "gtk4", features = ["v4_10"] }
 lazy_static = "1.4.0"
-log = "0.4"
+log = "0.4.22"
 preferences = "^1.1.0"
 regex-lite = "0.1.5"
 shapefile = "0.5.0"
