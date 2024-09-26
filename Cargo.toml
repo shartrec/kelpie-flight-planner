@@ -7,14 +7,14 @@ edition = "2021"
 
 [dependencies]
 app_dirs = "1.2.1"
-chrono = "0.4.31"
+chrono = "0.4.38"
 gtk = { version = "0.8.1", package = "gtk4", features = ["v4_10"] }
 lazy_static = "1.4.0"
 log = "^0.4"
 preferences = "^1.1.0"
 regex-lite = "0.1.5"
-shapefile = "0.5.0"
-simplelog = "^0.12.1"
+shapefile = "0.6.0"
+simplelog = "^0.12.2"
 yaml-rust = "0.4.5"
 libloading = "0.8.1"
 epoxy = "0.1.0"
@@ -28,6 +28,7 @@ serde = { version = "1.0.193", features = ["derive"] }
 scheduling = "0.1.2"
 home = "0.5.9"
 async-channel = "2.2.1"
+time = "0.3.36"
 
 [profile.release]
 opt-level = "z"
