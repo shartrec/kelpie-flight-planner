@@ -64,7 +64,7 @@ impl AircraftRenderer {
 
     fn load_buffers(&self, aircraft_position: &RefCell<Option<AircraftPositionInfo>>, aircraft_vertex_buffer: GLuint) {
         if let Some(api) = aircraft_position.borrow().deref() {
-            let vertices = self.build_aircraft_vertices(api);
+            let vertices = self.build_aircraft_verticesx(api);
             unsafe {
                 gl::BindBuffer(gl::ARRAY_BUFFER, aircraft_vertex_buffer);
                 gl::BufferData(
@@ -94,8 +94,9 @@ impl AircraftRenderer {
                     std::ptr::null(), // offset of the first component
                 );
 
-                gl::DrawArrays(gl::LINES, 0 as GLint, 2 as GLint);
-                gl::DrawArrays(gl::TRIANGLES, 2 as GLint, 3 as GLint);
+                gl::DrawArrays(gl::LINE_LOOP, 0 as GLint, 4 as GLint);
+                gl::DrawArrays(gl::LINE_LOOP, 4 as GLint, 4 as GLint);
+                gl::DrawArrays(gl::LINE_LOOP, 8 as GLint, 4 as GLint);
 
                 gl::LineWidth(1.0);
                 gl::BindBuffer(gl::ARRAY_BUFFER, 0); //Bind GL_ARRAY_BUFFER to our handle
@@ -112,7 +113,7 @@ impl AircraftRenderer {
         }
     }
 
-    fn build_aircraft_vertices(&self, api: &AircraftPositionInfo) -> Vec<Vertex> {
+    fn build_aircraft_verticesx(&self, api: &AircraftPositionInfo) -> Vec<Vertex> {
         let projector = SphericalProjector::new(1.000);
 
         let mut vertices: Vec<Vertex> = Vec::new();
@@ -121,26 +122,63 @@ impl AircraftRenderer {
 
         let heading = api.get_heading();
 
-        let line_length = 120.0 / self.zoom_level.get() as f64;
+        let line_length = 200.0 / self.zoom_level.get() as f64;
 
-        let v_start = aircraft_position.coordinate_at(line_length, heading);
-        let v_end = aircraft_position.coordinate_at(line_length, (heading + 180.) % 360.);
-        let h_start = aircraft_position.coordinate_at(line_length/2., (heading + 90.) % 360.);
-        let h_end = aircraft_position.coordinate_at(line_length/2., (heading + 270.) % 360.);
+        // Define the length and width of the aircraft
+        let fuselage_length = line_length * 1.0; // Full length of the fuselage
+        let fuselage_width = line_length * 0.2; // Width of the fuselage
+        let wing_length = line_length * 0.9; // Length of the wings
+        let wing_width = line_length * 0.2; // wing width
+        let tail_length = line_length * 0.5; // Length of the tail section
+        let tail_width = line_length * 0.15; // Width of the tail section
 
-        let v_s1 = projector.project(v_start.get_latitude(), v_start.get_longitude());
-        let v_e1 = projector.project(v_end.get_latitude(), v_end.get_longitude());
-        let h_s1 = projector.project(h_start.get_latitude(), h_start.get_longitude());
-        let h_e1 = projector.project(h_end.get_latitude(), h_end.get_longitude());
+// Calculate positions of key points based on aircraft heading
+        let nose_r = aircraft_position.coordinate_at(fuselage_length / 2.0, heading).coordinate_at(fuselage_width / 2.0, (heading + 90.0) % 360.0);
+        let nose_l = nose_r.coordinate_at(fuselage_width,(heading + 270.0) % 360.0);
+        let tail_r = nose_r.coordinate_at(fuselage_length , (heading + 180.0) % 360.0);
+        let tail_l = nose_l.coordinate_at(fuselage_length , (heading + 180.0) % 360.0);
+        let left_wing_r = aircraft_position.coordinate_at(wing_length / 2.0, (heading + 270.0) % 360.0);
+        let left_wing_f = left_wing_r.coordinate_at(wing_width, heading);
+        let right_wing_f = left_wing_f.coordinate_at(wing_length, (heading + 90.0) % 360.0);
+        let right_wing_r = left_wing_r.coordinate_at(wing_length, (heading + 90.0) % 360.0);
+        let left_tail_r = aircraft_position.coordinate_at(fuselage_length / 2.0, (heading + 180.0) % 360.0).coordinate_at(tail_length / 2.0, (heading + 270.0) % 360.0);
+        let left_tail_f = left_tail_r.coordinate_at(tail_width, heading);
+        let right_tail_f = left_tail_f.coordinate_at(tail_length, (heading + 90.0) % 360.0);
+        let right_tail_r = left_tail_r.coordinate_at(tail_length, (heading + 90.0) % 360.0);
 
-        //Vertices for tail
-        vertices.push(Vertex { position: v_s1 });
-        vertices.push(Vertex { position: v_e1 });
-        // Vertices for wing triangle
-        vertices.push(Vertex { position: v_s1 });
-        vertices.push(Vertex { position: h_s1 });
-        vertices.push(Vertex { position: h_e1 });
+// Project the coordinates to 2D map space
+        let nose_projected_l = projector.project(nose_l.get_latitude(), nose_l.get_longitude());
+        let nose_projected_r = projector.project(nose_r.get_latitude(), nose_r.get_longitude());
+        let tail_projected_l = projector.project(tail_l.get_latitude(), tail_l.get_longitude());
+        let tail_projected_r = projector.project(tail_r.get_latitude(), tail_r.get_longitude());
+        let left_wing_projected_f = projector.project(left_wing_f.get_latitude(), left_wing_f.get_longitude());
+        let left_wing_projected_r = projector.project(left_wing_r.get_latitude(), left_wing_r.get_longitude());
+        let right_wing_projected_f = projector.project(right_wing_f.get_latitude(), right_wing_f.get_longitude());
+        let right_wing_projected_r = projector.project(right_wing_r.get_latitude(), right_wing_r.get_longitude());
+        let left_tail_projected_f = projector.project(left_tail_f.get_latitude(), left_tail_f.get_longitude());
+        let left_tail_projected_r = projector.project(left_tail_r.get_latitude(), left_tail_r.get_longitude());
+        let right_tail_projected_f = projector.project(right_tail_f.get_latitude(), right_tail_f.get_longitude());
+        let right_tail_projected_r = projector.project(right_tail_r.get_latitude(), right_tail_r.get_longitude());
+
+        // Fuselage (rectangle)
+        vertices.push(Vertex { position: nose_projected_l });
+        vertices.push(Vertex { position: nose_projected_r });
+        vertices.push(Vertex { position: tail_projected_r });
+        vertices.push(Vertex { position: tail_projected_l });
+// Wings (rectangle)
+        vertices.push(Vertex { position: left_wing_projected_r });
+        vertices.push(Vertex { position: right_wing_projected_r });
+        vertices.push(Vertex { position: right_wing_projected_f });
+        vertices.push(Vertex { position: left_wing_projected_f });
+
+// Tail (rectangle)
+        vertices.push(Vertex { position: left_tail_projected_r });
+        vertices.push(Vertex { position: right_tail_projected_r });
+        vertices.push(Vertex { position: right_tail_projected_f });
+        vertices.push(Vertex { position: left_tail_projected_f });
 
         vertices
+
     }
+
 }
