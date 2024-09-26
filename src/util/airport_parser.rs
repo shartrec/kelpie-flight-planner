@@ -176,6 +176,26 @@ impl AirportParserFG850 {
                                     latitude = (r_lat + r1_lat) / 2.0;
                                     longitude = (r_long + r1_long) / 2.0;
                                 }
+                            } else if r_type == "102" {
+                                // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
+                                // let r_surface = tokens.next().unwrap_or("");
+                                let _number = tokenizer.next().unwrap_or("");
+                                let r_lat = crate::util::airport_parser::token_f64(tokenizer.next());
+                                let r_long = crate::util::airport_parser::token_f64(tokenizer.next());
+                                let _hdg = token_f64(tokenizer.next()); //Orientation
+                                let r_length = token_f64(tokenizer.next()) * 3.28;
+                                let _width = token_f64(tokenizer.next()) * 3.28;
+                                let _surface = tokenizer.next().unwrap_or(""); // Surface
+                                tokenizer.next(); // Markings
+                                tokenizer.next(); // Shoulder
+                                tokenizer.next(); // Smoothness
+                                let _edge_lights = tokenizer.next().unwrap_or(""); //edge lights
+                                if r_length > max_length {
+                                    max_length = r_length;
+                                    latitude = r_lat;
+                                    longitude = r_long;
+                                }
+
                             }
                         }
                         buf2.clear();
@@ -379,13 +399,50 @@ impl AirportParserFG850 {
 
                 airport.add_runway(runway);
                 buf.clear();
-                match Self::read_ascii_line(reader, &mut buf)  {
+                match Self::read_ascii_line(reader, &mut buf) {
                     Ok(_bytes) => (),
                     Err(msg) => {
                         let err_msg = format!("{}", msg).to_string();
                         return Err(err_msg);
                     }
                 }
+            } else if r_type == "102" {
+                    // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
+                    // let r_surface = tokens.next().unwrap_or("");
+                    let r_number = tokens.next().unwrap_or("");
+                    let r_lat = crate::util::airport_parser::token_f64(tokens.next());
+                    let r_long = crate::util::airport_parser::token_f64(tokens.next());
+                    let r_hdg = token_f64(tokens.next()); //Orientation
+                    let r_length = token_f64(tokens.next()) * 3.28;
+                    let r_width = token_f64(tokens.next()) * 3.28;
+                    let r_surface = tokens.next().unwrap_or(""); // Surface
+                    tokens.next(); // Markings
+                    tokens.next(); // Shoulder
+                    tokens.next(); // Smoothness
+                    let r_edge_lights = tokens.next().unwrap_or(""); //edge lights
+
+
+                    let runway = Runway::new(
+                        r_number.to_string(),
+                        r_lat,
+                        r_long,
+                        r_length as i32,
+                        r_width as i32,
+                        r_hdg,
+                        false,
+                        r_surface.to_string(),
+                        r_edge_lights.to_string(),
+                    );
+
+                    airport.add_runway(runway);
+                    buf.clear();
+                    match Self::read_ascii_line(reader, &mut buf)  {
+                        Ok(_bytes) => (),
+                        Err(msg) => {
+                            let err_msg = format!("{}", msg).to_string();
+                            return Err(err_msg);
+                        }
+                    }
             } else if r_type == "110" {
                 // Taxiway processing
                 // We don't care about anything but the nodes that we use to draw it.

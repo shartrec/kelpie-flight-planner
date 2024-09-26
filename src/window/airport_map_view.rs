@@ -33,7 +33,7 @@ mod imp {
     use gtk::glib::{clone, MainContext};
 
     use crate::event::Event;
-    use crate::model::airport::Airport;
+    use crate::model::airport::{Airport, AirportType};
     use crate::util::airport_painter::AirportPainter;
 
     use super::*;
@@ -75,7 +75,7 @@ mod imp {
                 let airport_painter = AirportPainter {
                     draw_taxiways: true,
                     draw_runways: true,
-                    draw_runway_list: true,
+                    draw_runway_list: airport.get_type().is_some_and(|t| t == AirportType::Airport),
                     draw_compass_rose: true,
                 };
                 airport_painter.draw_airport(&airport, area, cr);
