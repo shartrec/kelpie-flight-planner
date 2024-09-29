@@ -109,6 +109,7 @@ mod imp {
                         let selection_model = SingleSelection::new(Some(slm));
                         selection_model.set_autoselect(false);
                         view.navaid_list.set_model(Some(&selection_model));
+                        view.navaid_list.set_single_click_activate(true);
                     }
                 }
             }));
