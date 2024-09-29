@@ -49,6 +49,10 @@ mod imp {
 
     impl AirportMapView {
         pub fn set_airport(&self, airport: Arc<Airport>) {
+            // Clear the window
+            self.airport.replace(None);
+            self.airport_map_window.queue_draw();
+
             let (tx, rx) = async_channel::bounded::<Event>(1);
             // Ensure the runways & taxiways are loaded. This can happen in another thread.
             let ap = airport.clone();
