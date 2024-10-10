@@ -27,7 +27,8 @@
 
 use std::ptr;
 
-use gtk::{Application, CssProvider, gio, glib, UriLauncher};
+use adw::Application;
+use gtk::{CssProvider, gio, glib, UriLauncher};
 use gtk::gdk::Display;
 use gtk::gio::{Cancellable, File, SimpleAction};
 use gtk::glib::clone;
@@ -222,7 +223,6 @@ fn build_ui(app: &Application) {
 
 fn build_and_open(app: &Application, files: &[File], _name: &str) {
     // Create new window and present it
-    // todo Load plan into window.
     let window = Window::new(app);
     connect_actions(app, &window);
     window.present();

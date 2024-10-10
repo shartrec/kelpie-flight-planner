@@ -92,13 +92,14 @@
                     <property name="hexpand">true</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkStackSwitcher">
-                        <property name="stack">plan_stack</property>
-                        <property name="halign">1.0</property>
+                      <object class="AdwTabBar">
+                        <property name="view">plan_stack</property>
+                        <property name="expand_tabs">false</property>
+                        <property name="autohide">false</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkStack" id="plan_stack">
+                      <object class="AdwTabView" id="plan_stack">
                         <property name="vexpand">True</property>
                         <property name="hexpand">True</property>
                       </object>

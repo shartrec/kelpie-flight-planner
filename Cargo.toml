@@ -8,7 +8,8 @@ edition = "2021"
 [dependencies]
 app_dirs = "1.2.1"
 chrono = "0.4.38"
-gtk = { version = "0.8.1", package = "gtk4", features = ["v4_10"] }
+gtk = { version = "^0.9", package = "gtk4", features = ["v4_10"] }
+adw = { version = "0.7.0", package = "libadwaita", features = ["v1_5"] }
 lazy_static = "1.4.0"
 log = "^0.4"
 preferences = "^1.1.0"

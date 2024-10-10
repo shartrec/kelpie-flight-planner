@@ -22,8 +22,9 @@
  *
  */
 
+use adw::TabView;
 use glib::subclass::InitializingObject;
-use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned, Stack};
+use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned};
 use gtk::gio::{Cancellable, File};
 use gtk::glib::clone;
 use gtk::prelude::*;
@@ -68,7 +69,7 @@ pub struct Window {
     #[template_child]
     pub world_map_view: TemplateChild<WorldMapView>,
     #[template_child]
-    pub plan_stack: TemplateChild<Stack>,
+    pub plan_stack: TemplateChild<TabView>,
 }
 
 impl Window {
@@ -80,9 +81,9 @@ impl Window {
     pub(crate) fn new_plan(&self) {
         let view = PlanView::new();
         view.imp().new_plan();
-        self.plan_stack
-            .add_titled(&view, Some("newxx"), "New Plan");
-        self.plan_stack.set_visible_child(&view);
+        let page = self.plan_stack.add_page(&view, None);
+        page.set_title("New Plan");
+        self.plan_stack.set_selected_page(&page);
     }
 
     pub(crate) fn open_plan(&self) {
@@ -103,9 +104,9 @@ impl Window {
                     if let Some(path) = file.path() {
                         if let Ok(plan) = read_plan(&path) {
                             let view = PlanView::new();
-                            window.plan_stack
-                                .add_titled(&view, Some(plan.get_name().as_str()), plan.get_name().as_str());
-                            window.plan_stack.set_visible_child(&view);
+                            let page = window.plan_stack.add_page(&view, None);
+                            page.set_title(plan.get_name().as_str());
+                            window.plan_stack.set_selected_page(&page);
                             view.imp().set_plan(plan);
                         }
                     };
@@ -124,56 +125,58 @@ impl Window {
     }
 
     fn do_save(&self, title: &str, save_type: SaveType) {
-        if let Ok(view) = self.plan_stack.visible_child().expect("No plan").downcast::<PlanView>() {
-            let win = self.get_window_handle();
+        if let Some(page) = self.plan_stack.selected_page() {
+            if let Ok(view) = page.child().downcast::<PlanView>() {
+                let win = self.get_window_handle();
 
-            let rc = view.imp().get_plan();
-            let plan = rc.borrow();
-            let dialog = FileDialog::new();
-            dialog.set_modal(true);
-            dialog.set_title(title);
-            let ext = match save_type {
-                SaveType::Native => "fgfp",
-                SaveType::FgRouteManager => "xml",
-            };
-            let mut name = plan.get_name();
-            name.push('.');
-            name.push_str(ext);
-            dialog.set_initial_name(Some(name.as_str()));
-            let store = get_plan_file_filter(ext);
-            dialog.set_filters(Some(&store));
+                let rc = view.imp().get_plan();
+                let plan = rc.borrow();
+                let dialog = FileDialog::new();
+                dialog.set_modal(true);
+                dialog.set_title(title);
+                let ext = match save_type {
+                    SaveType::Native => "fgfp",
+                    SaveType::FgRouteManager => "xml",
+                };
+                let mut name = plan.get_name();
+                name.push('.');
+                name.push_str(ext);
+                dialog.set_initial_name(Some(name.as_str()));
+                let store = get_plan_file_filter(ext);
+                dialog.set_filters(Some(&store));
 
-            let x1 = &win.unwrap();
-            let xx = Some(x1.clone());
-            let x = Some(x1);
+                let x1 = &win.unwrap();
+                let xx = Some(x1.clone());
+                let x = Some(x1);
 
-            dialog.save(x, Some(&Cancellable::default()),
-                        clone!(@weak view, => move | result: Result<File, _>| {
+                dialog.save(x, Some(&Cancellable::default()),
+                            clone!(@weak view, => move | result: Result<File, _>| {
 
-                    if let Ok(file) = result {
-                        let writer = match save_type {
-                                    SaveType::Native => plan_writer_xml::write_plan,
-                                    SaveType::FgRouteManager => plan_writer_route_manager::export_plan_fg,
+                        if let Ok(file) = result {
+                            let writer = match save_type {
+                                        SaveType::Native => plan_writer_xml::write_plan,
+                                        SaveType::FgRouteManager => plan_writer_route_manager::export_plan_fg,
+                                    };
+                            if let Some(path) = file.path() {
+                                let plan = view.imp().get_plan();
+                                match writer(&plan.borrow(), &path) {
+                                    Ok(_) => {}
+                                    Err(s) => {
+                                        let buttons = vec!["Ok".to_string()];
+                                        let alert = AlertDialog::builder()
+                                            .message(format!("Failed to save plan: {}", s))
+                                            .buttons(buttons)
+                                            .build();
+
+                                        alert.show(xx.as_ref());
+
+                                    }
                                 };
-                        if let Some(path) = file.path() {
-                            let plan = view.imp().get_plan();
-                            match writer(&plan.borrow(), &path) {
-                                Ok(_) => {}
-                                Err(s) => {
-                                    let buttons = vec!["Ok".to_string()];
-                                    let alert = AlertDialog::builder()
-                                        .message(format!("Failed to save plan: {}", s))
-                                        .buttons(buttons)
-                                        .build();
-
-                                    alert.show(xx.as_ref());
-
-                                }
                             };
-                        };
-                    }
-            }));
-        }
+                        }
+                }));
+            }
+        };
     }
 
     fn get_window_handle(&self) -> Option<gtk::Window> {

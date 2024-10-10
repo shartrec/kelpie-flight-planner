@@ -165,11 +165,11 @@ pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
-            our_window
-                .imp()
-                .plan_stack
-                .visible_child()
-                .and_downcast::<PlanView>()
+            if let Some(page) = our_window.imp().plan_stack.selected_page() {
+                page.child().downcast::<PlanView>().ok()
+            } else {
+                None
+            }
         }
         None => None,
     }

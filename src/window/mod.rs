@@ -22,8 +22,9 @@
  *
  */
 
+use adw::Application;
 use glib::Object;
-use gtk::{Application, gio, glib};
+use gtk::{gio, glib};
 use gtk::prelude::GtkWindowExt;
 
 mod airport_map_view;
