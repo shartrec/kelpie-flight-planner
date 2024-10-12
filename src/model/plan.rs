@@ -40,7 +40,7 @@ use super::sector::Sector;
 
 #[derive(Default)]
 pub struct Plan {
-    dirty: RefCell<bool>,
+    dirty: bool,
     path: RefCell<Option<String>>,
     sectors: Vec<RefCell<Sector>>,
     aircraft: RefCell<Option<Arc<Aircraft>>>,
@@ -50,7 +50,7 @@ pub struct Plan {
 impl Plan {
     pub fn new() -> Self {
         Self {
-            dirty: RefCell::new(false),
+            dirty: false,
             path: RefCell::new(None),
             sectors: Vec::with_capacity(2),
             aircraft: RefCell::new(None),
@@ -121,13 +121,6 @@ impl Plan {
             .sum()
     }
 
-    //
-    //	Return if this plan has been changed since it was loaded from
-    //	persistent storage.
-    //	@return
-    pub fn is_dirty(&self) -> bool {
-        *self.dirty.borrow()
-    }
 
     pub fn get_name(&self) -> String {
         if self.path.borrow().is_none() {
@@ -135,10 +128,10 @@ impl Plan {
             let mut end: String = "".to_string();
             let sectors = &self.sectors;
             if !sectors.is_empty() {
-                if let Some(airport_start) = sectors[0].borrow().get_start() {
+                if let Some(airport_start) = sectors.first().and_then(|s| s.borrow().get_start()) {
                     start = airport_start.get_id().to_string();
                 }
-                if let Some(airport_end) = sectors[0].borrow().get_end() {
+                if let Some(airport_end) = sectors.last().and_then(|s| s.borrow().get_end()) {
                     end = airport_end.get_id().to_string();
                 }
                 if !start.is_empty() || !end.is_empty() {
@@ -329,6 +322,28 @@ impl Plan {
         let speed_format = SpeedFormat::new(&units);
         let speed = self.get_speed_to(wp) as f64;
         speed_format.format(&speed)
+    }
+
+    //
+    //	Return if this plan has been changed since it was loaded from
+    //	persistent storage.
+    //	@return
+    pub fn is_dirty(&self) -> bool {
+        let mut dirty = false;
+        // Check if any dirty sectors
+        for s in &self.sectors {
+            dirty |= s.borrow().is_dirty();
+        }
+        dirty |= self.dirty;
+        dirty
+    }
+
+    pub fn set_dirty(&mut self, dirty: bool) {
+        self.dirty = dirty;
+        // Mark all sectors clean as well
+        for s in &self.sectors {
+            s.borrow_mut().set_dirty(dirty);
+        }
     }
 }
 

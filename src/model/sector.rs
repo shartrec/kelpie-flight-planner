@@ -22,12 +22,9 @@
  *
  */
 
-use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
-
-use gtk::glib::property::PropertySet;
 
 use crate::model::plan::Plan;
 use crate::preference::UNITS;
@@ -39,36 +36,40 @@ use super::waypoint::Waypoint;
 
 #[derive(Clone)]
 pub struct Sector {
-    airport_start: RefCell<Option<Waypoint>>,
-    airport_end: RefCell<Option<Waypoint>>,
+    airport_start: Option<Waypoint>,
+    airport_end: Option<Waypoint>,
     waypoints: Rc<RwLock<Vec<Waypoint>>>,
+    dirty: bool,
 }
 
 impl Sector {
     pub fn new() -> Self {
         Sector {
-            airport_start: RefCell::new(None),
-            airport_end: RefCell::new(None),
+            airport_start: None,
+            airport_end: None,
             waypoints: Rc::new(RwLock::new(Vec::with_capacity(10))),
+            dirty: false,
         }
     }
 
     pub fn set_start(&mut self, start: Option<Arc<Airport>>) {
-        self.airport_start.set(start.map(|a| {
+        self.airport_start = start.map(|a| {
             Waypoint::Airport {
                 airport: a.clone(),
                 locked: true,
             }
-        }));
+        });
+        self.dirty = true;
     }
 
     pub fn set_end(&mut self, end: Option<Arc<Airport>>) {
-        self.airport_end.set(end.map(|a| {
+        self.airport_end = end.map(|a| {
             Waypoint::Airport {
                 airport: a.clone(),
                 locked: true,
             }
-        }));
+        });
+        self.dirty = true;
     }
 
     pub fn insert_waypoint(&mut self, index: usize, waypoint: Waypoint) {
@@ -77,12 +78,14 @@ impl Sector {
                 vec.insert(index, waypoint);
             }
         }
+        self.dirty = true;
     }
 
     pub fn add_waypoint(&mut self, waypoint: Waypoint) {
         if let Ok(mut vec) = self.waypoints.write() {
             vec.push(waypoint);
         }
+        self.dirty = true;
     }
 
     pub fn add_waypoint_optimised(&mut self, waypoint: Waypoint) {
@@ -135,6 +138,7 @@ impl Sector {
                 }
             }
         }
+        self.dirty = true;
     }
 
     pub fn add_all_waypoint(&mut self, waypoints: Vec<Waypoint>) {
@@ -144,11 +148,13 @@ impl Sector {
                 vec.push(wp);
             }
         }
+        self.dirty = true;
     }
 
     pub fn remove_waypoint(&mut self, index: usize) -> Option<Waypoint> {
         if let Ok(mut vec) = self.waypoints.write() {
             if index < vec.len() {
+                self.dirty = true;
                 Some(vec.remove(index))
             } else {
                 None
@@ -164,6 +170,7 @@ impl Sector {
                 vec.swap(index - 1, index);
             }
         }
+        self.dirty = true;
     }
 
     pub fn move_waypoint_down(&mut self, index: usize) {
@@ -172,24 +179,21 @@ impl Sector {
                 vec.swap(index, index + 1);
             }
         }
+        self.dirty = true;
     }
 
     pub fn is_empty(&self) -> bool {
-        ! (self.airport_start.borrow().is_some()
-            || self.airport_end.borrow().is_some()
+        ! (self.airport_start.is_some()
+            || self.airport_end.is_some()
             || self.waypoints.read().unwrap().len() > 0)
     }
 
     pub fn get_name(&self) -> String {
-        let binding = self.airport_start.borrow();
-        let w1 = binding.deref();
-        let n1 = match w1 {
+        let n1 = match &self.airport_start {
             Some(w) => w.get_id(),
             None => "",
         };
-        let binding = self.airport_end.borrow();
-        let w2 = binding.deref();
-        let n2 = match w2 {
+        let n2 =match &self.airport_end {
             Some(w) => w.get_id(),
             None => "",
         };
@@ -197,11 +201,11 @@ impl Sector {
     }
 
     pub fn get_start(&self) -> Option<Waypoint> {
-        self.airport_start.borrow().clone()
+        self.airport_start.clone()
     }
 
     pub fn get_end(&self) -> Option<Waypoint> {
-        self.airport_end.borrow().clone()
+        self.airport_end.clone()
     }
 
     pub fn get_waypoints(&self) -> &Rc<RwLock<Vec<Waypoint>>> {
@@ -248,6 +252,14 @@ impl Sector {
                 .unwrap_or(0.0),
             _ => 0.0,
         }
+    }
+
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub fn set_dirty(&mut self, dirty: bool) {
+        self.dirty = dirty;
     }
 }
 
