@@ -182,12 +182,7 @@ mod imp {
                             ],
                         );
                     }
-                    for wp in s
-                        .get_waypoints()
-                        .read()
-                        .expect("Can't get read lock on sectors")
-                        .deref()
-                    {
+                    for wp in s.get_waypoints() {
                         let wp_row = tree_store.append(Some(&row));
                         tree_store.set(
                             &wp_row,

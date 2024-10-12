@@ -158,12 +158,7 @@ impl PlanRenderer {
                 indices_airports.push(vertices.len() as u32 - 1);
                 let mut last_p = position;
 
-                for wp in s
-                    .get_waypoints()
-                    .read()
-                    .expect("Can't get read lock on sectors")
-                    .deref()
-                {
+                for wp in s.get_waypoints() {
                     let position = projector.project(wp.get_lat(), wp.get_long());
                     let arc = Self::draw_arc(last_p, position);
                     for v in arc {

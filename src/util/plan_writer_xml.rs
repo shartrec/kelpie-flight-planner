@@ -53,10 +53,7 @@ pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
             sector_element.children.push(XMLNode::Element(from));
         }
 
-        for wp in s.get_waypoints()
-            .read()
-            .expect("Can't get read lock on sectors")
-            .deref() {
+        for wp in s.get_waypoints() {
             let mut wp_element = Element::new("waypoint");
             wp_element.attributes.insert("name".to_string(), wp.get_name().to_string());
             wp_element.attributes.insert("type".to_string(), wp.get_type_name().to_string());

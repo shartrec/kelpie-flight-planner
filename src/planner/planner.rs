@@ -23,7 +23,7 @@
  */
 
 use std::cell::Cell;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use crate::earth;
@@ -85,7 +85,7 @@ impl Planner<'_> {
 
                     let mut prev_wp = from.clone();
                     // add all the manually added waypoints into the plan
-                    let old_wps = sector.get_waypoints().read().expect("Can't get old sector lock");
+                    let old_wps = sector.get_waypoints();
                     for wp in old_wps.iter() {
                         if *wp.is_locked() {
                             self.add_navaids_between(&prev_wp, &wp.clone(), &mut plan);
@@ -107,7 +107,7 @@ impl Planner<'_> {
                 } else if self.plan_type == USE_FIXES {
                     let mut prev_wp = from.clone();
                     // add all the manually added waypoints into the plan
-                    let old_wps = sector.get_waypoints().read().expect("Can't get old sector lock");
+                    let old_wps = sector.get_waypoints();
                     for wp in old_wps.iter() {
                         if *wp.is_locked() {
                             self.add_fixes_between(&prev_wp, &wp.clone(), &mut plan);
@@ -477,47 +477,45 @@ impl Planner<'_> {
 
     pub fn recalc_plan_elevations(&self, plan: &Plan) {
         for s_ref in plan.get_sectors().deref() {
-            let binding = s_ref.borrow();
-            let sector = binding.deref();
+
+            let mut sector = s_ref.borrow_mut();
             if sector.get_start().is_none() || sector.get_end().is_none() {
                 continue;
             }
+            let start_wp =  &sector.get_start().unwrap();
+            let end_wp = &sector.get_end().unwrap();
 
             // Remove the previous top of climb and beginning of descent
-            let mut guard = sector
-                .get_waypoints()
-                .write()
-                .expect("Can't get read lock on sectors");
-            let waypoints = guard.deref_mut();
+            let waypoints = sector.get_waypoints_mut();
             waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
 
             let max_alt = calc_max_altitude(
                 plan,
-                &sector.get_start().unwrap(),
-                &sector.get_end().unwrap(),
+                &start_wp,
+                &end_wp,
                 waypoints,
             );
 
             add_toc(
                 plan,
-                &sector.get_start().unwrap(),
-                &sector.get_end().unwrap(),
+                &start_wp,
+                &end_wp,
                 waypoints,
                 max_alt,
             );
 
             add_bod(
                 plan,
-                &sector.get_start().unwrap(),
-                &sector.get_end().unwrap(),
+                &start_wp,
+                &end_wp,
                 waypoints,
                 max_alt,
             );
 
             set_elevations(
                 plan,
-                &sector.get_start().unwrap(),
-                &sector.get_end().unwrap(),
+                &start_wp,
+                &end_wp,
                 waypoints,
                 max_alt,
             );
@@ -808,7 +806,6 @@ mod tests {
     use crate::model::sector::Sector;
 
     use crate::model::test_utils::tests::make_airport_at;
-    use crate::model::waypoint::Waypoint;
     use crate::preference::USE_GPS;
 
     use super::Planner;
@@ -834,7 +831,7 @@ mod tests {
         let mut sector = Sector::new();
         sector.set_start(Some(ap1));
         sector.set_end(Some(ap2));
-        let plan = planner.make_plan(&sector);
+        let plan = planner.make_plan(&mut sector);
 
 
         for wp in &plan {

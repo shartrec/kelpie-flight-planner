@@ -70,9 +70,7 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
 
         let mut route = Element::new("route"); //$NON-NLS-1$
         for (wp_ordinal, wp) in s.get_waypoints()
-            .read()
-            .expect("Can't get read lock on sectors")
-            .deref().iter().enumerate() {
+            .iter().enumerate() {
             let wpt = make_waypoint(wp, wp_ordinal as i32, plan);
             route.children.push(XMLNode::Element(wpt));
         }

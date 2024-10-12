@@ -22,9 +22,7 @@
  *
  */
 
-use std::ops::Deref;
-use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::model::plan::Plan;
 use crate::preference::UNITS;
@@ -38,7 +36,7 @@ use super::waypoint::Waypoint;
 pub struct Sector {
     airport_start: Option<Waypoint>,
     airport_end: Option<Waypoint>,
-    waypoints: Rc<RwLock<Vec<Waypoint>>>,
+    waypoints: Vec<Waypoint>,
     dirty: bool,
 }
 
@@ -47,7 +45,7 @@ impl Sector {
         Sector {
             airport_start: None,
             airport_end: None,
-            waypoints: Rc::new(RwLock::new(Vec::with_capacity(10))),
+            waypoints: Vec::with_capacity(10),
             dirty: false,
         }
     }
@@ -73,32 +71,27 @@ impl Sector {
     }
 
     pub fn insert_waypoint(&mut self, index: usize, waypoint: Waypoint) {
-        if let Ok(mut vec) = self.waypoints.write() {
-            if index <= vec.len() {
-                vec.insert(index, waypoint);
-            }
+            if index <= self.waypoints.len() {
+                self.waypoints.insert(index, waypoint);
         }
         self.dirty = true;
     }
 
     pub fn add_waypoint(&mut self, waypoint: Waypoint) {
-        if let Ok(mut vec) = self.waypoints.write() {
-            vec.push(waypoint);
-        }
+        self.waypoints.push(waypoint);
         self.dirty = true;
     }
 
     pub fn add_waypoint_optimised(&mut self, waypoint: Waypoint) {
-        if let Ok(mut vec) = self.waypoints.write() {
-            if vec.len() == 0 {
-                vec.push(waypoint);
+            if self.waypoints.len() == 0 {
+                self.waypoints.push(waypoint);
             } else {
                 // Find the nearest waypoint in the sector to this waypoint
                 let mut min_distance = f64::MAX;
                 let mut close_wp_index = 0;
                 let mut close_wp = None;
-                for i in 0..vec.len() {
-                    let w = &vec.deref().as_slice()[i];
+                for i in 0..self.waypoints.len() {
+                    let w = &self.waypoints.as_slice()[i];
                     let dist = w.get_loc().distance_to(waypoint.get_loc());
                     if dist < min_distance {
                         min_distance = dist;
@@ -116,7 +109,7 @@ impl Sector {
                                 None => 0.0
                             }
                         } else {
-                            let w = &vec.deref().as_slice()[close_wp_index - 1];
+                            let w = &self.waypoints.as_slice()[close_wp_index - 1];
                             w.get_loc().distance_to(wp.get_loc())
                     };
                     let dist_before_wp = if close_wp_index == 0 {
@@ -125,59 +118,48 @@ impl Sector {
                                 None => 0.0
                             }
                         } else {
-                            let w = &vec.deref().as_slice()[close_wp_index - 1];
+                            let w = &self.waypoints.as_slice()[close_wp_index - 1];
                             w.get_loc().distance_to(waypoint.get_loc())
                     };
                     if dist_before_wp < dist_before_cl {
-                        vec.insert(close_wp_index, waypoint);
+                        self.waypoints.insert(close_wp_index, waypoint);
                     } else {
-                        vec.insert(close_wp_index + 1, waypoint);
+                        self.waypoints.insert(close_wp_index + 1, waypoint);
                     }
                 } else {
-                    vec.push(waypoint);
+                    self.waypoints.push(waypoint);
                 }
             }
-        }
         self.dirty = true;
     }
 
     pub fn add_all_waypoint(&mut self, waypoints: Vec<Waypoint>) {
-        if let Ok(mut vec) = self.waypoints.write() {
-            vec.clear();
+        self.waypoints.clear();
             for wp in waypoints {
-                vec.push(wp);
+                self.waypoints.push(wp);
             }
-        }
         self.dirty = true;
     }
 
     pub fn remove_waypoint(&mut self, index: usize) -> Option<Waypoint> {
-        if let Ok(mut vec) = self.waypoints.write() {
-            if index < vec.len() {
+            if index < self.waypoints.len() {
                 self.dirty = true;
-                Some(vec.remove(index))
+                Some(self.waypoints.remove(index))
             } else {
                 None
             }
-        } else {
-            None
-        }
     }
 
     pub fn move_waypoint_up(&mut self, index: usize) {
-        if let Ok(mut vec) = self.waypoints.write() {
-            if index > 0 && index < vec.len() {
-                vec.swap(index - 1, index);
+            if index > 0 && index < self.waypoints.len() {
+                self.waypoints.swap(index - 1, index);
             }
-        }
         self.dirty = true;
     }
 
     pub fn move_waypoint_down(&mut self, index: usize) {
-        if let Ok(mut vec) = self.waypoints.write() {
-            if index < vec.len() - 1{
-                vec.swap(index, index + 1);
-            }
+            if index < self.waypoints.len() - 1{
+                self.waypoints.swap(index, index + 1);
         }
         self.dirty = true;
     }
@@ -185,7 +167,7 @@ impl Sector {
     pub fn is_empty(&self) -> bool {
         ! (self.airport_start.is_some()
             || self.airport_end.is_some()
-            || self.waypoints.read().unwrap().len() > 0)
+            || self.waypoints.len() > 0)
     }
 
     pub fn get_name(&self) -> String {
@@ -208,16 +190,20 @@ impl Sector {
         self.airport_end.clone()
     }
 
-    pub fn get_waypoints(&self) -> &Rc<RwLock<Vec<Waypoint>>> {
+    pub fn get_waypoints_mut(&mut self) -> &mut Vec<Waypoint> {
+        &mut self.waypoints
+    }
+
+    pub fn get_waypoints(&self) -> &Vec<Waypoint> {
         &self.waypoints
     }
 
     pub fn get_waypoint_count(&self) -> usize {
-        self.waypoints.read().unwrap().len()
+        self.waypoints.len()
     }
 
     pub fn get_waypoint(&self, pos: usize) -> Option<Waypoint> {
-        Some(self.waypoints.read().unwrap()[pos].clone())
+        Some(self.waypoints[pos].clone())
     }
 
     pub fn get_duration_as_string(&self, plan: &Plan) -> String {
@@ -227,14 +213,11 @@ impl Sector {
     }
 
     pub fn get_duration(&self, plan: &Plan) -> f64 {
-        match self.waypoints.read() {
-            Ok(waypoints) => waypoints
+        self.waypoints
                 .iter()
                 .map(move |wp| plan.get_time_to(wp))
                 .reduce(|acc, t| acc + t)
-                .unwrap_or(0.0),
-            _ => 0.0,
-        }
+                .unwrap_or(0.0)
     }
     pub fn get_distance_as_string(&self, plan: &Plan) -> String {
         let pref = crate::preference::manager();
@@ -244,14 +227,11 @@ impl Sector {
         distance_format.format(distance)
     }
     pub fn get_distance(&self, plan: &Plan) -> f64 {
-        match self.waypoints.read() {
-            Ok(waypoints) => waypoints
+        self.waypoints
                 .iter()
                 .map(move |wp| plan.get_leg_distance_to(wp))
                 .reduce(|acc, t| acc + t)
-                .unwrap_or(0.0),
-            _ => 0.0,
-        }
+                .unwrap_or(0.0)
     }
 
     pub fn is_dirty(&self) -> bool {
@@ -324,16 +304,15 @@ mod tests {
         s.add_waypoint(w3.clone());
         s.insert_waypoint(1, w4.clone());
 
-        let wps = s.waypoints.read().unwrap();
+        let wps = &s.waypoints;
         assert_eq!(wps.len(), 4);
         assert_eq!(wps.get(0).unwrap().get_loc(), w1.get_loc());
         assert_eq!(wps.get(1).unwrap().get_loc(), w4.get_loc());
         assert_eq!(wps.get(2).unwrap().get_loc(), w2.get_loc());
         assert_eq!(wps.get(3).unwrap().get_loc(), w3.get_loc());
-        drop(wps);
 
         s.remove_waypoint(2);
-        let wps = s.waypoints.read().unwrap();
+        let wps = &s.waypoints;
         assert_eq!(wps.len(), 3);
         assert_eq!(wps.get(0).unwrap().get_loc(), w1.get_loc());
         assert_eq!(wps.get(1).unwrap().get_loc(), w4.get_loc());

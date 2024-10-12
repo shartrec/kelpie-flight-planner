@@ -294,9 +294,6 @@ impl Plan {
                 for wp in s_borrowed
                     .deref()
                     .get_waypoints()
-                    .read()
-                    .expect("Can't get read lock on sectors")
-                    .deref()
                 {
                     if compare_wp(wp, waypoint) {
                         return speed;

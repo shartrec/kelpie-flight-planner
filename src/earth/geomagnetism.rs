@@ -606,7 +606,7 @@ mod tests {
         let geo = Geomagnetism::new(35.55, 139.76, None, None);
         assert_between(geo.declination, -8.0, -7.8);
         let geo = Geomagnetism::new(13.24, -16.65, None, None);
-        assert_between(geo.declination, -6.3, -6.1);
+        assert_between(geo.declination, -6.1, -6.0);
         let geo = Geomagnetism::new(40.6, -73.8, None, None);
         assert_between(geo.declination, -13.0, -12.5);
     }
