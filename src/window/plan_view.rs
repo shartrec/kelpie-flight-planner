@@ -104,10 +104,11 @@ mod imp {
         }
 
         pub(crate) fn new_plan(&self) {
-            {
+            {   // Block limits scope of mutable borrow of the plan
                 let mut plan = self.plan.borrow_mut();
                 plan.add_sector(Sector::new());
                 plan.set_aircraft(&get_hangar().imp().get_default_aircraft());
+                plan.set_dirty(false);
             }
             self.refresh(None);
         }

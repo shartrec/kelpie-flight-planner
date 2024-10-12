@@ -60,6 +60,7 @@ impl Plan {
 
     pub fn add_sector(&mut self, sector: Sector) {
         self.sectors.push(RefCell::new(sector));
+        self.dirty = true;
     }
 
     pub fn add_sector_at(
@@ -73,19 +74,20 @@ impl Plan {
         sector.set_end(end);
         self.sectors
             .insert(pos, RefCell::new(sector));
+        self.dirty = true;
     }
 
     pub fn remove_sector_at(&mut self, pos: usize) {
         self.sectors.remove(pos);
-    }
+        self.dirty = true;    }
 
     pub fn move_sector_up(&mut self, pos: usize) {
         self.sectors.swap(pos - 1, pos);
-    }
+        self.dirty = true;    }
 
     pub fn move_sector_down(&mut self, pos: usize) {
         self.sectors.swap(pos, pos + 1);
-    }
+        self.dirty = true;    }
 
     pub fn get_sectors(&self) -> &Vec<RefCell<Sector>> {
         &self.sectors
@@ -97,11 +99,11 @@ impl Plan {
 
     pub fn set_aircraft(&mut self, aircraft: &Option<Arc<Aircraft>>) {
         self.aircraft.replace(aircraft.clone());
-    }
+        self.dirty = true;    }
 
     pub fn set_max_altitude(&mut self, max_altitude: Option<i32>) {
         self.max_altitude.replace(max_altitude);
-    }
+        self.dirty = true;    }
 
     pub fn get_max_altitude(&self) -> Option<i32> {
         *self.max_altitude.borrow()
@@ -200,6 +202,7 @@ impl Plan {
     }
 
     pub fn add_airport(&mut self, airport: Arc<Airport>) {
+        // isDirty handling is done in the sectors objects
         for s in self.get_sectors() {
             if s.borrow().get_start().is_none() {
                 s.borrow_mut().set_start(Some(airport));
