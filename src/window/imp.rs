@@ -22,7 +22,8 @@
  *
  */
 
-use adw::TabView;
+use adw::{TabPage, TabView};
+use glib::Propagation;
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned};
 use gtk::gio::{Cancellable, File};
@@ -69,7 +70,7 @@ pub struct Window {
     #[template_child]
     pub world_map_view: TemplateChild<WorldMapView>,
     #[template_child]
-    pub plan_stack: TemplateChild<TabView>,
+    pub plan_tab_view: TemplateChild<TabView>,
 }
 
 impl Window {
@@ -80,10 +81,10 @@ impl Window {
 
     pub(crate) fn new_plan(&self) {
         let view = PlanView::new();
+        let page = self.plan_tab_view.append(&view);
+        view.imp().set_parent_page(page.clone());
         view.imp().new_plan();
-        let page = self.plan_stack.add_page(&view, None);
-        page.set_title("New Plan");
-        self.plan_stack.set_selected_page(&page);
+        self.plan_tab_view.set_selected_page(&page);
     }
 
     pub(crate) fn open_plan(&self) {
@@ -104,9 +105,10 @@ impl Window {
                     if let Some(path) = file.path() {
                         if let Ok(plan) = read_plan(&path) {
                             let view = PlanView::new();
-                            let page = window.plan_stack.add_page(&view, None);
+                            let page = window.plan_tab_view.add_page(&view, None);
+                            view.imp().set_parent_page(page.clone());
                             page.set_title(plan.get_name().as_str());
-                            window.plan_stack.set_selected_page(&page);
+                            window.plan_tab_view.set_selected_page(&page);
                             view.imp().set_plan(plan);
                         }
                     };
@@ -125,32 +127,38 @@ impl Window {
     }
 
     fn do_save(&self, title: &str, save_type: SaveType) {
-        if let Some(page) = self.plan_stack.selected_page() {
-            if let Ok(view) = page.child().downcast::<PlanView>() {
-                let win = self.get_window_handle();
+        if let Some(page) = self.plan_tab_view.selected_page() {
+            self.save_page_plan(title, save_type, &page);
+        };
+    }
 
-                let rc = view.imp().get_plan();
-                let plan = rc.borrow();
-                let dialog = FileDialog::new();
-                dialog.set_modal(true);
-                dialog.set_title(title);
-                let ext = match save_type {
-                    SaveType::Native => "fgfp",
-                    SaveType::FgRouteManager => "xml",
-                };
-                let mut name = plan.get_name();
-                name.push('.');
-                name.push_str(ext);
-                dialog.set_initial_name(Some(name.as_str()));
-                let store = get_plan_file_filter(ext);
-                dialog.set_filters(Some(&store));
+    fn save_page_plan(&self, title: &str, save_type: SaveType, page: &TabPage) {
+        if let Ok(view) = page.child().downcast::<PlanView>() {
 
-                let x1 = &win.unwrap();
-                let xx = Some(x1.clone());
-                let x = Some(x1);
+            let rc = view.imp().get_plan();
+            let plan = rc.borrow();
 
-                dialog.save(x, Some(&Cancellable::default()),
-                            clone!(@weak view, => move | result: Result<File, _>| {
+            let win = self.get_window_handle();
+            let dialog = FileDialog::new();
+            dialog.set_modal(true);
+            dialog.set_title(title);
+            let ext = match save_type {
+                SaveType::Native => "fgfp",
+                SaveType::FgRouteManager => "xml",
+            };
+            let mut name = plan.get_name();
+            name.push('.');
+            name.push_str(ext);
+            dialog.set_initial_name(Some(name.as_str()));
+            let store = get_plan_file_filter(ext);
+            dialog.set_filters(Some(&store));
+
+            let x1 = &win.unwrap();
+            let xx = Some(x1.clone());
+            let x = Some(x1);
+
+            dialog.save(x, Some(&Cancellable::default()),
+                        clone!(@weak view, => move | result: Result<File, _>| {
 
                         if let Ok(file) = result {
                             let writer = match save_type {
@@ -175,12 +183,11 @@ impl Window {
                             };
                         }
                 }));
-            }
-        };
+        }
     }
 
     fn get_window_handle(&self) -> Option<gtk::Window> {
-        match self.plan_stack.root() {
+        match self.plan_tab_view.root() {
             Some(r) => {
                 let window = r.downcast::<gtk::Window>().unwrap().clone();
                 Some(window)
@@ -241,6 +248,44 @@ impl ObjectImpl for Window {
         obj.load_window_size();
 
         self.layout_panels();
+
+        self.plan_tab_view.connect_close_page(clone!(@weak self as window => @default-return Propagation::Proceed, move |view, page|  {
+
+            let win = window.get_window_handle();
+
+            // Todo Check if plan dirty and if so do save.
+            if let Ok(view) = page.child().downcast::<PlanView>() {
+                let rc = view.imp().get_plan();
+                let plan = rc.borrow();
+                if !plan.is_dirty() {
+                    return Propagation::Proceed;
+                }
+            }
+
+            let buttons = vec!["Yes".to_string(), "No".to_string(), "Cancel".to_string(), ];
+            let alert = AlertDialog::builder()
+                .modal(true)
+                .message("Save changes to plan before closing".to_string())
+                .buttons(buttons)
+                .default_button(0)
+                .cancel_button(2)
+                .build();
+
+            alert.choose(win.as_ref(), Some(&Cancellable::default()), clone!(@weak page, @weak view => move |result| {
+                if let Ok(b) = result {
+                    if b == 0 {
+                       window.save_page_plan("Save Plan", SaveType::Native, &page);
+                       view.close_page_finish(&page, true);
+                    } else if b == 1 {
+                       view.close_page_finish(&page, true);
+                    }  else {
+                       view.close_page_finish(&page, false);
+                    }
+
+                }
+            }));
+            Propagation::Stop
+        }));
 
         match crate::earth::initialise() {
             Ok(_) => {}

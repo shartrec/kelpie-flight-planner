@@ -30,9 +30,12 @@ mod imp {
     use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
+    use adw::TabPage;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView};
+    use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, PopoverMenu,
+              ScrolledWindow, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView,
+              prelude::WidgetExt  };
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
@@ -79,6 +82,7 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         my_listener_id: RefCell<usize>,
+        page: RefCell<Option<TabPage>>,
     }
 
     enum Col {
@@ -94,6 +98,11 @@ mod imp {
     }
 
     impl PlanView {
+
+        pub(crate) fn set_parent_page(&self, page: TabPage) {
+            self.page.replace(Some(page));
+        }
+
         pub(crate) fn new_plan(&self) {
             {
                 let mut plan = self.plan.borrow_mut();
@@ -121,6 +130,10 @@ mod imp {
         }
 
         fn refresh(&self, selection: Option<TreePath>) {
+
+            if let Some(page) = &self.page.borrow().deref() {
+                page.set_title(&self.plan.borrow().get_name());
+            }
             // update the heading if required for Mag vs True Hdg
             let pref = crate::preference::manager();
             let col_hdg = if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {

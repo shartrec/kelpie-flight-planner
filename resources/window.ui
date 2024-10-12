@@ -93,13 +93,13 @@
                     <property name="orientation">vertical</property>
                     <child>
                       <object class="AdwTabBar">
-                        <property name="view">plan_stack</property>
+                        <property name="view">plan_tab_view</property>
                         <property name="expand_tabs">false</property>
                         <property name="autohide">false</property>
                       </object>
                     </child>
                     <child>
-                      <object class="AdwTabView" id="plan_stack">
+                      <object class="AdwTabView" id="plan_tab_view">
                         <property name="vexpand">True</property>
                         <property name="hexpand">True</property>
                       </object>

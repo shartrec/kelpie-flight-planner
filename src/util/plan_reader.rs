@@ -128,6 +128,8 @@ pub fn read_plan(file_path: &Path) -> Result<Plan, String> {
             }
         }
         plan.add_sector(sector);
+        // mark the plan as clean
+        plan.set_dirty(false);
     }
     Ok(plan)
 }
