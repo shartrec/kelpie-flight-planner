@@ -43,7 +43,7 @@ use crate::window::world_map_view::WorldMapView;
 
 enum SaveType {
     Native,
-    FgRouteManager
+    FgRouteManager,
 }
 
 
@@ -103,11 +103,12 @@ impl Window {
                     clone!(@weak self as window, => move | result: Result<File, _>| {
                 if let Ok(file) = result {
                     if let Some(path) = file.path() {
-                        if let Ok(plan) = read_plan(&path) {
+                        if let Ok(mut plan) = read_plan(&path) {
                             let view = PlanView::new();
                             let page = window.plan_tab_view.add_page(&view, None);
                             view.imp().set_parent_page(page.clone());
                             page.set_title(plan.get_name().as_str());
+                            plan.set_path(Some(path));
                             window.plan_tab_view.set_selected_page(&page);
                             view.imp().set_plan(plan);
                         }
@@ -115,7 +116,6 @@ impl Window {
                 }
             }));
     }
-
 
 
     pub(crate) fn save_plan(&self) {
@@ -134,7 +134,6 @@ impl Window {
 
     fn save_page_plan(&self, title: &str, save_type: SaveType, page: &TabPage) {
         if let Ok(view) = page.child().downcast::<PlanView>() {
-
             let rc = view.imp().get_plan();
             let plan = rc.borrow();
 
@@ -147,8 +146,10 @@ impl Window {
                 SaveType::FgRouteManager => "xml",
             };
             let mut name = plan.get_name();
-            name.push('.');
-            name.push_str(ext);
+            if !name.ends_with(ext) {
+                name.push('.');
+                name.push_str(ext);
+            }
             dialog.set_initial_name(Some(name.as_str()));
             let store = get_plan_file_filter(ext);
             dialog.set_filters(Some(&store));
@@ -166,9 +167,12 @@ impl Window {
                                         SaveType::FgRouteManager => plan_writer_route_manager::export_plan_fg,
                                     };
                             if let Some(path) = file.path() {
-                                let plan = view.imp().get_plan();
-                                match writer(&plan.borrow(), &path) {
-                                    Ok(_) => {}
+                                let binding = view.imp().get_plan();
+                                let mut plan = binding.borrow_mut();
+                                match writer(&plan, &path) {
+                                    Ok(_) => {
+                                        plan.set_dirty(false);
+                                    }
                                     Err(s) => {
                                         let buttons = vec!["Ok".to_string()];
                                         let alert = AlertDialog::builder()
@@ -217,7 +221,6 @@ impl Window {
         pref.put("vertical-split-pos", self.pane_1v.position());
         pref.put("horizontal-split-pos", self.pane_1h.position());
     }
-
 }
 
 // The central trait for subclassing a GObject
@@ -306,7 +309,6 @@ impl ObjectImpl for Window {
                 });
             }
         }
-
     }
 }
 

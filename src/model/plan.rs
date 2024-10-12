@@ -24,6 +24,7 @@
 
 use std::cell::{Ref, RefCell};
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::earth::coordinate::Coordinate;
@@ -41,7 +42,7 @@ use super::sector::Sector;
 #[derive(Default)]
 pub struct Plan {
     dirty: bool,
-    path: RefCell<Option<String>>,
+    path: Option<PathBuf>,
     sectors: Vec<RefCell<Sector>>,
     aircraft: RefCell<Option<Arc<Aircraft>>>,
     max_altitude: RefCell<Option<i32>>,
@@ -51,7 +52,7 @@ impl Plan {
     pub fn new() -> Self {
         Self {
             dirty: false,
-            path: RefCell::new(None),
+            path: None,
             sectors: Vec::with_capacity(2),
             aircraft: RefCell::new(None),
             max_altitude: RefCell::new(None),
@@ -99,11 +100,14 @@ impl Plan {
 
     pub fn set_aircraft(&mut self, aircraft: &Option<Arc<Aircraft>>) {
         self.aircraft.replace(aircraft.clone());
-        self.dirty = true;    }
+        self.dirty = true;
+    }
 
     pub fn set_max_altitude(&mut self, max_altitude: Option<i32>) {
         self.max_altitude.replace(max_altitude);
-        self.dirty = true;    }
+        self.dirty = true;
+    }
+
 
     pub fn get_max_altitude(&self) -> Option<i32> {
         *self.max_altitude.borrow()
@@ -125,27 +129,31 @@ impl Plan {
 
 
     pub fn get_name(&self) -> String {
-        if self.path.borrow().is_none() {
-            let mut start: String = "".to_string();
-            let mut end: String = "".to_string();
-            let sectors = &self.sectors;
-            if !sectors.is_empty() {
-                if let Some(airport_start) = sectors.first().and_then(|s| s.borrow().get_start()) {
-                    start = airport_start.get_id().to_string();
-                }
-                if let Some(airport_end) = sectors.last().and_then(|s| s.borrow().get_end()) {
-                    end = airport_end.get_id().to_string();
-                }
-                if !start.is_empty() || !end.is_empty() {
-                    return format!("{}-{}", start, end);
-                }
-                return String::from("new_plan");
+        match &self.path {
+            Some(path) => {
+                path.file_name().unwrap().to_string_lossy().to_string()
             }
-            return String::from("new_plan");
+            None => {
+                let mut start: String = "".to_string();
+                let mut end: String = "".to_string();
+                let sectors = & self.sectors;
+                if !sectors.is_empty() {
+                    if let Some(airport_start) = sectors.first().and_then( | s | s.borrow().get_start()) {
+                        start = airport_start.get_id().to_string();
+                    }
+                    if let Some(airport_end) = sectors.last().and_then( | s | s.borrow().get_end()) {
+                        end = airport_end.get_id().to_string();
+                    }
+                    if !start.is_empty() || !end.is_empty() {
+                        format ! ("{}-{}", start, end)
+                    } else {
+                        String::from("new_plan")
+                    }
+                } else {
+                    String::from("new_plan")
+                }
+            }
         }
-
-        let f = std::path::PathBuf::from(&self.path.borrow().clone().unwrap_or("".to_string()));
-        f.file_name().unwrap().to_string_lossy().to_string()
     }
 
     //
@@ -344,6 +352,9 @@ impl Plan {
         for s in &self.sectors {
             s.borrow_mut().set_dirty(dirty);
         }
+    }
+    pub fn set_path(&mut self, path: Option<PathBuf>) {
+        self.path = path;
     }
 }
 
