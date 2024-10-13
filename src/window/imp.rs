@@ -23,6 +23,7 @@
  */
 
 use adw::{TabPage, TabView};
+use adw::subclass::prelude::AdwApplicationWindowImpl;
 use glib::Propagation;
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned};
@@ -229,7 +230,7 @@ impl ObjectSubclass for Window {
     // `NAME` needs to match `class` attribute of template
     const NAME: &'static str = "KelpiePlannerWindow";
     type Type = super::Window;
-    type ParentType = gtk::ApplicationWindow;
+    type ParentType = adw::ApplicationWindow;
 
     fn class_init(klass: &mut Self::Class) {
         klass.bind_template();
@@ -352,3 +353,4 @@ impl WindowImpl for Window {
 
 // Trait shared by all application windows
 impl ApplicationWindowImpl for Window {}
+impl AdwApplicationWindowImpl for Window {}

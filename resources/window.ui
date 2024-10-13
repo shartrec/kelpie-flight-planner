@@ -54,21 +54,23 @@
       </section>
     </submenu>
   </menu>
-  <template class="KelpiePlannerWindow" parent="GtkApplicationWindow">
+  <template class="KelpiePlannerWindow" parent="AdwApplicationWindow">
     <property name="title">Kelpie Flight Planner for FlightGear</property>
     <property name="default-height">500</property>
     <property name="default-width">800</property>
-    <child type="titlebar">
-      <object class="GtkHeaderBar">
-        <child type="end">
-          <object class="GtkMenuButton">
-            <property name="icon-name">open-menu-symbolic</property>
-            <property name="menu-model">main-menu</property>
-          </object>
-        </child>
+    <property name="content">
+    <object class="AdwToolbarView">
+    <child type="top">
+      <object class="AdwHeaderBar">
+              <child>
+                <object class="GtkMenuButton">
+                  <property name="icon-name">open-menu-symbolic</property>
+                  <property name="menu-model">main-menu</property>
+                </object>
+              </child>
       </object>
     </child>
-    <child>
+    <property name="content">
       <object class="GtkBox">
         <property name="orientation">vertical</property>
         <child>
@@ -186,6 +188,8 @@
           </object>
         </child>
       </object>
-    </child>
+    </property>
+    </object>
+    </property>
   </template>
 </interface>
