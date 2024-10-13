@@ -269,7 +269,7 @@ impl AirportParserFG850 {
     pub fn load_runways(
         &self,
         airport: &Airport,
-        runway_offsets: &Arc<RwLock<HashMap<String, usize>>>,
+        runway_offsets: &RwLock<HashMap<String, usize>>,
         reader: &mut BufReader<GzDecoder<File>>,
     ) -> Result<(), String> {
         let mut tokenizer: std::str::SplitWhitespace;

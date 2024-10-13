@@ -84,7 +84,7 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            match get_earth_model().navaids.clone()
+            match get_earth_model().navaids
                 .read()
                 .expect("Unable to get a lock on the navaids")
                 .iter().nth(position as usize) {

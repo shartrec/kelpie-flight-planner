@@ -53,24 +53,24 @@ pub const FEET_PER_DEGREE: i32 = 6076 * 60;
 
 lazy_static! {
     static ref EARTH: Earth = Earth {
-        airports: Arc::new(RwLock::new(Vec::new())),
-        navaids: Arc::new(RwLock::new(Vec::new())),
-        fixes: Arc::new(RwLock::new(Vec::new())),
-        runway_offsets: Arc::new(RwLock::new(HashMap::new())),
-        ils: Arc::new(RwLock::new(HashMap::new())),
+        airports: RwLock::new(Vec::new()),
+        navaids: RwLock::new(Vec::new()),
+        fixes: RwLock::new(Vec::new()),
+        runway_offsets: RwLock::new(HashMap::new()),
+        ils: RwLock::new(HashMap::new()),
     };
 }
 
 pub struct Earth {
-    airports: Arc<RwLock<Vec<Arc<Airport>>>>,
-    navaids: Arc<RwLock<Vec<Arc<Navaid>>>>,
-    fixes: Arc<RwLock<Vec<Arc<Fix>>>>,
-    runway_offsets: Arc<RwLock<HashMap<String, usize>>>,
-    ils: Arc<RwLock<HashMap<String, Vec<(String, f64)>>>>,
+    airports: RwLock<Vec<Arc<Airport>>>,
+    navaids: RwLock<Vec<Arc<Navaid>>>,
+    fixes: RwLock<Vec<Arc<Fix>>>,
+    runway_offsets: RwLock<HashMap<String, usize>>,
+    ils: RwLock<HashMap<String, Vec<(String, f64)>>>,
 }
 
 impl Earth {
-    pub fn get_airports(&self) -> &Arc<RwLock<Vec<Arc<Airport>>>> {
+    pub fn get_airports(&self) -> &RwLock<Vec<Arc<Airport>>> {
         &self.airports
     }
 
@@ -98,7 +98,7 @@ impl Earth {
             .cloned()
     }
 
-    pub fn get_navaids(&self) -> &Arc<RwLock<Vec<Arc<Navaid>>>> {
+    pub fn get_navaids(&self) -> &RwLock<Vec<Arc<Navaid>>> {
         &self.navaids
     }
 
@@ -108,7 +108,7 @@ impl Earth {
         navs.extend(navaids);
     }
 
-    pub fn get_ils(&self) -> &Arc<RwLock<HashMap<String, Vec<(String, f64)>>>> {
+    pub fn get_ils(&self) -> &RwLock<HashMap<String, Vec<(String, f64)>>> {
         &self.ils
     }
 
@@ -127,7 +127,7 @@ impl Earth {
             .cloned()
     }
 
-    pub fn get_fixes(&self) -> &Arc<RwLock<Vec<Arc<Fix>>>> {
+    pub fn get_fixes(&self) -> &RwLock<Vec<Arc<Fix>>> {
         &self.fixes
     }
 
@@ -143,7 +143,7 @@ impl Earth {
         rns.extend(runway_offsets);
     }
 
-    pub fn get_runway_offsets(&self) -> &Arc<RwLock<HashMap<String, usize>>> {
+    pub fn get_runway_offsets(&self) -> &RwLock<HashMap<String, usize>> {
         &self.runway_offsets
     }
 }

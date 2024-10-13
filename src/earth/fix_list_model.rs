@@ -84,7 +84,7 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            match get_earth_model().fixes.clone()
+            match get_earth_model().fixes
                 .read()
                 .expect("Unable to get a lock on the fixes")
                 .iter().nth(position as usize) {

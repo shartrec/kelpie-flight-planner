@@ -49,8 +49,8 @@ pub struct Planner<'a> {
     plan_type: String,
     add_gps_waypoints: bool,
     add_waypoint_bias: bool,
-    navaids: &'a Arc<RwLock<Vec<Arc<Navaid>>>>,
-    fixes: &'a Arc<RwLock<Vec<Arc<Fix>>>>,
+    navaids: &'a RwLock<Vec<Arc<Navaid>>>,
+    fixes: &'a RwLock<Vec<Arc<Fix>>>,
 }
 
 impl Planner<'_> {
@@ -422,7 +422,7 @@ impl Planner<'_> {
 
     fn get_navaids_near(
         &self,
-        locations: &Arc<RwLock<Vec<Arc<Navaid>>>>,
+        locations: &RwLock<Vec<Arc<Navaid>>>,
         point: &Coordinate,
         range: f64,
     ) -> Vec<Arc<Navaid>> {
@@ -446,7 +446,7 @@ impl Planner<'_> {
 
     fn get_fixes_near(
         &self,
-        locations: &Arc<RwLock<Vec<Arc<Fix>>>>,
+        locations: &RwLock<Vec<Arc<Fix>>>,
         point: &Coordinate,
         range: f64,
     ) -> Vec<Arc<Fix>> {
