@@ -28,6 +28,7 @@ use std::sync::{Arc, RwLock};
 
 use crate::earth;
 use crate::earth::coordinate::Coordinate;
+use crate::model::aircraft::Aircraft;
 use crate::model::fix::Fix;
 use crate::model::location::Location;
 use crate::model::navaid::{Navaid, NavaidType};
@@ -475,10 +476,13 @@ impl Planner<'_> {
         raw_deviation
     }
 
-    pub fn recalc_plan_elevations(&self, plan: &Plan) {
-        for s_ref in plan.get_sectors().deref() {
+    pub fn recalc_plan_elevations(&self, plan: &mut Plan) {
 
-            let mut sector = s_ref.borrow_mut();
+        let aircraft = plan.get_aircraft().clone();
+        let altitude = plan.get_plan_altitude();
+
+        for sector in plan.get_sectors_mut() {
+
             if sector.get_start().is_none() || sector.get_end().is_none() {
                 continue;
             }
@@ -489,15 +493,17 @@ impl Planner<'_> {
             let waypoints = sector.get_waypoints_mut();
             waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
 
+
             let max_alt = calc_max_altitude(
-                plan,
+                &aircraft,
+                altitude,
                 &start_wp,
                 &end_wp,
                 waypoints,
             );
 
             add_toc(
-                plan,
+                &aircraft,
                 &start_wp,
                 &end_wp,
                 waypoints,
@@ -505,7 +511,7 @@ impl Planner<'_> {
             );
 
             add_bod(
-                plan,
+                &aircraft,
                 &start_wp,
                 &end_wp,
                 waypoints,
@@ -513,7 +519,7 @@ impl Planner<'_> {
             );
 
             set_elevations(
-                plan,
+                &aircraft,
                 &start_wp,
                 &end_wp,
                 waypoints,
@@ -524,7 +530,7 @@ impl Planner<'_> {
 }
 
 pub fn add_bod(
-    plan: &Plan,
+    aircraft: &Option<Arc<Aircraft>>,
     from: &Waypoint,
     to: &Waypoint,
     waypoints: &mut Vec<Waypoint>,
@@ -532,7 +538,6 @@ pub fn add_bod(
 ) {
     let mut done = false;
     let alt_to_bod = max_alt - to.get_elevation();
-    let aircraft = plan.get_aircraft();
     let time_to_bod = alt_to_bod as f64
         / aircraft
             .as_ref()
@@ -598,7 +603,7 @@ pub fn add_bod(
 }
 
 pub fn add_toc(
-    plan: &Plan,
+    aircraft: &Option<Arc<Aircraft>>,
     from: &Waypoint,
     to: &Waypoint,
     waypoints: &mut Vec<Waypoint>,
@@ -606,7 +611,6 @@ pub fn add_toc(
 ) {
     let mut done = false;
     let alt_to_toc = max_alt - from.get_elevation();
-    let aircraft = plan.get_aircraft();
 
     let time_to_toc = alt_to_toc as f64
         / aircraft
@@ -668,7 +672,8 @@ pub fn add_toc(
 }
 
 fn calc_max_altitude(
-    plan: &Plan,
+    aircraft: &Option<Arc<Aircraft>>,
+    max_altitude: i32,
     from: &Waypoint,
     to: &Waypoint,
     waypoints: &Vec<Waypoint>,
@@ -685,9 +690,9 @@ fn calc_max_altitude(
     let leg_length = prev_wp.get_loc().distance_to(to.get_loc());
     dist += leg_length;
 
-    let mut alt = plan.get_plan_altitude();
+    let mut alt = max_altitude;
 
-    while calc_climb_sink_distance(plan, to, from, alt) > dist {
+    while calc_climb_sink_distance(&aircraft, to, from, alt) > dist {
         alt -= 500;
     }
 
@@ -695,7 +700,7 @@ fn calc_max_altitude(
 }
 
 pub fn set_elevations(
-    plan: &Plan,
+    aircraft: &Option<Arc<Aircraft>>,
     from: &Waypoint,
     _to: &Waypoint,
     waypoints: &Vec<Waypoint>,
@@ -722,15 +727,11 @@ pub fn set_elevations(
                 if ascent {
                     let distance = prev_wp.get_loc().distance_to(wp.get_loc());
                     let leg_time = distance
-                        / plan
-                            .get_aircraft()
-                            .as_ref()
+                        / aircraft.as_ref()
                             .map(|a| *a.get_climb_speed() as f64)
                             .unwrap_or(120.0);
                     alt += (leg_time
-                        * plan
-                            .get_aircraft()
-                            .as_ref()
+                        * aircraft.as_ref()
                             .map(|a| *a.get_climb_rate() as f64)
                             .unwrap_or(1000.0)
                         * 60.0) as i32;
@@ -744,15 +745,11 @@ pub fn set_elevations(
                 } else if descent {
                     let distance = prev_wp.get_loc().distance_to(wp.get_loc());
                     let leg_time = distance
-                        / plan
-                            .get_aircraft()
-                            .as_ref()
+                        / aircraft.as_ref()
                             .map(|a| *a.get_sink_speed() as f64)
                             .unwrap_or(80.0);
                     alt -= (leg_time
-                        * plan
-                            .get_aircraft()
-                            .as_ref()
+                        * aircraft.as_ref()
                             .map(|a| *a.get_sink_rate() as f64)
                             .unwrap_or(700.0)
                         * 60.0) as i32;
@@ -766,33 +763,25 @@ pub fn set_elevations(
     }
 }
 
-fn calc_climb_sink_distance(plan: &Plan, from: &Waypoint, to: &Waypoint, altitude: i32) -> f64 {
+fn calc_climb_sink_distance(aircraft: &Option<Arc<Aircraft>>, from: &Waypoint, to: &Waypoint, altitude: i32) -> f64 {
     let alt_to_toc = (altitude - from.get_elevation()) as f64;
     let time_to_toc = alt_to_toc
-        / plan
-            .get_aircraft()
-            .as_ref()
+        / aircraft.as_ref()
             .map(|a| *a.get_climb_rate() as f64)
             .unwrap_or(1000.0)
         / 60.0;
-    let dist_to_toc = plan
-        .get_aircraft()
-        .as_ref()
+    let dist_to_toc = aircraft.as_ref()
         .map(|a| *a.get_climb_speed() as f64)
         .unwrap_or(120.0)
         * time_to_toc;
 
     let alt_to_bod = (altitude - to.get_elevation()) as f64;
     let time_to_bod = alt_to_bod
-        / plan
-            .get_aircraft()
-            .as_ref()
+        / aircraft.as_ref()
             .map(|a| *a.get_sink_rate() as f64)
             .unwrap_or(700.0)
         / 60.0;
-    let dist_to_bod = plan
-        .get_aircraft()
-        .as_ref()
+    let dist_to_bod = aircraft.as_ref()
         .map(|a| *a.get_sink_speed() as f64)
         .unwrap_or(80.0)
         * time_to_bod;

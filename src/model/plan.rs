@@ -22,8 +22,6 @@
  *
  */
 
-use std::cell::{Ref, RefCell};
-use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -43,9 +41,9 @@ use super::sector::Sector;
 pub struct Plan {
     dirty: bool,
     path: Option<PathBuf>,
-    sectors: Vec<RefCell<Sector>>,
-    aircraft: RefCell<Option<Arc<Aircraft>>>,
-    max_altitude: RefCell<Option<i32>>,
+    sectors: Vec<Sector>,
+    aircraft: Option<Arc<Aircraft>>,
+    max_altitude: Option<i32>,
 }
 
 impl Plan {
@@ -54,13 +52,13 @@ impl Plan {
             dirty: false,
             path: None,
             sectors: Vec::with_capacity(2),
-            aircraft: RefCell::new(None),
-            max_altitude: RefCell::new(None),
+            aircraft: None,
+            max_altitude: None,
         }
     }
 
     pub fn add_sector(&mut self, sector: Sector) {
-        self.sectors.push(RefCell::new(sector));
+        self.sectors.push(sector);
         self.dirty = true;
     }
 
@@ -74,7 +72,7 @@ impl Plan {
         sector.set_start(start);
         sector.set_end(end);
         self.sectors
-            .insert(pos, RefCell::new(sector));
+            .insert(pos, sector);
         self.dirty = true;
     }
 
@@ -90,31 +88,35 @@ impl Plan {
         self.sectors.swap(pos, pos + 1);
         self.dirty = true;    }
 
-    pub fn get_sectors(&self) -> &Vec<RefCell<Sector>> {
+    pub fn get_sectors(&self) -> &Vec<Sector> {
         &self.sectors
     }
 
-    pub fn get_aircraft(&self) -> Ref<Option<Arc<Aircraft>>> {
-        self.aircraft.borrow()
+    pub fn get_sectors_mut(&mut self) -> &mut Vec<Sector> {
+        &mut self.sectors
+    }
+
+    pub fn get_aircraft(&self) -> &Option<Arc<Aircraft>> {
+        &self.aircraft
     }
 
     pub fn set_aircraft(&mut self, aircraft: &Option<Arc<Aircraft>>) {
-        self.aircraft.replace(aircraft.clone());
+        self.aircraft = aircraft.clone();
         self.dirty = true;
     }
 
     pub fn set_max_altitude(&mut self, max_altitude: Option<i32>) {
-        self.max_altitude.replace(max_altitude);
+        self.max_altitude = max_altitude;
         self.dirty = true;
     }
 
 
-    pub fn get_max_altitude(&self) -> Option<i32> {
-        *self.max_altitude.borrow()
+    pub fn get_max_altitude(&self) -> &Option<i32> {
+        &self.max_altitude
     }
 
     pub fn get_plan_altitude(&self) -> i32 {
-        (*self.max_altitude.borrow()).unwrap_or_else(|| match self.aircraft.borrow().deref() {
+        self.max_altitude.unwrap_or_else(|| match &self.aircraft {
             Some(a) => *a.get_cruise_altitude(),
             None => 0,
         })
@@ -123,7 +125,7 @@ impl Plan {
     pub fn get_duration(&self) -> f64 {
         self.sectors
             .iter()
-            .map(|s| s.borrow().get_duration(self))
+            .map(|s| s.get_duration(self))
             .sum()
     }
 
@@ -138,10 +140,10 @@ impl Plan {
                 let mut end: String = "".to_string();
                 let sectors = & self.sectors;
                 if !sectors.is_empty() {
-                    if let Some(airport_start) = sectors.first().and_then( | s | s.borrow().get_start()) {
+                    if let Some(airport_start) = sectors.first().and_then( | s | s.get_start()) {
                         start = airport_start.get_id().to_string();
                     }
-                    if let Some(airport_end) = sectors.last().and_then( | s | s.borrow().get_end()) {
+                    if let Some(airport_end) = sectors.last().and_then( | s | s.get_end()) {
                         end = airport_end.get_id().to_string();
                     }
                     if !start.is_empty() || !end.is_empty() {
@@ -164,40 +166,39 @@ impl Plan {
     pub fn get_previous_location(&self, wp: &Waypoint) -> Option<Coordinate> {
         for s in &self.sectors {
             let wp_comp = wp.clone();
-            let s_borrowed = s.borrow();
-            if let Some(start_wp) = s_borrowed.get_start() {
+            if let Some(start_wp) = s.get_start() {
                 if compare_wp(&start_wp, &wp_comp) {
                     return None;
                 }
             }
             // let wp_comp = wp.clone();
-            if let Some(end_wp) = s_borrowed.get_end() {
+            if let Some(end_wp) = s.get_end() {
                 if compare_wp(&end_wp, &wp_comp) {
-                    if s_borrowed.get_waypoint_count() == 0 {
-                        if let Some(start_wp) = s_borrowed.get_start() {
+                    if s.get_waypoint_count() == 0 {
+                        if let Some(start_wp) = s.get_start() {
                             return Some(start_wp.get_loc().clone());
                         }
                     } else {
-                        return s_borrowed
-                            .get_waypoint(s_borrowed.get_waypoint_count() - 1)
+                        return s
+                            .get_waypoint(s.get_waypoint_count() - 1)
                             .map(|wp| wp.get_loc().clone());
                     }
                 }
             }
 
-            for i in 0..s_borrowed.get_waypoint_count() {
+            for i in 0..s.get_waypoint_count() {
                 let wp_comp = wp.clone();
-                let awp = s_borrowed.get_waypoint(i);
+                let awp = s.get_waypoint(i);
                 match awp {
                     None => (),
                     Some(wpx) => {
                         if compare_wp(&wpx, &wp_comp) {
                             if i == 0 {
-                                if let Some(start_wp) = s_borrowed.get_start() {
+                                if let Some(start_wp) = s.get_start() {
                                     return Some(start_wp.get_loc().clone());
                                 }
                             } else {
-                                return s_borrowed
+                                return s
                                     .get_waypoint(i - 1)
                                     .map(|wp| wp.get_loc().clone());
                             }
@@ -211,13 +212,13 @@ impl Plan {
 
     pub fn add_airport(&mut self, airport: Arc<Airport>) {
         // isDirty handling is done in the sectors objects
-        for s in self.get_sectors() {
-            if s.borrow().get_start().is_none() {
-                s.borrow_mut().set_start(Some(airport));
+        for s in &mut self.sectors {
+            if s.get_start().is_none() {
+                s.set_start(Some(airport));
                 return;
             }
-            if s.borrow().get_end().is_none() {
-                s.borrow_mut().set_end(Some(airport));
+            if s.get_end().is_none() {
+                s.set_end(Some(airport));
                 return;
             }
         }
@@ -286,22 +287,19 @@ impl Plan {
     }
 
     pub fn get_speed_to(&self, waypoint: &Waypoint) -> i32 {
-        if let Some(aircraft) = &self.aircraft.borrow().deref() {
+        if let Some(aircraft) = &self.aircraft {
             let climb = aircraft.get_climb_speed();
             let cruise = aircraft.get_cruise_speed();
             let sink = aircraft.get_sink_speed();
 
             for s in &self.sectors {
                 let mut speed = *climb;
-                let s_borrowed = s.borrow();
-                if let Some(start_wp) = s_borrowed.get_start() {
+                if let Some(start_wp) = s.get_start() {
                     if compare_wp(&start_wp, waypoint) {
                         return 0;
                     }
                 }
-                for wp in s_borrowed
-                    .deref()
-                    .get_waypoints()
+                for wp in s.get_waypoints()
                 {
                     if compare_wp(wp, waypoint) {
                         return speed;
@@ -312,7 +310,7 @@ impl Plan {
                         _ => speed,
                     };
                 }
-                if let Some(end_wp) = s_borrowed.get_end() {
+                if let Some(end_wp) = s.get_end() {
                     if compare_wp(&end_wp, waypoint) {
                         return *sink;
                     }
@@ -340,7 +338,7 @@ impl Plan {
         let mut dirty = false;
         // Check if any dirty sectors
         for s in &self.sectors {
-            dirty |= s.borrow().is_dirty();
+            dirty |= s.is_dirty();
         }
         dirty |= self.dirty;
         dirty
@@ -349,8 +347,8 @@ impl Plan {
     pub fn set_dirty(&mut self, dirty: bool) {
         self.dirty = dirty;
         // Mark all sectors clean as well
-        for s in &self.sectors {
-            s.borrow_mut().set_dirty(dirty);
+        for s in &mut self.sectors {
+            s.set_dirty(dirty);
         }
     }
     pub fn set_path(&mut self, path: Option<PathBuf>) {

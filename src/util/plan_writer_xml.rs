@@ -39,21 +39,19 @@ pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
     };
     let mut plan_element = Element::new("plan");
     plan_element.attributes.insert("name".to_string(), plan.get_name());
-    if let Some(aircraft) = plan.get_aircraft().deref() {
+    if let Some(aircraft) = plan.get_aircraft() {
         plan_element.attributes.insert("aircraft".to_string(), aircraft.get_name().to_string());
     }
     for sector in   plan.get_sectors().deref() {
         let mut sector_element = Element::new("sector");
 
-        let binding = sector.borrow();
-        let s = binding.deref();
-        if let Some(start) = s.get_start() {
+        if let Some(start) = sector.get_start() {
             let mut from = Element::new("from-airport");
             from.attributes.insert("id".to_string(), start.get_id().to_string());
             sector_element.children.push(XMLNode::Element(from));
         }
 
-        for wp in s.get_waypoints() {
+        for wp in sector.get_waypoints() {
             let mut wp_element = Element::new("waypoint");
             wp_element.attributes.insert("name".to_string(), wp.get_name().to_string());
             wp_element.attributes.insert("type".to_string(), wp.get_type_name().to_string());
@@ -76,7 +74,7 @@ pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
             sector_element.children.push(XMLNode::Element(wp_element));
         }
 
-        if let Some(end) = s.get_end() {
+        if let Some(end) = sector.get_end() {
             let mut to = Element::new("to-airport");
             to.attributes.insert("id".to_string(), end.get_id().to_string());
             sector_element.children.push(XMLNode::Element(to));

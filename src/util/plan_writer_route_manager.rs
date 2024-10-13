@@ -51,14 +51,12 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
 
     for sector in   plan.get_sectors().deref() {
 
-        let binding = sector.borrow();
-        let s = binding.deref();
-        if let Some(start) = s.get_start() {
+        if let Some(start) = sector.get_start() {
             if let Some(from) = make_airport(&start, true) {
                 plan_element.children.push(XMLNode::Element(from));
             }
         }
-        if let Some(end) = s.get_end() {
+        if let Some(end) = sector.get_end() {
             if let Some(to) = make_airport(&end, true) {
                 plan_element.children.push(XMLNode::Element(to));
             }
@@ -69,7 +67,7 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
 
 
         let mut route = Element::new("route"); //$NON-NLS-1$
-        for (wp_ordinal, wp) in s.get_waypoints()
+        for (wp_ordinal, wp) in sector.get_waypoints()
             .iter().enumerate() {
             let wpt = make_waypoint(wp, wp_ordinal as i32, plan);
             route.children.push(XMLNode::Element(wpt));
@@ -94,7 +92,7 @@ fn make_cruise(plan: &Plan) -> Option<Element> {
     alt.children.push(XMLNode::Text(format!("{:.0}", plan.get_max_altitude().unwrap_or(7000))));
     cruise.children.push(XMLNode::Element(alt));
 
-    if let Some(aircraft) = plan.get_aircraft().deref() {
+    if let Some(aircraft) = plan.get_aircraft() {
         let mut spd = Element::new("knots");
         spd.attributes.insert("type".to_string(), "int".to_string());
         spd.children.push(XMLNode::Text(format!("{:.0}", aircraft.get_cruise_speed())));

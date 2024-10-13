@@ -24,7 +24,6 @@
 
 use std::cell::{Cell, RefCell};
 use std::f32::consts::PI;
-use std::ops::Deref;
 use std::rc::Rc;
 
 use gl::types::{GLint, GLuint};
@@ -149,9 +148,7 @@ impl PlanRenderer {
         // We create a vertex for each waypoint and treat the whole as a line strip,
         // We also add an index for each airport, which is drawn as a point
         let plan = plan.borrow();
-        for s_ref in plan.get_sectors().deref() {
-            let binding = s_ref.borrow();
-            let s = binding.deref();
+        for s in plan.get_sectors() {
             if let Some(airport) = s.get_start() {
                 let position = projector.project(airport.get_lat(), airport.get_long());
                 vertices.push(Vertex { position });

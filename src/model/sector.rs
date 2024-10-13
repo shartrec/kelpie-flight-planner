@@ -142,12 +142,17 @@ impl Sector {
     }
 
     pub fn remove_waypoint(&mut self, index: usize) -> Option<Waypoint> {
-            if index < self.waypoints.len() {
-                self.dirty = true;
-                Some(self.waypoints.remove(index))
-            } else {
-                None
-            }
+        if index < self.waypoints.len() {
+            self.dirty = true;
+            Some(self.waypoints.remove(index))
+        } else {
+            None
+        }
+    }
+
+    pub fn remove_all_waypoints(&mut self) {
+        self.dirty = true;
+        Some(self.waypoints.clear());
     }
 
     pub fn move_waypoint_up(&mut self, index: usize) {

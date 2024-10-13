@@ -27,7 +27,7 @@ use gtk::gio;
 mod imp {
     use std::cell::RefCell;
     use std::cmp::Ordering;
-    use std::ops::Deref;
+    use std::ops::{Deref, DerefMut};
     use std::rc::Rc;
     use std::sync::Arc;
     use adw::TabPage;
@@ -159,18 +159,16 @@ mod imp {
             ]);
             // Iterate over the plan loading the TreeModel
             let plan = self.plan.borrow();
-            for s_ref in plan.get_sectors().deref() {
-                let binding = s_ref.borrow();
-                let s = binding.deref();
-                if !s.is_empty() {
+            for sector in plan.get_sectors().deref() {
+                if !sector.is_empty() {
                     let row = tree_store.append(None);
                     tree_store.set(&row,
                                    &[
-                                       (Col::Name as u32, &s.get_name()),
-                                       (Col::Dist as u32, &s.get_distance_as_string(&plan)),
-                                       (Col::Time as u32, &s.get_duration_as_string(&plan)),
+                                       (Col::Name as u32, &sector.get_name()),
+                                       (Col::Dist as u32, &sector.get_distance_as_string(&plan)),
+                                       (Col::Time as u32, &sector.get_duration_as_string(&plan)),
                                    ]);
-                    if let Some(airport) = s.get_start() {
+                    if let Some(airport) = sector.get_start() {
                         let wp_row = tree_store.append(Some(&row));
                         tree_store.set(
                             &wp_row,
@@ -182,7 +180,7 @@ mod imp {
                             ],
                         );
                     }
-                    for wp in s.get_waypoints() {
+                    for wp in sector.get_waypoints() {
                         let wp_row = tree_store.append(Some(&row));
                         tree_store.set(
                             &wp_row,
@@ -211,7 +209,7 @@ mod imp {
                             ],
                         );
                     }
-                    if let Some(airport) = s.get_end() {
+                    if let Some(airport) = sector.get_end() {
                         let wp_row = tree_store.append(Some(&row));
                         tree_store.set(
                             &wp_row,
@@ -243,16 +241,15 @@ mod imp {
 
         fn make_plan(&self) {
             let planner = Planner::new();
-            let plan = self.plan.borrow_mut();
+            let mut plan = self.plan.borrow_mut();
             let mut loc = None;
-            for s in plan.get_sectors().iter() {
-                let waypoints = planner.make_plan(s.borrow().deref());
-                let mut s_clone = s.borrow().deref().clone();
-                s_clone.add_all_waypoint(waypoints);
-                s.replace(s_clone);
-                planner.recalc_plan_elevations(&plan);
-                loc = s.borrow().get_start();
+            for sector in plan.get_sectors_mut().iter_mut() {
+                let waypoints = planner.make_plan(sector);
+                sector.remove_all_waypoints();
+                sector.add_all_waypoint(waypoints);
+                loc = sector.get_start();
             }
+            planner.recalc_plan_elevations(plan.deref_mut());
             drop(plan);
             if let Some(map_view) = get_world_map_view(&self.plan_window) {
                 if let Some(wp) = loc {
@@ -286,12 +283,12 @@ mod imp {
                 // Sectors are at the top level
                 if path.len() == 1 {
                     let sector_index = path[0] as usize;
-                    let sector = &plan.get_sectors()[sector_index];
-                    if sector.borrow().get_start().is_none() {
-                        sector.borrow_mut().set_start(Some(loc.clone()));
+                    let sector = &mut plan.get_sectors_mut()[sector_index];
+                    if sector.get_start().is_none() {
+                        sector.set_start(Some(loc.clone()));
                         added = true;
-                    } else if sector.borrow().get_end().is_none() {
-                        sector.borrow_mut().set_end(Some(loc.clone()));
+                    } else if sector.get_end().is_none() {
+                        sector.set_end(Some(loc.clone()));
                         added = true;
                     }
                 }
@@ -306,7 +303,7 @@ mod imp {
         }
 
         pub fn add_waypoint_to_plan(&self, waypoint: Waypoint) {
-            let plan = self.plan.borrow();
+            let mut plan = self.plan.borrow_mut();
             // See if a sector or waypoint is selected
             if let Some((model, iter)) = self.plan_tree.selection().selected() {
                 let path = model.path(&iter).indices();
@@ -315,31 +312,35 @@ mod imp {
                     1 => {
                         // a Sector only is selected
                         let sector_index = path[0] as usize;
-                        let sector = &plan.get_sectors()[sector_index];
-                        sector.borrow_mut().add_waypoint(waypoint);
+                        let sector = &mut plan.get_sectors_mut()[sector_index];
+                        sector.add_waypoint(waypoint);
                     }
                     2 => {
                         let sector_index = path[0] as usize;
                         let mut wp_index = path[1] as usize;
                         // The airport is the first subitem of the plan
                         wp_index = wp_index.saturating_sub(1);
-                        let sector = &plan.get_sectors()[sector_index];
-                        sector
-                            .borrow_mut()
-                            .insert_waypoint(wp_index, waypoint);
+                        let sector = &mut plan.get_sectors_mut()[sector_index];
+                        sector.insert_waypoint(wp_index, waypoint);
                     }
                     _ => {
                         // Add to end of last sector
-                        if let Some(s) = plan.get_sectors().last() {
-                            s.borrow_mut().add_waypoint_optimised(waypoint);
+                        let i = plan.get_sectors().len();
+                        if i > 0 {
+                            let sector = &mut plan.get_sectors_mut()[i - 1];
+                            sector.add_waypoint_optimised(waypoint);
                         }
                     }
                 }
-            } else if let Some(s) = plan.get_sectors().last() {
-                s.borrow_mut().add_waypoint_optimised(waypoint);
+            } else {
+                let i = plan.get_sectors().len();
+                if i > 0 {
+                    let sector = &mut plan.get_sectors_mut()[i - 1];
+                    sector.add_waypoint_optimised(waypoint);
+                }
             }
             let planner = Planner::new();
-            planner.recalc_plan_elevations(&plan);
+            planner.recalc_plan_elevations(plan.deref_mut());
             drop(plan);
             let _ = &self.refresh(None);
             event::manager().notify_listeners(Event::PlanChanged);
@@ -351,7 +352,7 @@ mod imp {
             let mut plan = self.plan.borrow_mut();
 
             if let Some(prev_sector) = plan.get_sectors().last() {
-                if let Some(wp) = prev_sector.borrow().get_end() {
+                if let Some(wp) = prev_sector.get_end() {
                     if let Waypoint::Airport { airport, .. } = wp {
                         prev_airport_id = airport.get_id().to_string().clone();
                         prev = true;
@@ -389,9 +390,9 @@ mod imp {
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
+                        let sectors = plan.get_sectors_mut();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let mut sector = sectors[sector_index].borrow_mut();
+                        let sector = &mut sectors[sector_index];
                         if wp_index > 1
                             && wp_index < sector.get_waypoint_count() + 1
                         {
@@ -424,9 +425,9 @@ mod imp {
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
+                        let sectors: &mut Vec<Sector> = plan.get_sectors_mut();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let mut sector = sectors[sector_index].borrow_mut();
+                        let sector = &mut sectors[sector_index];
                         if wp_index > 0
                             && wp_index < sector.get_waypoint_count()
                         {
@@ -458,19 +459,18 @@ mod imp {
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
-                        let sectors = plan.get_sectors();
+                        let sectors: &mut Vec<Sector> = plan.get_sectors_mut();
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
-                        let sector = &sectors[sector_index];
-                        let mut s_clone = sector.borrow().deref().clone();
+                        let sector = &mut sectors[sector_index];
+
                         if wp_index == 0 {
-                            s_clone.set_start(None);
-                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            s_clone.set_end(None);
+                            sector.set_start(None);
+                        } else if wp_index == sector.get_waypoint_count() + 1 {
+                            sector.set_end(None);
                         } else {
                             let i = wp_index - 1;
-                            let _ = s_clone.remove_waypoint(i);
+                            let _ = sector.remove_waypoint(i);
                         }
-                        sector.replace(s_clone);
                     }
                     _ => {}
                 }
@@ -491,10 +491,10 @@ mod imp {
                         let sector_index = path[0] as usize;
                         let sectors = plan.get_sectors();
                         let sector = &sectors[sector_index];
-                        if let Some(wp) = &sector.borrow().get_start() {
+                        if let Some(wp) = &sector.get_start() {
                             Some(wp.get_loc().clone())
                         } else {
-                            sector.borrow().get_end().as_ref().map(|wp| wp.get_loc().clone())
+                            sector.get_end().as_ref().map(|wp| wp.get_loc().clone())
                         }
                     }
                     2 => {
@@ -504,12 +504,12 @@ mod imp {
                         // Only if a waypoint.  index > 1 and < sectors.len() - 1
                         let sector = &sectors[sector_index];
                         if wp_index == 0 {
-                            sector.borrow().get_start().as_ref().map(|wp| wp.get_loc().clone())
-                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            sector.borrow().get_end().as_ref().map(|wp| wp.get_loc().clone())
+                            sector.get_start().as_ref().map(|wp| wp.get_loc().clone())
+                        } else if wp_index == sector.get_waypoint_count() + 1 {
+                            sector.get_end().as_ref().map(|wp| wp.get_loc().clone())
                         } else {
                             let i = wp_index - 1;
-                            sector.borrow().get_waypoint(i).as_ref().map(|wp| wp.get_loc().clone())
+                            sector.get_waypoint(i).as_ref().map(|wp| wp.get_loc().clone())
                         }
                     }
                     _ => None
@@ -533,7 +533,7 @@ mod imp {
                         let sectors = plan.get_sectors();
                         let sector = &sectors[sector_index];
                         if wp_index == 0 {
-                            if let Some(wp) = &sector.borrow().get_start() {
+                            if let Some(wp) = &sector.get_start() {
                                 match wp {
                                     Waypoint::Airport { airport, .. } => {
                                         Some(airport.clone())
@@ -543,8 +543,8 @@ mod imp {
                             } else {
                                 None
                             }
-                        } else if wp_index == sector.borrow().get_waypoint_count() + 1 {
-                            if let Some(wp) = &sector.borrow().get_end() {
+                        } else if wp_index == sector.get_waypoint_count() + 1 {
+                            if let Some(wp) = &sector.get_end() {
                                 match wp {
                                     Waypoint::Airport { airport, .. } => {
                                         Some(airport.clone())
@@ -720,10 +720,10 @@ mod imp {
                             let wp_index = path[1] as usize;
                             let sectors = plan.get_sectors();
                             // Only if a waypoint.  index > 0 and < sectors.len() - 1
-                            if wp_index > 1 && wp_index < sectors[sector_index].borrow().get_waypoint_count() + 1 {
+                            if wp_index > 1 && wp_index < sectors[sector_index].get_waypoint_count() + 1 {
                                 view.btn_move_up.set_sensitive(true);
                             }
-                            if wp_index > 0 && wp_index < sectors[sector_index].borrow().get_waypoint_count() {
+                            if wp_index > 0 && wp_index < sectors[sector_index].get_waypoint_count() {
                                 view.btn_move_down.set_sensitive(true);
                             }
 
