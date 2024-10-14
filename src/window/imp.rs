@@ -28,7 +28,7 @@ use adw::{TabPage, TabView};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use glib::Propagation;
 use glib::subclass::InitializingObject;
-use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned};
+use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned};
 use gtk::gio::{Cancellable, File};
 use gtk::glib::{clone, MainContext};
 use gtk::prelude::*;
@@ -76,6 +76,8 @@ pub struct Window {
     pub world_map_view: TemplateChild<WorldMapView>,
     #[template_child]
     pub plan_tab_view: TemplateChild<TabView>,
+    #[template_child]
+    pub status_bar: TemplateChild<Label>,
     my_listener_id: RefCell<usize>,
 }
 
@@ -268,13 +270,10 @@ impl ObjectImpl for Window {
 
         self.layout_panels();
 
-        let win = self.get_window_handle();
-
-
         // Listen for setup required message
         let (tx, rx) = async_channel::unbounded::<Event>();
         let index = event::manager().register_listener(tx);
-        MainContext::default().spawn_local(async move {
+        MainContext::default().spawn_local(clone!(@weak self as window, => async move {
                 while let Ok(ev) = rx.recv().await {
                     match ev {
                         Event::SetupRequired => {
@@ -285,6 +284,7 @@ impl ObjectImpl for Window {
                                 .buttons(buttons)
                                 .build();
 
+                            let win = window.get_window_handle();
                             let win_clone = win.clone();
                             alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
                                 let pref_dialog = PreferenceDialog::new();
@@ -292,10 +292,13 @@ impl ObjectImpl for Window {
                                 pref_dialog.show();
                             });
                         }
+                        Event::StatusChange(s) => {
+                            window.status_bar.set_label(s.as_str());
+                        }
                         _ => {}
                     }
                 };
-        });
+        }));
 
         self.my_listener_id.replace(index);
 

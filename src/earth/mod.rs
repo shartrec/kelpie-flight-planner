@@ -176,10 +176,11 @@ pub fn initialise() -> Result<(), String> {
 }
 
 fn load_airports(path: &str) -> Result<(), String>{
+    event::manager().notify_listeners(Event::StatusChange(format!("Loading Airports from >{}", path)));
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
     let file = fs::File::open(path);
-    match file {
+    let result = match file {
         Ok(input) => {
             let decoder = read::GzDecoder::new(input);
             let mut reader = BufReader::new(decoder);
@@ -195,14 +196,17 @@ fn load_airports(path: &str) -> Result<(), String>{
             }
         }
         Err(e) => Err(e.to_string()),
-    }
+    };
+    event::manager().notify_listeners(Event::StatusChange("".to_string()));
+    result
 }
 
 fn load_navaids(path: &str)  -> Result<(), String> {
+    event::manager().notify_listeners(Event::StatusChange(format!("Loading Nav aids from >{}", path)));
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
-    match file {
+    let result = match file {
         Ok(input) => {
             let mut parser = NavaidParserFG {};
             let decoder = read::GzDecoder::new(input);
@@ -218,13 +222,16 @@ fn load_navaids(path: &str)  -> Result<(), String> {
             }
         }
         Err(e) => Err(e.to_string()),
-    }
+    };
+    event::manager().notify_listeners(Event::StatusChange("".to_string()));
+    result
 }
 
 fn load_fixes(path: &str)  -> Result<(), String> {
+    event::manager().notify_listeners(Event::StatusChange(format!("Loading Fixes from >{}", path)));
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
-    match file {
+    let result = match file {
         Ok(input) => {
             let mut parser = FixParserFG {};
             let decoder = read::GzDecoder::new(input);
@@ -239,5 +246,7 @@ fn load_fixes(path: &str)  -> Result<(), String> {
             }
         }
         Err(e) => Err(e.to_string()),
-    }
+    };
+    event::manager().notify_listeners(Event::StatusChange("".to_string()));
+    result
 }
