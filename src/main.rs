@@ -196,6 +196,12 @@ fn connect_actions(app: &Application, window: &Window) {
     }));
     app.add_action(&action);
 
+    let action = SimpleAction::new("reload", None);
+    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+        let _ = &window.imp().reload();
+    }));
+    app.add_action(&action);
+
     let action = SimpleAction::new("help-about", None);
     action.connect_activate(clone!(@strong window => move |_action, _parameter| {
         show_help_about(&window);

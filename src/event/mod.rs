@@ -36,6 +36,7 @@ pub enum Event {
     FixesLoaded,
     PlanChanged,
     PreferencesChanged,
+    SetupRequired,
 }
 
 lazy_static! {

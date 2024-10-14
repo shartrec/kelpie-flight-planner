@@ -22,15 +22,19 @@
  *
  */
 
+use std::cell::RefCell;
+use async_std::task;
 use adw::{TabPage, TabView};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
 use glib::Propagation;
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Notebook, Paned};
 use gtk::gio::{Cancellable, File};
-use gtk::glib::clone;
+use gtk::glib::{clone, MainContext};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
+use crate::event;
+use crate::event::Event;
 
 use crate::util::{get_plan_file_filter, plan_writer_route_manager, plan_writer_xml};
 use crate::util::plan_reader::read_plan;
@@ -72,6 +76,7 @@ pub struct Window {
     pub world_map_view: TemplateChild<WorldMapView>,
     #[template_child]
     pub plan_tab_view: TemplateChild<TabView>,
+    my_listener_id: RefCell<usize>,
 }
 
 impl Window {
@@ -191,6 +196,16 @@ impl Window {
         }
     }
 
+    pub(crate) fn reload(&self) {
+        // Spawn a new task to perform the initialization asynchronously
+        task::spawn(async move {
+            if let Err(_) = crate::earth::initialise() {
+                event::manager().notify_listeners(Event::SetupRequired);
+            }
+        });
+    }
+
+
     fn get_window_handle(&self) -> Option<gtk::Window> {
         match self.plan_tab_view.root() {
             Some(r) => {
@@ -253,6 +268,37 @@ impl ObjectImpl for Window {
 
         self.layout_panels();
 
+        let win = self.get_window_handle();
+
+
+        // Listen for setup required message
+        let (tx, rx) = async_channel::unbounded::<Event>();
+        let index = event::manager().register_listener(tx);
+        MainContext::default().spawn_local(async move {
+                while let Ok(ev) = rx.recv().await {
+                    match ev {
+                        Event::SetupRequired => {
+                            let buttons = vec!["Ok".to_string()];
+                            let alert = AlertDialog::builder()
+                                .modal(true)
+                                .message("Please set paths to flightgear Airport and Navaid files".to_string())
+                                .buttons(buttons)
+                                .build();
+
+                            let win_clone = win.clone();
+                            alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
+                                let pref_dialog = PreferenceDialog::new();
+                                pref_dialog.set_transient_for(win_clone.as_ref());
+                                pref_dialog.show();
+                            });
+                        }
+                        _ => {}
+                    }
+                };
+        });
+
+        self.my_listener_id.replace(index);
+
         self.plan_tab_view.connect_close_page(clone!(@weak self as window => @default-return Propagation::Proceed, move |view, page|  {
 
             let win = window.get_window_handle();
@@ -291,26 +337,14 @@ impl ObjectImpl for Window {
             Propagation::Stop
         }));
 
-        match crate::earth::initialise() {
-            Ok(_) => {}
-            Err(_) => {
-                let win = self.get_window_handle();
-                let win_clone = win.clone();
-
-                let buttons = vec!["Ok".to_string()];
-                let alert = AlertDialog::builder()
-                    .modal(true)
-                    .message("Please set paths to flightgear Airport and Navaid files".to_string())
-                    .buttons(buttons)
-                    .build();
-                alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
-                    let pref_dialog = PreferenceDialog::new();
-                    pref_dialog.set_transient_for(Some(&win_clone.unwrap()));
-                    pref_dialog.show();
-                });
+        // Spawn a new task to perform the initialization asynchronously
+        task::spawn(async move {
+            if let Err(_) = crate::earth::initialise() {
+                event::manager().notify_listeners(Event::SetupRequired);
             }
-        }
+        });
     }
+
 }
 
 // Trait to allow us to add menubars

@@ -98,12 +98,26 @@ mod imp {
             let index = event::manager().register_listener(tx);
             MainContext::default().spawn_local(clone!(@weak self as view => async move {
                 while let Ok(ev) = rx.recv().await {
-                    if let Event::PlanChanged = ev {
-                        if let Some(renderer) = view.renderer.borrow().as_ref() {
-                            renderer.plan_changed();
-                            view.gl_area.queue_draw();
+                    match ev {
+                        Event::PlanChanged => {
+                            if let Some(renderer) = view.renderer.borrow().as_ref() {
+                                renderer.plan_changed();
+                                view.gl_area.queue_draw();
+                            }
                         }
-                    }
+                        Event::AirportsLoaded => {
+                            if let Some(renderer) = view.renderer.borrow().as_ref() {
+                                renderer.airports_loaded();
+                                view.gl_area.queue_draw();
+                            }
+                        }
+                        Event::NavaidsLoaded => {
+                            if let Some(renderer) = view.renderer.borrow().as_ref() {
+                                renderer.navaids_loaded();
+                                view.gl_area.queue_draw();
+                            }
+                        }
+                    _ => {}}
                 }
             }));
 

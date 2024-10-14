@@ -30,6 +30,7 @@ scheduling = "0.1.2"
 home = "0.5.9"
 async-channel = "2.2.1"
 time = "0.3.36"
+async-std = "1.13.0"
 
 [profile.release]
 opt-level = "z"
