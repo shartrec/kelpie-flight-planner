@@ -193,7 +193,13 @@
           </object>
         </child>
         <child>
-          <object class="GtkLabel" id="statusbar">
+          <object class="GtkLabel" id="status_bar">
+            <property name="margin-top">3</property>
+            <property name="margin-bottom">3</property>
+            <property name="margin-start">10</property>
+            <property name="margin-end">10</property>
+            <property name="halign">end</property>
+            <property name="justify">right</property>
           </object>
         </child>
       </object>
