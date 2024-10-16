@@ -168,6 +168,7 @@
                   <object class="GtkNotebook" id="map_notebook">
                     <property name="vexpand">true</property>
                     <property name="hexpand">true</property>
+                    <property name="margin-top">9</property>
                     <child>
                       <object class="WorldMapView" id="world_map_view">
                       </object>

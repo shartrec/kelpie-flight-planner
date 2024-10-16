@@ -136,28 +136,30 @@ impl Window {
 
     fn do_save(&self, title: &str, save_type: SaveType) {
         if let Some(page) = self.plan_tab_view.selected_page() {
-            self.save_page_plan(title, save_type, &page);
+            self.save_page_plan(title, save_type, &page, false);
         };
     }
 
-    fn save_page_plan(&self, title: &str, save_type: SaveType, page: &TabPage) {
+    fn save_page_plan(&self, title: &str, save_type: SaveType, page: &TabPage, close_window: bool) {
         if let Ok(view) = page.child().downcast::<PlanView>() {
             let rc = view.imp().get_plan();
             let plan = rc.borrow();
 
-            let win = self.get_window_handle();
-            let dialog = FileDialog::new();
-            dialog.set_modal(true);
-            dialog.set_title(title);
             let ext = match save_type {
                 SaveType::Native => "fgfp",
                 SaveType::FgRouteManager => "xml",
             };
             let mut name = plan.get_name();
+            let full_title = format!("{} : {}", title, name);
             if !name.ends_with(ext) {
                 name.push('.');
                 name.push_str(ext);
             }
+
+            let win = self.get_window_handle();
+            let dialog = FileDialog::new();
+            dialog.set_modal(true);
+            dialog.set_title(full_title.as_ref());
             dialog.set_initial_name(Some(name.as_str()));
             let store = get_plan_file_filter(ext);
             dialog.set_filters(Some(&store));
@@ -167,7 +169,7 @@ impl Window {
             let x = Some(x1);
 
             dialog.save(x, Some(&Cancellable::default()),
-                        clone!(@weak view, => move | result: Result<File, _>| {
+                        clone!(@weak self as window, @weak view, => move | result: Result<File, _>| {
 
                         if let Ok(file) = result {
                             let writer = match save_type {
@@ -189,10 +191,12 @@ impl Window {
                                             .build();
 
                                         alert.show(xx.as_ref());
-
                                     }
                                 };
                             };
+                        }
+                        if close_window {
+                            window.obj().close();
                         }
                 }));
         }
@@ -239,6 +243,49 @@ impl Window {
         pref.put("vertical-split-pos", self.pane_1v.position());
         pref.put("horizontal-split-pos", self.pane_1h.position());
     }
+
+
+    fn is_dirty(&self, page: &TabPage) -> (bool, Option<String>) {
+        if let Ok(view) = page.child().downcast::<PlanView>() {
+            let rc = view.imp().get_plan();
+            let plan = rc.borrow();
+            (plan.is_dirty(), Some(plan.get_name()))
+        } else {
+            (false, None)
+        }
+    }
+
+    fn set_not_dirty(&self, page: &TabPage) {
+        if let Ok(view) = page.child().downcast::<PlanView>() {
+            let rc = view.imp().get_plan();
+            let mut plan = rc.borrow_mut();
+            plan.set_dirty(false);
+        }
+    }
+
+    fn query_save_dirty<F>(&self, name: &str, close_callback: F)
+        where F: FnOnce(i32) + 'static
+    {
+
+        let win = self.get_window_handle();
+
+        let buttons = vec!["Yes".to_string(), "No".to_string(), "Cancel".to_string(), ];
+        let alert = AlertDialog::builder()
+            .modal(true)
+            .message(format!("Save changes to plan {} before closing", name))
+            .buttons(buttons)
+            .default_button(0)
+            .cancel_button(2)
+            .build();
+
+        alert.choose(win.as_ref(), Some(&Cancellable::default()), |result: Result<i32, _>| {
+            if let Ok(button) = result {
+                close_callback(button);
+            }
+        });
+
+    }
+
 }
 
 // The central trait for subclassing a GObject
@@ -304,40 +351,27 @@ impl ObjectImpl for Window {
 
         self.plan_tab_view.connect_close_page(clone!(@weak self as window => @default-return Propagation::Proceed, move |view, page|  {
 
-            let win = window.get_window_handle();
+            // Check if plan dirty and if so do save.
+            if let (dirty, Some(name)) = window.is_dirty(&page.clone()) {
+                if dirty {
+                    window.query_save_dirty(&name, clone!(@weak window, @weak view, @weak page, => move |button| {
 
-            // Todo Check if plan dirty and if so do save.
-            if let Ok(view) = page.child().downcast::<PlanView>() {
-                let rc = view.imp().get_plan();
-                let plan = rc.borrow();
-                if !plan.is_dirty() {
-                    return Propagation::Proceed;
+                        if button == 0 {
+                            window.save_page_plan("Save Plan", SaveType::Native, &page, false);
+                            view.close_page_finish(&page, true);
+                        } else if button == 1 {
+                            view.close_page_finish(&page, true);
+                        } else {
+                            view.close_page_finish(&page, false);
+                        }
+                    }));
+                    Propagation::Stop
+                } else {
+                    Propagation::Proceed
                 }
+            } else {
+                Propagation::Proceed
             }
-
-            let buttons = vec!["Yes".to_string(), "No".to_string(), "Cancel".to_string(), ];
-            let alert = AlertDialog::builder()
-                .modal(true)
-                .message("Save changes to plan before closing".to_string())
-                .buttons(buttons)
-                .default_button(0)
-                .cancel_button(2)
-                .build();
-
-            alert.choose(win.as_ref(), Some(&Cancellable::default()), clone!(@weak page, @weak view => move |result| {
-                if let Ok(b) = result {
-                    if b == 0 {
-                       window.save_page_plan("Save Plan", SaveType::Native, &page);
-                       view.close_page_finish(&page, true);
-                    } else if b == 1 {
-                       view.close_page_finish(&page, true);
-                    }  else {
-                       view.close_page_finish(&page, false);
-                    }
-
-                }
-            }));
-            Propagation::Stop
         }));
 
         // Spawn a new task to perform the initialization asynchronously
@@ -383,8 +417,36 @@ impl WindowImpl for Window {
         self.obj()
             .save_window_size()
             .expect("Failed to save window state");
-        // Allow to invoke other event handlers
-        self.parent_close_request()
+
+        let mut propagation = Propagation::Proceed;
+        let n_pages = self.plan_tab_view.n_pages();
+        for i in 0..n_pages {
+            let page = self.plan_tab_view.nth_page(i);
+            if let (dirty, Some(name)) = self.is_dirty(&self.plan_tab_view.nth_page(i)) {
+                if dirty {
+                    propagation = Propagation::Stop;
+                    self.query_save_dirty(&name, clone!(@weak self as window => move |button| {
+                        if button == 0 {
+                            window.save_page_plan("Save Plan", SaveType::Native, &page, true);
+                            window.set_not_dirty(&page);
+                            if i > 1 {
+                                window.plan_tab_view.close_page(&page);
+                            }
+                        } else if button == 1 {
+                            window.set_not_dirty(&page);
+                            if i > 1 {
+                                window.plan_tab_view.close_page(&page);
+                            }
+                            let  _ = window.obj().close();
+                        } else {
+                            // cancel pressed . do nothing
+                        }
+                    }));
+                    break;
+                }
+            }
+        }
+        propagation
     }
 }
 
