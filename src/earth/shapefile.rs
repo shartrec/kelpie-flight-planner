@@ -40,36 +40,38 @@ pub fn read_shapes() -> Option<Vec<Polygon>> {
 
     let mut world: Vec<Polygon> = Vec::new();
 
-    let file = Asset::get("GSHHS_l_L1.shp");
-    match file {
-        Some(embedded_file) => {
-            let data = embedded_file.data;
-            let sb = Cursor::new(data.deref());
-            match ShapeReader::new(sb) {
-
-                Ok(reader) => {
-                    if let Ok(shapes) = reader.read() {
-                        for shape in shapes.iter() {
-                            match shape {
-                                Shape::Polygon(pts) => world.push(pts.clone()),
-                                _ => {
-                                    error!("World shoreline data in file is not polygons as expected: ");
-                                },
+    let file_1 = Asset::get("GSHHS_l_L1.shp");
+    let file_2 = Asset::get("GSHHS_l_L6.shp");
+    for file in [file_1, file_2] {
+        match file {
+            Some(embedded_file) => {
+                let data = embedded_file.data;
+                let sb = Cursor::new(data.deref());
+                match ShapeReader::new(sb) {
+                    Ok(reader) => {
+                        if let Ok(shapes) = reader.read() {
+                            for shape in shapes.iter() {
+                                match shape {
+                                    Shape::Polygon(pts) => world.push(pts.clone()),
+                                    _ => {
+                                        error!("World shoreline data in file is not polygons as expected: ");
+                                    },
+                                }
                             }
                         }
                     }
+                    _ => {
+                        error!("Unable to open file for world shoreline data");
+                    }
                 }
-                _ => {
-                    error! ("Unable to open file for world shoreline data");
-                }
+
             }
-            Some(world)
+            None => {
+                error!("Unable to find the path in preferences for world shoreline data");
+            },
         }
-        None => {
-            error! ("Unable to find the path in preferences for world shoreline data");
-            None
-        },
     }
+    Some(world)
 }
 
 

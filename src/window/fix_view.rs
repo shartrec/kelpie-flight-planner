@@ -158,18 +158,6 @@ mod imp {
             custom_filter.changed(FilterChange::Different);
         }
 
-        fn add_selected_to_plan(&self) {
-            if let Some(navaid) = self.get_selection() {
-                self.add_to_plan(navaid);
-            }
-        }
-
-        fn add_item_to_plan(&self, item: u32) {
-            if let Some(navaid) = self.get_model_navaid(item) {
-                self.add_to_plan(navaid);
-            }
-        }
-
         fn add_to_plan(&self, fix: Arc<Fix>) {
             if let Some(ref mut plan_view) = get_plan_view(&self.fix_window.get()) {
                 // get the plan
@@ -279,11 +267,12 @@ mod imp {
                 label.set_xalign(0.0);
             })));
 
-            self.fix_list.connect_activate(
-                clone!(@weak self as view => move | _list_view, position | {
-                    view.add_item_to_plan(position);
-                }),
-            );
+            // ToDo Disabled for now.
+            // self.fix_list.connect_activate(
+            //     clone!(@weak self as view => move | _list_view, position | {
+            //         view.add_item_to_plan(position);
+            //     }),
+            // );
 
             // build popover menu
 
@@ -370,7 +359,9 @@ mod imp {
 
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
-                view.add_selected_to_plan();
+                if let Some(navaid) = view.get_selection() {
+                    view.add_to_plan(navaid);
+                }
             }));
             actions.add_action(&action);
         }
