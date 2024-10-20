@@ -312,7 +312,6 @@ impl AirportPainter {
         cr.select_font_face("monospace", FontSlant::Normal, FontWeight::Normal);
         cr.set_font_size(12.0);
 
-        // Create a Pango context for text layout
         let runways = airport
             .get_runways()
             .read()
