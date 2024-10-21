@@ -36,7 +36,6 @@ pub struct AirportPainter {
     // Define your Airport struct fields here
     pub draw_taxiways: bool,
     pub draw_runways: bool,
-    pub draw_runway_list: bool,
     pub draw_compass_rose: bool,
 }
 
@@ -104,12 +103,6 @@ impl AirportPainter {
                 self.draw_runway(cr, &bounding_box, scale, &extents, runway, airport);
             }
             self.draw_airport_name(cr, 0.0, 0.0, width, height, airport);
-            let _ = cr.restore();
-        }
-
-        if self.draw_runway_list {
-            let _ = cr.save();
-            self.draw_runway_list(cr, 0.0, 0.0, width, height, airport);
             let _ = cr.restore();
         }
 
@@ -300,53 +293,4 @@ impl AirportPainter {
         let _ = cr.stroke();
     }
 
-    fn draw_runway_list(
-        &self,
-        cr: &Context,
-        x: f64,
-        y: f64,
-        _width: f64,
-        height: f64,
-        airport: &Airport,
-    ) {
-        cr.select_font_face("monospace", FontSlant::Normal, FontWeight::Normal);
-        cr.set_font_size(12.0);
-
-        let runways = airport
-            .get_runways()
-            .read()
-            .expect("Could not get airport lock");
-        let n = runways.len();
-        let mut text = "Runways".to_string();
-        let text_extents = match cr.text_extents(&text) {
-            Ok(extents) => (extents.width(), extents.height()),
-            _ => (5.0, 10.0),
-        };
-        let step = text_extents.1 + 1.0;
-        let mut pos = y + height - step * (n as f64 + 1.0);
-        // We draw runways at the bottom, so need to allow room for n rows
-        cr.move_to(x + 5.0, pos);
-        let _ = cr.show_text(&text);
-
-        for runway in runways.iter() {
-            pos += step;
-            let ils = airport.get_ils(runway.get_number());
-            let ils_opp = airport.get_ils(&runway.get_opposite_number());
-
-            if ils.is_none() && ils_opp.is_none() {
-                text = format!("{:<9} {:<9}", runway.get_number_pair(), runway.get_length(),)
-            } else {
-                text = format!(
-                    "{:<9} {:<9} ILS {:0.3} / {:0.3}",
-                    runway.get_number_pair(),
-                    runway.get_length(),
-                    ils.unwrap_or(0.),
-                    ils_opp.unwrap_or(0.),
-                );
-            }
-            cr.move_to(5.0, pos);
-            let _ = cr.show_text(&text);
-        }
-        let _ = cr.stroke();
-    }
 }

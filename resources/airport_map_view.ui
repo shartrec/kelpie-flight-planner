@@ -5,15 +5,25 @@
 <interface>
 
   <template class="AirportMapView" parent="GtkBox">
-    <property name="layout-manager">
-      <object class="GtkBoxLayout">
-        <property name="orientation">vertical</property>
-      </object>
-    </property>
     <child>
-      <object class="GtkDrawingArea" id="airport_map_window">
-        <property name="vexpand">true</property>
-        <property name="hexpand">true</property>
+      <object class="GtkOverlay" id="overlay1">
+        <child>
+          <object class="GtkDrawingArea" id="airport_map_window">
+            <property name="vexpand">true</property>
+            <property name="hexpand">true</property>
+          </object>
+        </child>
+        <child type="overlay">
+          <object class="GtkLabel" id="runway_list">
+            <property name="label"> </property>
+            <property name="hexpand">true</property>
+            <property name="valign">end</property>
+            <property name="halign">start</property>
+            <style>
+              <class name="runway-list"/>
+            </style>
+          </object>
+        </child>
       </object>
     </child>
   </template>

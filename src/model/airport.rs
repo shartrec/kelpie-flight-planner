@@ -377,6 +377,7 @@ impl Default for Airport {
 #[derive(Default, Clone, PartialEq)]
 pub struct Runway {
     number: String,
+    runway_type: Option<RunwayType>,
     lat: f64,
     long: f64,
     heading: f64,
@@ -391,6 +392,7 @@ impl Runway {
     //noinspection RsExternalLinter
     pub fn new(
         number: String,
+        runway_type: Option<RunwayType>,
         lat: f64,
         long: f64,
         length: i32,
@@ -402,6 +404,7 @@ impl Runway {
     ) -> Self {
         Self {
             number,
+            runway_type,
             lat,
             long,
             heading,
@@ -474,6 +477,9 @@ impl Runway {
 
     pub fn get_number_pair(&self) -> String {
         format!("{}/{}", self.get_number(), self.get_opposite_number())
+    }
+    pub fn get_runway_type(&self) -> Option<RunwayType> {
+        self.runway_type.clone()
     }
 }
 
@@ -556,6 +562,26 @@ impl AirportType {
             Some(AirportType::SeaBase)
         } else if airport_type == "17" {
             Some(AirportType::Heliport)
+        } else {
+            None
+        }
+    }
+}
+#[derive(Clone, PartialEq)]
+pub enum RunwayType {
+    Runway,
+    WaterRunway,
+    Helipad,
+}
+
+impl RunwayType {
+    pub fn type_for(runway_type: &str) -> Option<RunwayType> {
+        if runway_type == "100" {
+            Some(RunwayType::Runway)
+        } else if runway_type == "101" {
+            Some(RunwayType::WaterRunway)
+        } else if runway_type == "102" {
+            Some(RunwayType::Helipad)
         } else {
             None
         }

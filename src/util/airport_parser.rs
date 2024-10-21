@@ -31,7 +31,7 @@ use flate2::read::GzDecoder;
 use log::{error, warn};
 
 use crate::earth::coordinate::Coordinate;
-use crate::model::airport::{Airport, AirportType, LayoutNode, Runway, Taxiway};
+use crate::model::airport::{Airport, AirportType, LayoutNode, Runway, RunwayType, Taxiway};
 use crate::model::location::Location;
 
 pub struct AirportParserFG850 {}
@@ -387,6 +387,7 @@ impl AirportParserFG850 {
 
                 let runway = Runway::new(
                     r_number.to_string(),
+                    Some(RunwayType::Runway),
                     lat,
                     long,
                     r_length,
@@ -424,6 +425,7 @@ impl AirportParserFG850 {
 
                     let runway = Runway::new(
                         r_number.to_string(),
+                        Some(RunwayType::Helipad),
                         r_lat,
                         r_long,
                         r_length as i32,

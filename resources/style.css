@@ -25,3 +25,7 @@ label.preference-page-heading {
   padding-top: 5px;
   padding-bottom: 5px;
 }
+
+label.runway-list {
+  font-family: monospace;
+}

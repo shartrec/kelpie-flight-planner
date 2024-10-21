@@ -29,11 +29,11 @@ mod imp {
     use std::thread;
 
     use glib::subclass::InitializingObject;
-    use gtk::{cairo::Context, DrawingArea};
+    use gtk::{cairo::Context, DrawingArea, Label};
     use gtk::glib::{clone, MainContext};
 
     use crate::event::Event;
-    use crate::model::airport::{Airport, AirportType};
+    use crate::model::airport::{Airport, RunwayType};
     use crate::util::airport_painter::AirportPainter;
 
     use super::*;
@@ -43,6 +43,8 @@ mod imp {
     pub struct AirportMapView {
         #[template_child]
         pub airport_map_window: TemplateChild<DrawingArea>,
+        #[template_child]
+        pub runway_list: TemplateChild<Label>,
 
         airport: RefCell<Option<Arc<Airport>>>,
     }
@@ -52,6 +54,7 @@ mod imp {
             // Clear the window
             self.airport.replace(None);
             self.airport_map_window.queue_draw();
+            self.runway_list.set_label("");
 
             let (tx, rx) = async_channel::bounded::<Event>(1);
             // Ensure the runways & taxiways are loaded. This can happen in another thread.
@@ -79,12 +82,42 @@ mod imp {
                 let airport_painter = AirportPainter {
                     draw_taxiways: true,
                     draw_runways: true,
-                    draw_runway_list: airport.get_type().is_some_and(|t| t == AirportType::Airport),
                     draw_compass_rose: true,
                 };
                 airport_painter.draw_airport(&airport, area, cr);
+                self.draw_runway_list(&airport);
             }
         }
+
+        fn draw_runway_list(&self, airport: &Airport) {
+            let mut buf = String::new();
+            buf.push_str("Runways");
+            let runways = airport
+                .get_runways()
+                .read()
+                .expect("Could not get airport lock");
+            for runway in runways.iter() {
+                let ils = airport.get_ils(runway.get_number());
+                let ils_opp = airport.get_ils(&runway.get_opposite_number());
+                if runway.get_runway_type().is_some_and(|t| t == RunwayType::Runway) {
+                    let text = if ils.is_none() && ils_opp.is_none() {
+                        format!("{:<9} {:<9}", runway.get_number_pair(), runway.get_length(), )
+                    } else {
+                        format!(
+                            "{:<9} {:<9} ILS {:0.3} / {:0.3}",
+                            runway.get_number_pair(),
+                            runway.get_length(),
+                            ils.unwrap_or(0.),
+                            ils_opp.unwrap_or(0.),
+                        )
+                    };
+                    buf.push('\n');
+                    buf.push_str(text.as_str());
+                }
+            }
+            self.runway_list.set_label(buf.as_str());
+        }
+
     }
 
     #[glib::object_subclass]
