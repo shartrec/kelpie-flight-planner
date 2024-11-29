@@ -97,7 +97,7 @@ mod imp {
             pref_dialog.set_hide_on_close(true);
             self.aircraft_dialog.replace(Some(pref_dialog));
 
-            self.aircraft_list.model().unwrap().connect_selection_changed(clone!(@weak self as view => move |model, _position, _count| {
+            self.aircraft_list.model().unwrap().connect_selection_changed(clone!(#[weak(rename_to = view)] self, move |model, _position, _count| {
                 let selection = model.selection();
                 if selection.is_empty() {
                     view.aircraft_edit.set_sensitive(false);
@@ -110,7 +110,7 @@ mod imp {
                 }
             }));
 
-            self.aircraft_edit.connect_clicked(clone!(@weak self as view => move | button | {
+            self.aircraft_edit.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
                 let dialog_ref = view.aircraft_dialog.borrow();
                 if let Some(dialog) = dialog_ref.deref() {
                     // Get the selection
@@ -130,7 +130,7 @@ mod imp {
                 }
             }));
 
-            self.aircraft_add.connect_clicked(clone!(@weak self as view => move | button | {
+            self.aircraft_add.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
                 let dialog_ref = view.aircraft_dialog.borrow();
                 if let Some(dialog) = dialog_ref.deref() {
                     // Get the selection
@@ -142,7 +142,7 @@ mod imp {
                 }
             }));
 
-            self.aircraft_delete.connect_clicked(clone!(@weak self as view => move | _button | {
+            self.aircraft_delete.connect_clicked(clone!(#[weak(rename_to = view)] self, move | _button | {
                     // Get the selection
                     if let Some(selection) = view.aircraft_list.model() {
                         let s = selection.selection();
@@ -155,7 +155,7 @@ mod imp {
                     }
             }));
 
-            self.aircraft_default.connect_clicked(clone!(@weak self as view => move | _button | {
+            self.aircraft_default.connect_clicked(clone!(#[weak(rename_to = view)] self, move | _button | {
                     // Get the selection
                     if let Some(selection) = view.aircraft_list.model() {
                         let s = selection.selection();

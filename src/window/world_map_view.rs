@@ -86,6 +86,7 @@ mod imp {
         drag_last: RefCell<Option<[f64; 2]>>,
         zoom_level: Cell<f32>,
         scheduler_handle: RefCell<Option<SchedulerHandle>>,
+        aircraft_position_info: RefCell<Option<AircraftPositionInfo>>,
     }
 
     const MAX_ZOOM: f32 = 20.;
@@ -96,7 +97,7 @@ mod imp {
 
             let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
-            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                 while let Ok(ev) = rx.recv().await {
                     match ev {
                         Event::PlanChanged => {
@@ -125,10 +126,13 @@ mod imp {
 
             // Set up the scheduled tasks to query the aircraft position
             let (tx, rx) = async_channel::unbounded::<Option<AircraftPositionInfo>>();
-            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                 while let Ok(ap) = rx.recv().await {
                     if let Some(renderer) = view.renderer.borrow().as_ref() {
-                        renderer.set_aircraft_position(ap);
+                        if *view.aircraft_position_info.borrow().deref() != ap {
+                            view.aircraft_position_info.replace(ap.clone());
+                            renderer.set_aircraft_position(ap);
+                        }
                     }
                 view.gl_area.queue_draw();
                 }
@@ -346,7 +350,7 @@ mod imp {
             self.gl_area.set_has_depth_buffer(true);
             self.gl_area.set_has_tooltip(true);
 
-            self.gl_area.connect_realize(clone!(@weak self as window => move |area| {
+            self.gl_area.connect_realize(clone!(#[weak(rename_to = window)] self, move |area| {
                 if let Some(context) = area.context() {
                     context.make_current();
                     if let Some(error) = area.error() {
@@ -369,7 +373,7 @@ mod imp {
                 }
             }));
 
-            self.gl_area.connect_unrealize(clone!(@weak self as window => move |area| {
+            self.gl_area.connect_unrealize(clone!(#[weak(rename_to = window)] self, move |area| {
                 let pref = crate::preference::manager();
 
                 if let Some(renderer) = window.renderer.borrow().as_ref(){
@@ -384,7 +388,7 @@ mod imp {
                 }
             }));
 
-            self.gl_area.connect_render(clone!(@weak self as window => @default-return Propagation::Proceed, move |area, _context| {
+            self.gl_area.connect_render(clone!(#[weak(rename_to = window)] self, #[upgrade_or] Propagation::Proceed, move |area, _context| {
                 let airports = window.btn_show_airports.is_active();
                 let navaids = window.btn_show_navaids.is_active();
                 window.renderer.borrow().as_ref().unwrap().draw(area, airports, navaids);
@@ -394,7 +398,7 @@ mod imp {
             // Set double click to centre map
             let gesture = gtk::GestureClick::new();
             gesture.set_button(1);
-            gesture.connect_released(clone!(@weak self as view => move | gesture, _n, x, y| {
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move | gesture, _n, x, y| {
                 if _n == 2 {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
                     if let Ok(point) = view.unproject(x, y) {
@@ -410,7 +414,7 @@ mod imp {
             // Connect popup menu to right click
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
-            gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move |gesture, _n, x, y| {
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(x as f32, y as f32)) {
                     let airport = match view.unproject(point.x() as f64, point.y() as f64) {
                         Ok(pos) => {
@@ -447,11 +451,11 @@ mod imp {
             // Set Gesture to drag the map about
             let gesture = gtk::GestureDrag::new();
             gesture.set_button(1);
-            gesture.connect_drag_begin(clone!(@weak self as view => move | _gesture, x, y| {
+            gesture.connect_drag_begin(clone!(#[weak(rename_to = view)] self, move | _gesture, x, y| {
                 view.drag_start.replace(Some([x, y]));
                 view.drag_last.replace(Some([x, y]));
             }));
-            gesture.connect_drag_update(clone!(@weak self as view => move | _gesture, x, y| {
+            gesture.connect_drag_update(clone!(#[weak(rename_to = view)] self, move | _gesture, x, y| {
                 if let Some(map_drag_start) = view.drag_start.borrow().as_ref() {
                     let x_start = map_drag_start[0];
                     let y_start = map_drag_start[1];
@@ -500,12 +504,12 @@ mod imp {
                     view.drag_last.replace(Some([x_start + x, y_start + y]));
                 };
             }));
-            gesture.connect_drag_end(clone!(@weak self as view => move | _gesture, _x, _y| {
+            gesture.connect_drag_end(clone!(#[weak(rename_to = view)] self, move | _gesture, _x, _y| {
                 view.drag_start.replace(None);
             }));
             self.gl_area.add_controller(gesture);
 
-            self.gl_area.connect_query_tooltip(clone!(@weak self as view => @default-return false, move | _glarea, x, y, _kbm, tooltip | {
+            self.gl_area.connect_query_tooltip(clone!(#[weak(rename_to = view)] self, #[upgrade_or] false, move | _glarea, x, y, _kbm, tooltip | {
                 match view.unproject(x as f64,y as f64) {
                     Ok(pos) => {
                         if let Some(airport) = view.find_airport_for_point(pos) {
@@ -524,20 +528,20 @@ mod imp {
                 }
             }));
 
-            self.btn_show_airports.connect_clicked(clone!(@weak self as view => move |_| {
+            self.btn_show_airports.connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     view.gl_area.queue_draw();
                 }));
 
-            self.btn_show_navaids.connect_clicked(clone!(@weak self as view => move |_| {
+            self.btn_show_navaids.connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     view.gl_area.queue_draw();
                 }));
 
-            self.btn_zoom_in.connect_clicked(clone!(@weak self as view => move |_| {
+            self.btn_zoom_in.connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     let z_factor = 1.0 / 0.75;
                     view.zoom(z_factor);
                 }));
 
-            self.btn_zoom_out.connect_clicked(clone!(@weak self as view => move |_| {
+            self.btn_zoom_out.connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     let z_factor = 0.75;
                     view.zoom(z_factor);
                 }));
@@ -548,7 +552,7 @@ mod imp {
                 .insert_action_group("world_map", Some(&actions));
 
             let action = SimpleAction::new("view_airport", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
@@ -565,7 +569,7 @@ mod imp {
             self.view_action.replace(Some(action));
 
             let action = SimpleAction::new("add_to_plan", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
@@ -582,7 +586,7 @@ mod imp {
             self.add_action.replace(Some(action));
 
             let action = SimpleAction::new("add_nav_to_plan", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
@@ -599,7 +603,7 @@ mod imp {
             self.add_nav_action.replace(Some(action));
 
             let action = SimpleAction::new("find_airports_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
@@ -613,7 +617,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
@@ -627,7 +631,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {

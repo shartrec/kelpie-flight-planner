@@ -64,7 +64,7 @@ mod imp {
                 let _ = tx.try_send(Event::AirportsLoaded);
             });
 
-            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                 while let Ok(ev) = rx.recv().await {
                     if let Event::AirportsLoaded = ev {
                         view.airport.replace(Some(airport.clone()));
@@ -142,7 +142,7 @@ mod imp {
             self.initialise();
 
             self.airport_map_window.set_draw_func(
-                clone!(@weak self as view => move |area, cr, _x, _y| {
+                clone!(#[weak(rename_to = view)] self, move |area, cr, _x, _y| {
                     view.draw_function(area, cr);
                 }),
             );

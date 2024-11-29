@@ -64,7 +64,7 @@ impl FGProperty {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AircraftPositionInfo {
     position: Coordinate,
     heading: f64,

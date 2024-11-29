@@ -86,7 +86,7 @@ mod imp {
             let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
 
-            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                 while let Ok(ev) = rx.recv().await {
                     if let Event::AirportsLoaded = ev {
                         view.airport_search.set_sensitive(true);
@@ -288,7 +288,7 @@ mod imp {
 
             // ToDo Disabled for now.
             // self.airport_list.connect_activate(
-            //     clone!(@weak self as view => move | _list_view, position | {
+            //     clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
             //     if let Some(airport) = self.get_model_airport(item) {
             //         self.add_to_plan(airport);
             //     }
@@ -312,7 +312,7 @@ mod imp {
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
-            gesture.connect_released(clone!(@weak self as view => move | gesture, _n, x, y| {
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move | gesture, _n, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 if let Some(popover) = view.popover.borrow().as_ref() {
                         popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
@@ -323,21 +323,21 @@ mod imp {
 
             // If the user clicks search or pressses enter in any of the search fields do the search
             self.airport_search
-                .connect_clicked(clone!(@weak self as window => move |_search| {
+                .connect_clicked(clone!(#[weak(rename_to = window)] self, move |_search| {
                     window.search();
                 }));
             self.airport_search_name.connect_activate(
-                clone!(@weak self as window => move |_search| {
+                clone!(#[weak(rename_to = window)] self, move |_search| {
                     window.search();
                 }),
             );
             self.airport_search_lat.connect_activate(
-                clone!(@weak self as window => move |_search| {
+                clone!(#[weak(rename_to = window)] self, move |_search| {
                     window.search();
                 }),
             );
             self.airport_search_long.connect_activate(
-                clone!(@weak self as window => move |_search| {
+                clone!(#[weak(rename_to = window)] self, move |_search| {
                     window.search();
                 }),
             );
@@ -348,7 +348,7 @@ mod imp {
                 .insert_action_group("airport", Some(&actions));
 
             let action = SimpleAction::new("add_to_plan", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(airport) = view.get_selection() {
                     view.add_to_plan(airport);
                 }
@@ -356,7 +356,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_airports_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                     if let Some(airport) = view.get_selection() {
                         view.search_near(airport.get_loc());
                     }
@@ -364,7 +364,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                     if let Some(airport) = view.get_selection() {
                         if let Some(navaid_view) = get_navaid_view(&view.airport_window.get()) {
                             show_navaid_view(&view.airport_window.get());
@@ -375,7 +375,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(airport) = view.get_selection() {
                         if let Some(fix_view) = get_fix_view(&view.airport_window.get()) {
                             show_fix_view(&view.airport_window.get());
@@ -386,7 +386,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("view", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(airport) = view.get_selection() {
                         if let Some(airport_map_view) = get_airport_map_view(&view.airport_window.get()) {
                             show_airport_map_view(&view.airport_window.get());

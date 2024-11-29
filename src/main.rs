@@ -159,37 +159,37 @@ fn load_css() {
 
 fn connect_actions(app: &Application, window: &Window) {
     let action = SimpleAction::new("new", None);
-    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
        let _ = &window.imp().new_plan();
     }));
     app.add_action(&action);
 
     let action = SimpleAction::new("open", None);
-    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
         let _ = &window.imp().open_plan();
     }));
     app.add_action(&action);
 
     let action = SimpleAction::new("save", None);
-    action.connect_activate(clone!(@weak window => move  |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move  |_action, _parameter| {
         let _ = &window.imp().save_plan();
     }));
     app.add_action(&action);
 
     let action = SimpleAction::new("export_fg_rm", None);
-    action.connect_activate(clone!(@weak window => move  |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move  |_action, _parameter| {
         let _ = &window.imp().export_plan();
     }));
     app.add_action(&action);
 
     let action = SimpleAction::new("quit", None);
-    action.connect_activate(clone!(@weak app => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] app, move |_action, _parameter| {
         app.quit()
     }));
     app.add_action(&action);
 
     let action = SimpleAction::new("preferences", None);
-    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
         let pref_dialog = PreferenceDialog::new();
         pref_dialog.set_transient_for(Some(&window));
         pref_dialog.show();
@@ -197,7 +197,7 @@ fn connect_actions(app: &Application, window: &Window) {
     app.add_action(&action);
 
     let action = SimpleAction::new("reload", None);
-    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
         let _ = &window.imp().reload();
     }));
     app.add_action(&action);
@@ -209,7 +209,7 @@ fn connect_actions(app: &Application, window: &Window) {
     app.add_action(&action);
 
     let action = SimpleAction::new("help-contents", None);
-    action.connect_activate(clone!(@weak window => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
         UriLauncher::builder()
             .uri(info::DOCSITE)
             .build()

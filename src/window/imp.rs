@@ -108,7 +108,7 @@ impl Window {
         let x = Some(x1);
 
         dialog.open(x, Some(&Cancellable::default()),
-                    clone!(@weak self as window, => move | result: Result<File, _>| {
+                    clone!(#[weak(rename_to = window)] self, move | result: Result<File, _>| {
                 if let Ok(file) = result {
                     if let Some(path) = file.path() {
                         if let Ok(mut plan) = read_plan(&path) {
@@ -169,7 +169,7 @@ impl Window {
             let x = Some(x1);
 
             dialog.save(x, Some(&Cancellable::default()),
-                        clone!(@weak self as window, @weak view, => move | result: Result<File, _>| {
+                        clone!(#[weak(rename_to = window)] self, #[weak] view, move | result: Result<File, _>| {
 
                         if let Ok(file) = result {
                             let writer = match save_type {
@@ -320,7 +320,7 @@ impl ObjectImpl for Window {
         // Listen for setup required message
         let (tx, rx) = async_channel::unbounded::<Event>();
         let index = event::manager().register_listener(tx);
-        MainContext::default().spawn_local(clone!(@weak self as window, => async move {
+        MainContext::default().spawn_local(clone!(#[weak(rename_to = window)] self, async move {
                 while let Ok(ev) = rx.recv().await {
                     match ev {
                         Event::SetupRequired => {
@@ -349,7 +349,7 @@ impl ObjectImpl for Window {
 
         self.my_listener_id.replace(index);
 
-        self.plan_tab_view.connect_close_page(clone!(@weak self as window => @default-return Propagation::Proceed, move |view, page|  {
+        self.plan_tab_view.connect_close_page(clone!(#[weak(rename_to = window)] self, #[upgrade_or] Propagation::Proceed, move |view, page|  {
 
             // Check if plan dirty and if so do save.
             if let (dirty, Some(name)) = window.is_dirty(&page.clone()) {
@@ -425,7 +425,7 @@ impl WindowImpl for Window {
             if let (dirty, Some(name)) = self.is_dirty(&self.plan_tab_view.nth_page(i)) {
                 if dirty {
                     propagation = Propagation::Stop;
-                    self.query_save_dirty(&name, clone!(@weak self as window => move |button| {
+                    self.query_save_dirty(&name, clone!(#[weak(rename_to = window)] self, move |button| {
                         if button == 0 {
                             window.save_page_plan("Save Plan", SaveType::Native, &page, true);
                             window.set_not_dirty(&page);

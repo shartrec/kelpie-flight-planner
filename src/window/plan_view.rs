@@ -264,7 +264,7 @@ mod imp {
             let (tx, rx) = async_channel::unbounded::<Event>();
             let index = event::manager().register_listener(tx);
 
-            MainContext::default().spawn_local(clone!(@weak self as view => async move {
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                 while let Ok(ev) = rx.recv().await {
                     if let Event::PreferencesChanged = ev {
                         view.refresh(None);
@@ -617,7 +617,7 @@ mod imp {
             self.parent_constructed();
 
             self.btn_make_plan
-                .connect_clicked(clone!(@weak self as view => move |_search| {
+                .connect_clicked(clone!(#[weak(rename_to = view)] self, move |_search| {
                     view.make_plan();
                     view.refresh(None);
                 }));
@@ -639,7 +639,7 @@ mod imp {
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
-            gesture.connect_released(clone!(@weak self as view => move |gesture, _n, x, y| {
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move |gesture, _n, x, y| {
                 gesture.set_state(gtk::EventSequenceState::Claimed);
                 if let Some(popover) = view.popover.borrow().as_ref() {
                         popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
@@ -649,22 +649,22 @@ mod imp {
             self.plan_window.add_controller(gesture);
 
             self.btn_new_sector
-                .connect_clicked(clone!(@weak self as view => move |_| {
+                .connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     view.new_sector();
                 }));
 
             self.btn_move_up
-                .connect_clicked(clone!(@weak self as view => move |_| {
+                .connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     view.move_selected_up();
                 }));
 
             self.btn_move_down
-                .connect_clicked(clone!(@weak self as view => move |_| {
+                .connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {
                     view.move_selected_down();
                 }));
 
             self.btn_max_alt
-                .connect_toggled(clone!(@weak self as view => move | button | {
+                .connect_toggled(clone!(#[weak(rename_to = view)] self, move | button | {
                 let mut plan = view.plan.borrow_mut();
                     if button.is_active() {
                         match view.max_alt.text().parse::<i32>() {
@@ -682,7 +682,7 @@ mod imp {
                     }
                 }));
 
-            self.max_alt.connect_changed(clone!(@weak self as view => move| editable | {
+            self.max_alt.connect_changed(clone!(#[weak(rename_to = view)] self, move| editable | {
                 if view.btn_max_alt.is_active() {
                     let mut plan = view.plan.borrow_mut();
                     match editable.text().parse::<i32>() {
@@ -697,7 +697,7 @@ mod imp {
             }));
 
 
-            self.plan_tree.connect_cursor_changed(clone!(@weak self as view => move |tree_view| {
+            self.plan_tree.connect_cursor_changed(clone!(#[weak(rename_to = view)] self, move |tree_view| {
                 let plan = view.plan.borrow();
                 view.btn_move_up.set_sensitive(false);
                 view.btn_move_down.set_sensitive(false);
@@ -741,13 +741,13 @@ mod imp {
                 .insert_action_group("plan", Some(&actions));
 
             let action = SimpleAction::new("remove", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                view.remove_selected();
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("view", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                if let Some(airport) = view.get_selected_airport() {
                     if let Some(airport_map_view) = get_airport_map_view(&view.plan_window.get()) {
                         show_airport_map_view(&view.plan_window.get());
@@ -758,7 +758,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("show_on_map", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                if let Some(map_view) = get_world_map_view(&view.plan_window) {
                     show_world_map_view(&view.plan_window);
                     if let Some(loc) = view.get_selected_location() {
@@ -770,7 +770,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_airports_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
                     if let Some(airport_view) = get_airport_view(&view.plan_window.get()) {
                         show_airport_view(&view.plan_window.get());
@@ -781,7 +781,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
                     if let Some(navaid_view) = get_navaid_view(&view.plan_window.get()) {
                         show_navaid_view(&view.plan_window.get());
@@ -792,7 +792,7 @@ mod imp {
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_fixes_near", None);
-            action.connect_activate(clone!(@weak self as view => move |_action, _parameter| {
+            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
                     if let Some(fix_view) = get_fix_view(&view.plan_window.get()) {
                         show_fix_view(&view.plan_window.get());

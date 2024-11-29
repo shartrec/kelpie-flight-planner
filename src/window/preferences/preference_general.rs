@@ -145,16 +145,16 @@ mod imp {
             self.fix_path.connect_changed(| editable | {
                 manager().put(FIXES_PATH, editable.text());
             });
-            self.fg_browse.connect_clicked(clone!(@weak self as view => move | button | {
+            self.fg_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
                 process_file_browse(view.fg_path.clone(), button.clone(), "Flightgear data directory", true);
             }));
-            self.apt_browse.connect_clicked(clone!(@weak self as view => move | button | {
+            self.apt_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
                 process_file_browse(view.apt_path.clone(), button.clone(), "Location for Flightgear airport data", false);
             }));
-            self.nav_browse.connect_clicked(clone!(@weak self as view => move | button | {
+            self.nav_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
                 process_file_browse(view.nav_path.clone(), button.clone(), "Location for Flightgear navaid data", false);
             }));
-            self.fix_browse.connect_clicked(clone!(@weak self as view => move | button | {
+            self.fix_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
                 process_file_browse(view.fix_path.clone(), button.clone(), "Location for Flightgear fix data", false);
             }));
         }

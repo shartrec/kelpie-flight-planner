@@ -158,11 +158,11 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.btn_cancel.connect_clicked(clone!( @weak self as window => move |_button| {
+            self.btn_cancel.connect_clicked(clone!(#[weak(rename_to = window)] self, move |_button| {
                window.obj().close();
             }));
 
-            self.btn_ok.connect_clicked(clone!( @weak self as window => move |_button| {
+            self.btn_ok.connect_clicked(clone!(#[weak(rename_to = window)] self, move |_button| {
                 if window.validate() && window.save_aircraft() {
                     window.obj().close();
                 }
