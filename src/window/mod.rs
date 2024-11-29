@@ -22,6 +22,8 @@
  *
  */
 
+#![allow(unsafe_code)]
+
 use adw::Application;
 use glib::Object;
 use gtk::{gio, glib};

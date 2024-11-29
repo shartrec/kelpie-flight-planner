@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![forbid(unsafe_code)]
 
 pub mod aircraft;
 pub mod airport;

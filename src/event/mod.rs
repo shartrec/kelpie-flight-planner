@@ -22,6 +22,8 @@
  *
  */
 
+#![forbid(unsafe_code)]
+
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;

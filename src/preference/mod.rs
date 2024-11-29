@@ -23,6 +23,7 @@
  */
 
 #![allow(unused)]
+#![forbid(unsafe_code)]
 
 use std::{
     str::FromStr,

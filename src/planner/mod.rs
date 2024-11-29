@@ -21,4 +21,6 @@
  *      Trevor Campbell
  *
  */
+#![forbid(unsafe_code)]
+
 pub(crate) mod planner;

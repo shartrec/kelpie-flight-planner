@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![forbid(unsafe_code)]
 
 use gtk::FileFilter;
 use gtk::gio::ListStore;
