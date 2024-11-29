@@ -26,7 +26,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use app_dirs::*;
+use dirs_next::config_dir;
 use gtk::{gio, glib, subclass::prelude::*};
 use lazy_static::lazy_static;
 use log::{error, warn};
@@ -275,47 +275,46 @@ pub fn get_hangar() -> &'static Hangar {
 
 // Load aircraft from yaml file
 pub fn load_hangar() -> Vec<Arc<Aircraft>> {
-    let path = get_hangar_path();
-
-    let mut contents = String::new();
-    match File::open(&path) {
-        Ok(mut file) => {
-            file.read_to_string(&mut contents)
-                .expect("Unable to read file");
-        }
-        Err(_) => {
-            contents = DEFAULT_AICRAFT.to_string();
-        }
-    }
     let mut hangar: Vec<Arc<Aircraft>> = Vec::new();
+    if let Some(path) = get_hangar_path() {
+        let mut contents = String::new();
+        match File::open(&path) {
+            Ok(mut file) => {
+                file.read_to_string(&mut contents)
+                    .expect("Unable to read file");
+            }
+            Err(_) => {
+                contents = DEFAULT_AICRAFT.to_string();
+            }
+        }
 
-    match YamlLoader::load_from_str(&contents) {
-        Ok(docs) => {
-            for doc in docs {
-                if let Some(all) = doc.as_vec() {
-                    for each in all {
-                        if let Some(map) = each.as_hash() {
-                            let aircraft = Aircraft::new(
-                                get_string(map, KEY_NAME),
-                                get_i32(map, KEY_CRUISE_SPEED),
-                                get_i32(map, KEY_CRUISE_ALTITUDE),
-                                get_i32(map, KEY_CLIMB_SPEED),
-                                get_i32(map, KEY_CLIMB_RATE),
-                                get_i32(map, KEY_SINK_SPEED),
-                                get_i32(map, KEY_SINK_RATE),
-                                get_bool(map, KEY_IS_DEFAULT),
-                            );
-                            hangar.push(Arc::new(aircraft));
+        match YamlLoader::load_from_str(&contents) {
+            Ok(docs) => {
+                for doc in docs {
+                    if let Some(all) = doc.as_vec() {
+                        for each in all {
+                            if let Some(map) = each.as_hash() {
+                                let aircraft = Aircraft::new(
+                                    get_string(map, KEY_NAME),
+                                    get_i32(map, KEY_CRUISE_SPEED),
+                                    get_i32(map, KEY_CRUISE_ALTITUDE),
+                                    get_i32(map, KEY_CLIMB_SPEED),
+                                    get_i32(map, KEY_CLIMB_RATE),
+                                    get_i32(map, KEY_SINK_SPEED),
+                                    get_i32(map, KEY_SINK_RATE),
+                                    get_bool(map, KEY_IS_DEFAULT),
+                                );
+                                hangar.push(Arc::new(aircraft));
+                            }
                         }
                     }
                 }
             }
-        }
-        Err(_) => {
-            error!("Unable to load aircraft configuration from {:?}", &path);
+            Err(_) => {
+                error!("Unable to load aircraft configuration from {:?}", &path);
+            }
         }
     }
-
     hangar
 }
 
@@ -343,50 +342,53 @@ fn get_string(map: &Hash, key: &str) -> String {
 
 #[allow(dead_code)]
 pub fn save_hangar() {
-    let path = get_hangar_path();
+    if let Some(path) = get_hangar_path() {
+        let hangar = get_hangar().imp().get_all();
+        let all = hangar.read().expect("Unable to get read lock on hangar");
 
-    let hangar = get_hangar().imp().get_all();
-    let all = hangar.read().expect("Unable to get read lock on hangar");
+        let mut vec = Vec::new();
 
-    let mut vec = Vec::new();
+        // if let Some(mut vec) = vec.as_vec() {
+        for (_name, a) in all.iter() {
+            let mut inner_map = Hash::new();
+            put_string(&mut inner_map, KEY_NAME, a.get_name());
+            put_i32(&mut inner_map, KEY_CRUISE_SPEED, a.get_cruise_speed());
+            put_i32(&mut inner_map, KEY_CRUISE_ALTITUDE, a.get_cruise_altitude());
+            put_i32(&mut inner_map, KEY_CLIMB_SPEED, a.get_climb_speed());
+            put_i32(&mut inner_map, KEY_CLIMB_RATE, a.get_climb_rate());
+            put_i32(&mut inner_map, KEY_SINK_SPEED, a.get_sink_speed());
+            put_i32(&mut inner_map, KEY_SINK_RATE, a.get_sink_rate());
+            put_bool(&mut inner_map, KEY_IS_DEFAULT, a.is_default());
 
-    // if let Some(mut vec) = vec.as_vec() {
-    for (_name, a) in all.iter() {
-        let mut inner_map = Hash::new();
-        put_string(&mut inner_map, KEY_NAME, a.get_name());
-        put_i32(&mut inner_map, KEY_CRUISE_SPEED, a.get_cruise_speed());
-        put_i32(&mut inner_map, KEY_CRUISE_ALTITUDE, a.get_cruise_altitude());
-        put_i32(&mut inner_map, KEY_CLIMB_SPEED, a.get_climb_speed());
-        put_i32(&mut inner_map, KEY_CLIMB_RATE, a.get_climb_rate());
-        put_i32(&mut inner_map, KEY_SINK_SPEED, a.get_sink_speed());
-        put_i32(&mut inner_map, KEY_SINK_RATE, a.get_sink_rate());
-        put_bool(&mut inner_map, KEY_IS_DEFAULT, a.is_default());
+            let map = Yaml::Hash(inner_map);
 
-        let map = Yaml::Hash(inner_map);
+            vec.push(map);
+        }
+        let doc = Yaml::Array(vec);
 
-        vec.push(map);
-    }
-    let doc = Yaml::Array(vec);
-
-    let mut out_str = String::new();
-    let mut emitter = YamlEmitter::new(&mut out_str);
-    match emitter.dump(&doc) {
-        Ok(_) => {
-            match File::create(path) {
-                Ok(mut f) => match f.write_all(out_str.as_bytes()) {
-                    Ok(_) => {}
+        let mut out_str = String::new();
+        let mut emitter = YamlEmitter::new(&mut out_str);
+        match emitter.dump(&doc) {
+            Ok(_) => {
+                match File::create(path) {
+                    Ok(mut f) => match f.write_all(out_str.as_bytes()) {
+                        Ok(_) => {}
+                        Err(err) => {
+                            warn!("Unable to save aircraft config : {}", err);
+                        }
+                    },
                     Err(err) => {
-                        warn!("Unable to save aircraft config : {}", err);
+                        error!("Unable to save aircraft config : {}", err);
                     }
-                },
-                Err(err) => {
-                    error!("Unable to save aircraft config : {}", err);
                 }
             }
+            Err(err) => {
+                error!("Unable to save aircraft config : {}", err);
+            }
         }
-        Err(err) => {
-            error!("Unable to save aircraft config : {}", err);
-        }
+    } else {
+        error!("Unable to get config path for hangar");
+        error!("Unable to save aircraft config");
     }
 }
 
@@ -405,11 +407,11 @@ fn put_string(map: &mut Hash, key: &str, v: &str) {
     map.insert(Yaml::String(key.to_string()), Yaml::String(v.to_string()));
 }
 
-pub fn get_hangar_path() -> PathBuf {
-    get_app_dir(
-        AppDataType::UserConfig,
-        &APP_INFO,
-        "aircraft.yaml",
-    )
-    .expect("Unable to build path for airport config")
+pub fn get_hangar_path() -> Option<PathBuf> {
+    let x = config_dir().map(|mut p| {
+        p.push(&APP_INFO.name);
+        p.push("aircraft.yaml");
+        p
+    });
+    x
 }

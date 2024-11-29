@@ -8,27 +8,28 @@ edition = "2021"
 [dependencies]
 app_dirs = "1.2.1"
 chrono = "0.4.38"
+dirs-next = "2.0.0"
 gtk = { version = "^0.9", package = "gtk4", features = ["v4_10"] }
 adw = { version = "0.7.0", package = "libadwaita", features = ["v1_5"] }
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 log = "^0.4"
 preferences = "^1.1.0"
 regex-lite = "0.1.5"
 shapefile = "0.6.0"
 simplelog = "^0.12.2"
 yaml-rust = "0.4.5"
-libloading = "0.8.1"
+libloading = "0.8.5"
 epoxy = "0.1.0"
 gl = "0.14.0"
-nalgebra-glm = "0.18.0"
-flate2 = "1.0.28"
-xmltree = "0.10.3"
-rust-embed = "8.0.0"
+nalgebra-glm = "0.19.0"
+flate2 = "1.0.35"
+xmltree = "0.11.0"
+rust-embed = "8.5.0"
 ureq = { version = "2.9.1", features = ["json"] }
-serde = { version = "1.0.193", features = ["derive"] }
+serde = { version = "^1.0", features = ["derive"] }
 scheduling = "0.1.2"
 home = "0.5.9"
-async-channel = "2.2.1"
+async-channel = "2.3.1"
 time = "0.3.36"
 async-std = "1.13.0"
 
@@ -36,4 +37,4 @@ async-std = "1.13.0"
 opt-level = "z"
 
 [build-dependencies]
-glib-build-tools = "0.18.0"
+glib-build-tools = "0.20.0"
