@@ -27,11 +27,10 @@ use std::cell::{Cell, RefCell};
 use std::ffi::{CStr, CString};
 use std::rc::Rc;
 use std::time::Duration;
+use adw::glib::timeout_add_local_once;
 
 use glm::*;
 use gtk::GLArea;
-use gtk::glib::ControlFlow;
-use gtk::glib::timeout_add_local;
 use gtk::prelude::WidgetExt;
 
 use crate::earth::coordinate::Coordinate;
@@ -354,9 +353,8 @@ impl Renderer {
 
         if !true_centre {
             let my_area = area.clone();
-            timeout_add_local(Duration::from_millis(20), move || {
+            timeout_add_local_once(Duration::from_millis(20), move || {
                 my_area.queue_draw();
-                ControlFlow::Continue
             });
 
         }

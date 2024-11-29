@@ -132,9 +132,9 @@ mod imp {
                         if *view.aircraft_position_info.borrow().deref() != ap {
                             view.aircraft_position_info.replace(ap.clone());
                             renderer.set_aircraft_position(ap);
+                            view.gl_area.queue_draw();
                         }
                     }
-                view.gl_area.queue_draw();
                 }
             }));
 
