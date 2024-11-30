@@ -177,7 +177,7 @@ pub fn initialise() -> Result<(), String> {
 }
 
 fn load_airports(path: &str) -> Result<(), String>{
-    event::manager().notify_listeners(Event::StatusChange(format!("Loading Airports from >{}", path)));
+    event::manager().notify_listeners(Event::StatusChange(format!("Loading Airports from : {}", path)));
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
     let file = fs::File::open(path);
@@ -203,7 +203,7 @@ fn load_airports(path: &str) -> Result<(), String>{
 }
 
 fn load_navaids(path: &str)  -> Result<(), String> {
-    event::manager().notify_listeners(Event::StatusChange(format!("Loading Nav aids from >{}", path)));
+    event::manager().notify_listeners(Event::StatusChange(format!("Loading Nav aids from : {}", path)));
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
     let file = fs::File::open(path);
@@ -229,7 +229,7 @@ fn load_navaids(path: &str)  -> Result<(), String> {
 }
 
 fn load_fixes(path: &str)  -> Result<(), String> {
-    event::manager().notify_listeners(Event::StatusChange(format!("Loading Fixes from >{}", path)));
+    event::manager().notify_listeners(Event::StatusChange(format!("Loading Fixes from : {}", path)));
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
     let result = match file {
