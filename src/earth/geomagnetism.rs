@@ -595,19 +595,23 @@ impl Geomagnetism {
 
 #[cfg(test)]
 mod tests {
+    use chrono::Utc;
+    use chrono::prelude::*;
     use super::Geomagnetism;
 
     #[test]
     fn test_declination() {
-        let geo = Geomagnetism::new(-34.1356, 150.9231, None, None);
+        let date =  Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).latest();
+
+        let geo = Geomagnetism::new(-34.1356, 150.9231, None, date);
         assert_between(geo.declination, 12.75, 12.85);
-        let geo = Geomagnetism::new(51.48, 0.5, None, None);
-        assert_between(geo.declination, 1.1, 1.3);
-        let geo = Geomagnetism::new(35.55, 139.76, None, None);
+        let geo = Geomagnetism::new(51.48, 0.5, None, date);
+        assert_between(geo.declination, 1.0, 1.1);
+        let geo = Geomagnetism::new(35.55, 139.76, None, date);
         assert_between(geo.declination, -8.0, -7.8);
-        let geo = Geomagnetism::new(13.24, -16.65, None, None);
-        assert_between(geo.declination, -6.1, -6.0);
-        let geo = Geomagnetism::new(40.6, -73.8, None, None);
+        let geo = Geomagnetism::new(13.24, -16.65, None, date);
+        assert_between(geo.declination, -6.2, -6.0);
+        let geo = Geomagnetism::new(40.6, -73.8, None, date);
         assert_between(geo.declination, -13.0, -12.5);
     }
 
