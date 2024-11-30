@@ -23,7 +23,6 @@
  */
 #![forbid(unsafe_code)]
 
-use std::cell::RefCell;
 use async_std::task;
 use adw::{TabPage, TabView};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
@@ -79,7 +78,6 @@ pub struct Window {
     pub plan_tab_view: TemplateChild<TabView>,
     #[template_child]
     pub status_bar: TemplateChild<Label>,
-    my_listener_id: RefCell<usize>,
 }
 
 impl Window {
@@ -319,36 +317,34 @@ impl ObjectImpl for Window {
         self.layout_panels();
 
         // Listen for setup required message
-        let (tx, rx) = async_channel::unbounded::<Event>();
-        let index = event::manager().register_listener(tx);
-        MainContext::default().spawn_local(clone!(#[weak(rename_to = window)] self, async move {
-                while let Ok(ev) = rx.recv().await {
-                    match ev {
-                        Event::SetupRequired => {
-                            let buttons = vec!["Ok".to_string()];
-                            let alert = AlertDialog::builder()
-                                .modal(true)
-                                .message("Please set paths to flightgear Airport and Navaid files".to_string())
-                                .buttons(buttons)
-                                .build();
+        if let Some(rx) = event::manager().register_listener() {
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = window)] self, async move {
+                    while let Ok(ev) = rx.recv().await {
+                        match ev {
+                            Event::SetupRequired => {
+                                let buttons = vec!["Ok".to_string()];
+                                let alert = AlertDialog::builder()
+                                    .modal(true)
+                                    .message("Please set paths to flightgear Airport and Navaid files".to_string())
+                                    .buttons(buttons)
+                                    .build();
 
-                            let win = window.get_window_handle();
-                            let win_clone = win.clone();
-                            alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
-                                let pref_dialog = PreferenceDialog::new();
-                                pref_dialog.set_transient_for(win_clone.as_ref());
-                                pref_dialog.show();
-                            });
+                                let win = window.get_window_handle();
+                                let win_clone = win.clone();
+                                alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
+                                    let pref_dialog = PreferenceDialog::new();
+                                    pref_dialog.set_transient_for(win_clone.as_ref());
+                                    pref_dialog.show();
+                                });
+                            }
+                            Event::StatusChange(s) => {
+                                window.status_bar.set_label(s.as_str());
+                            }
+                            _ => {}
                         }
-                        Event::StatusChange(s) => {
-                            window.status_bar.set_label(s.as_str());
-                        }
-                        _ => {}
-                    }
-                };
-        }));
-
-        self.my_listener_id.replace(index);
+                    };
+            }));
+        }
 
         self.plan_tab_view.connect_close_page(clone!(#[weak(rename_to = window)] self, #[upgrade_or] Propagation::Proceed, move |view, page|  {
 

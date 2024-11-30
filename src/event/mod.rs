@@ -24,14 +24,13 @@
 
 #![forbid(unsafe_code)]
 
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::RwLock;
 
-use async_channel::Sender;
+use async_channel::{Receiver, Sender, TrySendError};
 use lazy_static::lazy_static;
+use log::warn;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Event {
     AirportsLoaded,
     NavaidsLoaded,
@@ -44,8 +43,7 @@ pub enum Event {
 
 lazy_static! {
     static ref MANAGER: EventManager = EventManager {
-        listeners: RwLock::new(HashMap::new()),
-        index: AtomicUsize::new(0),
+        listeners: RwLock::new(Vec::new()),
     };
 }
 pub fn manager() -> &'static EventManager {
@@ -53,32 +51,35 @@ pub fn manager() -> &'static EventManager {
 }
 
 pub struct EventManager {
-    listeners: RwLock<HashMap<usize, Sender<Event>>>,
-    index: AtomicUsize,
+    listeners: RwLock<Vec<Sender<Event>>>,
 }
 
 impl EventManager {
-    pub fn register_listener(&self, listener: Sender<Event>) -> usize {
-        if let Ok(mut listeners) = self.listeners.write() {
-            let i = self.index.fetch_add(1, Ordering::Relaxed);
-            listeners.insert(i, listener);
-            i
-        } else {
-            0
-        }
-    }
+    pub fn register_listener(&self) -> Option<Receiver<Event>> {
+        let (tx, rx) = async_channel::unbounded::<Event>();
 
-    pub fn unregister_listener(&self, index: &usize) {
         if let Ok(mut listeners) = self.listeners.write() {
-            listeners.remove(index);
+            listeners.push(tx);
+            Some(rx)
+        } else {
+            None
         }
     }
 
     pub fn notify_listeners(&self, ev: Event) {
         if let Ok(listeners) = self.listeners.read() {
             for listener in listeners.iter() {
-                let _ = listener.1.try_send(ev.clone());
+                match listener.try_send(ev.clone()) {
+                    Ok(_) => {}
+                    Err(TrySendError::Closed(_)) => {
+                        warn!("Listener channel closed")
+                    }
+                    Err(TrySendError::Full(_)) => {}
+                }
             }
+        }
+        if let Ok(mut listeners) = self.listeners.write() {
+            listeners.retain(|l| !l.is_closed())
         }
     }
 }

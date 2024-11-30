@@ -27,7 +27,6 @@ use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {
     use std::cell::{Cell, RefCell};
-    use std::ops::Deref;
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
@@ -74,42 +73,39 @@ mod imp {
         pub fix_search: TemplateChild<Button>,
 
         popover: RefCell<Option<PopoverMenu>>,
-        my_listener_id: RefCell<usize>,
         filter_list_model: RefCell<Option<FilterListModel>>,
 
     }
 
     impl FixView {
         pub fn initialise(&self) {
-            let (tx, rx) = async_channel::unbounded::<Event>();
-            let index = event::manager().register_listener(tx);
+            if let Some(rx) = event::manager().register_listener() {
+                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
+                    while let Ok(ev) = rx.recv().await {
+                        if let Event::FixesLoaded = ev {
+                            view.fix_search.set_sensitive(true);
+                            let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
 
-            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                while let Ok(ev) = rx.recv().await {
-                    if let Event::FixesLoaded = ev {
-                        view.fix_search.set_sensitive(true);
-                        let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
+                            view.filter_list_model.replace(Some(fm.clone()));
 
-                        view.filter_list_model.replace(Some(fm.clone()));
+                             // Add a sorter
+                            view.col_id.set_sorter(Some(&Self::get_id_sorter()));
+                            view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+                            view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
 
-                         // Add a sorter
-                        view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                        view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                        view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+                            let sorter = view.fix_list.sorter();
 
-                        let sorter = view.fix_list.sorter();
+                            let slm = SortListModel::new(Some(fm), sorter);
+                            slm.set_incremental(true);
 
-                        let slm = SortListModel::new(Some(fm), sorter);
-                        slm.set_incremental(true);
-
-                        let selection_model = SingleSelection::new(Some(slm));
-                        selection_model.set_autoselect(false);
-                        view.fix_list.set_model(Some(&selection_model));
-                        view.fix_list.set_single_click_activate(true);
+                            let selection_model = SingleSelection::new(Some(slm));
+                            selection_model.set_autoselect(false);
+                            view.fix_list.set_model(Some(&selection_model));
+                            view.fix_list.set_single_click_activate(true);
+                        }
                     }
-                }
-            }));
-            self.my_listener_id.replace(index);
+                }));
+            }
         }
 
         pub fn search(&self) {
@@ -372,7 +368,6 @@ mod imp {
             if let Some(popover) = self.popover.borrow().as_ref() {
                 popover.unparent();
             };
-            event::manager().unregister_listener(self.my_listener_id.borrow().deref());
         }
     }
 

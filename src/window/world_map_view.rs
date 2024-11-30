@@ -80,7 +80,6 @@ mod imp {
         add_action: RefCell<Option<SimpleAction>>,
         add_nav_action: RefCell<Option<SimpleAction>>,
 
-        my_listener_id: RefCell<usize>,
         renderer: RefCell<Option<Renderer>>,
         drag_start: RefCell<Option<[f64; 2]>>,
         drag_last: RefCell<Option<[f64; 2]>>,
@@ -95,35 +94,32 @@ mod imp {
         pub fn initialise(&self) {
             self.zoom_level.replace(1.0);
 
-            let (tx, rx) = async_channel::unbounded::<Event>();
-            let index = event::manager().register_listener(tx);
-            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                while let Ok(ev) = rx.recv().await {
-                    match ev {
-                        Event::PlanChanged => {
-                            if let Some(renderer) = view.renderer.borrow().as_ref() {
-                                renderer.plan_changed();
-                                view.gl_area.queue_draw();
+            if let Some(rx) = event::manager().register_listener() {
+                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
+                    while let Ok(ev) = rx.recv().await {
+                        match ev {
+                            Event::PlanChanged => {
+                                if let Some(renderer) = view.renderer.borrow().as_ref() {
+                                    renderer.plan_changed();
+                                    view.gl_area.queue_draw();
+                                }
                             }
-                        }
-                        Event::AirportsLoaded => {
-                            if let Some(renderer) = view.renderer.borrow().as_ref() {
-                                renderer.airports_loaded();
-                                view.gl_area.queue_draw();
+                            Event::AirportsLoaded => {
+                                if let Some(renderer) = view.renderer.borrow().as_ref() {
+                                    renderer.airports_loaded();
+                                    view.gl_area.queue_draw();
+                                }
                             }
-                        }
-                        Event::NavaidsLoaded => {
-                            if let Some(renderer) = view.renderer.borrow().as_ref() {
-                                renderer.navaids_loaded();
-                                view.gl_area.queue_draw();
+                            Event::NavaidsLoaded => {
+                                if let Some(renderer) = view.renderer.borrow().as_ref() {
+                                    renderer.navaids_loaded();
+                                    view.gl_area.queue_draw();
+                                }
                             }
-                        }
-                    _ => {}}
-                }
-            }));
-
-            self.my_listener_id.replace(index);
-
+                        _ => {}}
+                    }
+                }));
+            }
             // Set up the scheduled tasks to query the aircraft position
             let (tx, rx) = async_channel::unbounded::<Option<AircraftPositionInfo>>();
             MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
@@ -646,7 +642,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            event::manager().unregister_listener(self.my_listener_id.borrow().deref());
             if let Some(popover) = self.popover.borrow().as_ref() {
                 popover.unparent();
             };

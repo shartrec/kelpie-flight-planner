@@ -83,7 +83,6 @@ mod imp {
         pub plan: Rc<RefCell<Plan>>,
 
         popover: RefCell<Option<PopoverMenu>>,
-        my_listener_id: RefCell<usize>,
         page: RefCell<Option<TabPage>>,
     }
 
@@ -263,17 +262,15 @@ mod imp {
         }
 
         pub fn initialise(&self) {
-            let (tx, rx) = async_channel::unbounded::<Event>();
-            let index = event::manager().register_listener(tx);
-
-            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                while let Ok(ev) = rx.recv().await {
-                    if let Event::PreferencesChanged = ev {
-                        view.refresh(None);
+            if let Some(rx) = event::manager().register_listener() {
+                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
+                    while let Ok(ev) = rx.recv().await {
+                        if let Event::PreferencesChanged = ev {
+                            view.refresh(None);
+                        }
                     }
-                }
-            }));
-            self.my_listener_id.replace(index);
+                }));
+            }
         }
 
         pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {
@@ -810,7 +807,6 @@ mod imp {
         }
 
         fn dispose(&self) {
-            event::manager().unregister_listener(self.my_listener_id.borrow().deref());
             if let Some(popover) = self.popover.borrow().as_ref() {
                 popover.unparent();
             };
