@@ -70,6 +70,7 @@ mod imp {
                 while let Ok(ev) = rx.recv().await {
                     if let Event::AirportsLoaded = ev {
                         view.airport.replace(Some(airport.clone()));
+                        view.draw_runway_list(&airport);
                         view.airport_map_window.queue_draw()
                     }
                 }
@@ -87,7 +88,6 @@ mod imp {
                     draw_compass_rose: true,
                 };
                 airport_painter.draw_airport(&airport, area, cr);
-                self.draw_runway_list(&airport);
             }
         }
 
