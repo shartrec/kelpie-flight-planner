@@ -16,7 +16,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install jq tool
+    - name: Install GTK4
       run: |
         sudo apt-get update
         sudo apt-get install gtk4
