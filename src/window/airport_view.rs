@@ -284,14 +284,21 @@ mod imp {
                 label.set_xalign(1.0);
             })));
 
-            // ToDo Disabled for now.
-            // self.airport_list.connect_activate(
-            //     clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
-            //     if let Some(airport) = self.get_model_airport(item) {
-            //         self.add_to_plan(airport);
-            //     }
-            //     }),
-            // );
+            // Add airport to plan on Double click.
+            // This only works because we have  ```view.airport_list.set_single_click_activate(true)```
+            // and the single click activate absorbs the first click and the second is passed to the gesture.
+            // This is probably best described as undocumented behaviour.
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(1);
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move | gesture, n, _x, _y| {
+                if n == 1 {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    if let Some(airport) = view.get_selection() {
+                        view.add_to_plan(airport);
+                    }
+                }
+            }));
+            self.airport_list.add_controller(gesture);
 
             // build popover menu
             let builder = Builder::from_resource("/com/shartrec/kelpie_planner/airport_popover.ui");
