@@ -54,11 +54,9 @@ mod imp {
     use crate::model::navaid_object::NavaidObject;
 
     #[derive(Default)]
-    pub struct Navaids {
-    }
+    pub struct Navaids {}
 
-    impl Navaids {
-    }
+    impl Navaids {}
 
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
@@ -97,6 +95,5 @@ mod imp {
             }
         }
     }
-
 }
 

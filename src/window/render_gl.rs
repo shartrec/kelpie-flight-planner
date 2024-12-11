@@ -27,8 +27,8 @@ use std::cell::{Cell, RefCell};
 use std::ffi::{CStr, CString};
 use std::rc::Rc;
 use std::time::Duration;
-use adw::glib::timeout_add_local_once;
 
+use adw::glib::timeout_add_local_once;
 use glm::*;
 use gtk::GLArea;
 use gtk::prelude::WidgetExt;
@@ -356,7 +356,6 @@ impl Renderer {
             timeout_add_local_once(Duration::from_millis(20), move || {
                 my_area.queue_draw();
             });
-
         }
     }
 
@@ -366,11 +365,11 @@ impl Renderer {
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0);
 
-        trans = translate(&trans, &vec3(0.,0., 0.001));
+        trans = translate(&trans, &vec3(0., 0., 0.001));
         trans = scale(&trans, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
         trans = rotate(&trans, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1., 0., 0.));
         trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
-        trans = translate(&trans, &vec3(0.,0., -0.001));
+        trans = translate(&trans, &vec3(0., 0., -0.001));
         trans
     }
 
@@ -395,16 +394,16 @@ impl Renderer {
         let side = width.min(height);
         let earth_radius = side / 2.0;
 
-        let x_offset = (width - side) /2.;
-        let y_offset = (height - side) /2.;
+        let x_offset = (width - side) / 2.;
+        let y_offset = (height - side) / 2.;
 
 
         let v_scroll = 0.0;
         let h_scroll = 0.0;
 
         // Get the true projected x, y coordinates
-        let x1 = earth_radius as i32 - ((x-x_offset) + h_scroll) as i32;
-        let y1 = earth_radius as i32 - ((y-y_offset) + v_scroll) as i32;
+        let x1 = earth_radius as i32 - ((x - x_offset) + h_scroll) as i32;
+        let y1 = earth_radius as i32 - ((y - y_offset) + v_scroll) as i32;
         let depth = earth_radius;
 
         let r_squared = (x1 * x1 + y1 * y1) as f32;
@@ -421,7 +420,7 @@ impl Renderer {
         let aspect_ratio = if height < width {
             [height / width, 1.0]
         } else {
-            [1.0, width / height ]
+            [1.0, width / height]
         };
         let mat = self.build_matrix(aspect_ratio);
 

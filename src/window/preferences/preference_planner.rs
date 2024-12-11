@@ -94,7 +94,6 @@ mod imp {
         fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
-
     }
 
 
@@ -104,49 +103,48 @@ mod imp {
 
             self.initialise();
 
-            self.btn_auto_plan.connect_toggled(| button| {
+            self.btn_auto_plan.connect_toggled(|button| {
                 crate::preference::manager().put(AUTO_PLAN, button.is_active());
             });
-            self.planner_max_leg.connect_changed(| editable | {
+            self.planner_max_leg.connect_changed(|editable| {
                 crate::preference::manager().put(MAX_LEG_LENGTH, editable.text());
             });
-            self.planner_min_leg.connect_changed(| editable | {
+            self.planner_min_leg.connect_changed(|editable| {
                 crate::preference::manager().put(MIN_LEG_LENGTH, editable.text());
             });
-            self.planner_deviation.connect_changed(| editable | {
+            self.planner_deviation.connect_changed(|editable| {
                 crate::preference::manager().put(MAX_DEVIATION, editable.text());
             });
-            self.btn_use_radios.connect_toggled(| button | {
+            self.btn_use_radios.connect_toggled(|button| {
                 if button.is_active() {
                     crate::preference::manager().put(PLAN_TYPE, USE_RADIO_BEACONS);
                 }
             });
-            self.btn_use_fixes.connect_toggled(| button | {
+            self.btn_use_fixes.connect_toggled(|button| {
                 if button.is_active() {
                     crate::preference::manager().put(PLAN_TYPE, USE_FIXES);
                 }
             });
-            self.btn_use_gps.connect_toggled( | button| {
+            self.btn_use_gps.connect_toggled(|button| {
                 if button.is_active() {
                     crate::preference::manager().put(PLAN_TYPE, USE_GPS);
                 }
             });
-            self.btn_vor_only.connect_toggled(| button| {
+            self.btn_vor_only.connect_toggled(|button| {
                 crate::preference::manager().put(VOR_ONLY, button.is_active());
             });
-            self.btn_vor_preferred.connect_toggled(| button| {
+            self.btn_vor_preferred.connect_toggled(|button| {
                 crate::preference::manager().put(VOR_PREFERED, button.is_active());
             });
-            self.btn_add_gps.connect_toggled(| button| {
+            self.btn_add_gps.connect_toggled(|button| {
                 crate::preference::manager().put(ADD_WAYPOINTS, button.is_active());
             });
         }
     }
 
-    impl BoxImpl for PreferencePlannerPage {
-    }
-    impl WidgetImpl for PreferencePlannerPage {}
+    impl BoxImpl for PreferencePlannerPage {}
 
+    impl WidgetImpl for PreferencePlannerPage {}
 }
 
 glib::wrapper! {

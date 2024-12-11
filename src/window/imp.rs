@@ -23,9 +23,9 @@
  */
 #![forbid(unsafe_code)]
 
-use async_std::task;
 use adw::{TabPage, TabView};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
+use async_std::task;
 use glib::Propagation;
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned};
@@ -33,9 +33,9 @@ use gtk::gio::{Cancellable, File};
 use gtk::glib::{clone, MainContext};
 use gtk::prelude::*;
 use gtk::subclass::prelude::*;
+
 use crate::event;
 use crate::event::Event;
-
 use crate::util::{get_plan_file_filter, plan_writer_route_manager, plan_writer_xml};
 use crate::util::plan_reader::read_plan;
 use crate::window::airport_map_view::AirportMapView;
@@ -265,10 +265,9 @@ impl Window {
     fn query_save_dirty<F>(&self, name: &str, close_callback: F)
         where F: FnOnce(i32) + 'static
     {
-
         let win = self.get_window_handle();
 
-        let buttons = vec!["Yes".to_string(), "No".to_string(), "Cancel".to_string(), ];
+        let buttons = vec!["Yes".to_string(), "No".to_string(), "Cancel".to_string()];
         let alert = AlertDialog::builder()
             .modal(true)
             .message(format!("Save changes to plan {} before closing", name))
@@ -282,9 +281,7 @@ impl Window {
                 close_callback(button);
             }
         });
-
     }
-
 }
 
 // The central trait for subclassing a GObject
@@ -378,7 +375,6 @@ impl ObjectImpl for Window {
             }
         });
     }
-
 }
 
 // Trait to allow us to add menubars
@@ -449,4 +445,5 @@ impl WindowImpl for Window {
 
 // Trait shared by all application windows
 impl ApplicationWindowImpl for Window {}
+
 impl AdwApplicationWindowImpl for Window {}

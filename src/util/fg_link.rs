@@ -71,7 +71,6 @@ pub struct AircraftPositionInfo {
 }
 
 impl AircraftPositionInfo {
-
     pub(crate) fn get_position(&self) -> &Coordinate {
         &self.position
     }
@@ -95,7 +94,7 @@ pub fn get_aircraft_position() -> Option<AircraftPositionInfo> {
         if longitude.is_ok() && latitude.is_ok() && heading.is_ok() {
             let position = Coordinate::new(latitude.unwrap_or(0.0), longitude.unwrap_or(0.0));
             let heading = heading.unwrap_or(0.0);
-            return Some(AircraftPositionInfo{position, heading});
+            return Some(AircraftPositionInfo { position, heading });
         }
     }
     None

@@ -119,7 +119,6 @@ mod imp {
             }
             self.runway_list.set_label(buf.as_str());
         }
-
     }
 
     #[glib::object_subclass]

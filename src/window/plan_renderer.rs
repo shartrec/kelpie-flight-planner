@@ -211,11 +211,10 @@ impl PlanRenderer {
         let inc = PI / 180.0;
         let mut i = 0.0;
         while i < psi {
-
             let vx = x1 * i.cos() + x3 * i.sin();
             let vy = y1 * i.cos() + y3 * i.sin();
             let vz = z1 * i.cos() + z3 * i.sin();
-            vertices.push(Vertex { position: [vx * 1.00001, vy * 1.00001, vz * 1.00001]});
+            vertices.push(Vertex { position: [vx * 1.00001, vy * 1.00001, vz * 1.00001] });
             i += inc
         }
         vertices

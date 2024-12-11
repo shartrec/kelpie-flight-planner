@@ -47,6 +47,7 @@ use crate::window::world_map_view::WorldMapView;
 pub fn is_non_numeric(c: char) -> bool {
     !c.is_numeric()
 }
+
 #[allow(dead_code)]
 pub fn entry_disallow(entry: &gtk::Entry, pattern: fn(char) -> bool) {
     entry.connect_insert_text(move |entry, text, position| {
@@ -141,24 +142,23 @@ fn get_gl_info() -> String {
         gl_info = gl_info + "Open GL Version : " + s.as_str() + "\n";
     }
     if let Some(s) = get_gl_string(gl::RENDERER) {
-        gl_info = gl_info + "Open GL Renderer : "  + s.as_str() + "\n";
+        gl_info = gl_info + "Open GL Renderer : " + s.as_str() + "\n";
     }
     gl_info
 }
 
 
 pub(crate) fn get_gl_string(name: types::GLenum) -> Option<String> {
-    let _result = unsafe {
+    unsafe {
         let string_ptr = gl::GetString(name);
-        match *string_ptr  {
+        match *string_ptr {
             0 => None,
             _ => {
                 let c_str: &CStr = CStr::from_ptr(string_ptr as *const i8);
                 Some(c_str.to_str().unwrap().to_string())
             }
         }
-    };
-    _result
+    }
 }
 
 pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
@@ -174,6 +174,7 @@ pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
         None => None,
     }
 }
+
 pub(crate) fn get_world_map_view(widget: &ScrolledWindow) -> Option<WorldMapView> {
     match widget.root() {
         Some(r) => {
@@ -183,6 +184,7 @@ pub(crate) fn get_world_map_view(widget: &ScrolledWindow) -> Option<WorldMapView
         None => None,
     }
 }
+
 pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
@@ -194,6 +196,7 @@ pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
         }
     }
 }
+
 pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
     match widget.root() {
         Some(r) => {
@@ -203,6 +206,7 @@ pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMap
         None => None,
     }
 }
+
 pub(crate) fn show_airport_map_view(widget: &ScrolledWindow) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
@@ -224,6 +228,7 @@ pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
         None => None,
     }
 }
+
 pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
@@ -235,6 +240,7 @@ pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
         }
     }
 }
+
 pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
     match widget.root() {
         Some(r) => {
@@ -244,6 +250,7 @@ pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
         None => None,
     }
 }
+
 pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
@@ -255,6 +262,7 @@ pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
         }
     }
 }
+
 pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
     match widget.root() {
         Some(r) => {
@@ -264,6 +272,7 @@ pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
         None => None,
     }
 }
+
 pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();

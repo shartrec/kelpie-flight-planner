@@ -138,7 +138,7 @@ impl Waypoint {
     pub fn get_freq(&self) -> Option<&f64> {
         match self {
             Waypoint::Navaid { navaid, .. } => Some(navaid.get_freq()),
-            _  => None,
+            _ => None,
         }
     }
     pub(crate) fn get_lat_as_string(&self) -> String {

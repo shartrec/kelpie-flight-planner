@@ -27,8 +27,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
-use flate2::read;
 
+use flate2::read;
 use lazy_static::lazy_static;
 use log::info;
 
@@ -104,7 +104,7 @@ impl Earth {
     }
 
     pub fn set_navaids(&self, navaids: Vec<Arc<Navaid>>) {
-        let mut navs =self.navaids.write().expect("Unable to get lock on Navaids");
+        let mut navs = self.navaids.write().expect("Unable to get lock on Navaids");
         navs.clear();
         navs.extend(navaids);
     }
@@ -133,7 +133,7 @@ impl Earth {
     }
 
     pub fn set_fixes(&self, fixes: Vec<Arc<Fix>>) {
-        let mut fxs =self.fixes.write().expect("Unable to get lock on fixes");
+        let mut fxs = self.fixes.write().expect("Unable to get lock on fixes");
         fxs.clear();
         fxs.extend(fixes);
     }
@@ -176,7 +176,7 @@ pub fn initialise() -> Result<(), String> {
     Ok(())
 }
 
-fn load_airports(path: &str) -> Result<(), String>{
+fn load_airports(path: &str) -> Result<(), String> {
     event::manager().notify_listeners(Event::StatusChange(format!("Loading Airports from : {}", path)));
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
@@ -202,7 +202,7 @@ fn load_airports(path: &str) -> Result<(), String>{
     result
 }
 
-fn load_navaids(path: &str)  -> Result<(), String> {
+fn load_navaids(path: &str) -> Result<(), String> {
     event::manager().notify_listeners(Event::StatusChange(format!("Loading Nav aids from : {}", path)));
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
@@ -218,7 +218,7 @@ fn load_navaids(path: &str)  -> Result<(), String> {
                     get_earth_model().set_ils(ils);
                     event::manager().notify_listeners(Event::NavaidsLoaded);
                     Ok(())
-                },
+                }
                 Err(msg) => Err(msg),
             }
         }
@@ -228,7 +228,7 @@ fn load_navaids(path: &str)  -> Result<(), String> {
     result
 }
 
-fn load_fixes(path: &str)  -> Result<(), String> {
+fn load_fixes(path: &str) -> Result<(), String> {
     event::manager().notify_listeners(Event::StatusChange(format!("Loading Fixes from : {}", path)));
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
@@ -242,7 +242,7 @@ fn load_fixes(path: &str)  -> Result<(), String> {
                     get_earth_model().set_fixes(fixes);
                     event::manager().notify_listeners(Event::FixesLoaded);
                     Ok(())
-                },
+                }
                 Err(msg) => Err(msg),
             }
         }

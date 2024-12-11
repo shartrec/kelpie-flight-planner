@@ -32,12 +32,12 @@ mod imp {
     use std::ops::{Deref, DerefMut};
     use std::rc::Rc;
     use std::sync::Arc;
-    use adw::TabPage;
 
+    use adw::TabPage;
     use glib::subclass::InitializingObject;
     use gtk::{Builder, Button, CheckButton, DropDown, Entry, Label, PopoverMenu,
-              ScrolledWindow, SingleSelection, Stack, StringObject, TreePath, TreeStore, TreeView,
-              prelude::WidgetExt  };
+              prelude::WidgetExt, ScrolledWindow, SingleSelection, Stack, StringObject, TreePath, TreeStore,
+              TreeView};
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
@@ -99,7 +99,6 @@ mod imp {
     }
 
     impl PlanView {
-
         pub(crate) fn set_parent_page(&self, page: TabPage) {
             self.page.replace(Some(page));
         }
@@ -132,7 +131,6 @@ mod imp {
         }
 
         fn refresh(&self, selection: Option<TreePath>) {
-
             if let Some(page) = &self.page.borrow().deref() {
                 page.set_title(&self.plan.borrow().get_name());
             }
@@ -385,7 +383,7 @@ mod imp {
                         let sector_index = path[0] as usize;
                         plan.move_sector_up(sector_index);
                         tree_path = Some(TreePath::from_indices(&[sector_index as i32 - 1]));
-                    },
+                    }
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
@@ -420,7 +418,7 @@ mod imp {
                         let sector_index = path[0] as usize;
                         plan.move_sector_down(sector_index);
                         tree_path = Some(TreePath::from_indices(&[sector_index as i32 + 1]));
-                    },
+                    }
                     2 => {
                         let sector_index = path[0] as usize;
                         let wp_index = path[1] as usize;
@@ -566,7 +564,7 @@ mod imp {
 
         //noinspection RsExternalLinter
         fn setup_aircraft_combo(&self) {
-            self.aircraft_combo.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject|{
+            self.aircraft_combo.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject| {
                 label.set_label(string_object.string().as_ref());
                 label.set_xalign(0.0);
             })));

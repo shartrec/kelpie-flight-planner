@@ -61,7 +61,6 @@ impl ShorelineRenderer {
     }
 
     pub fn draw(&self, _area: &GLArea) {
-
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.shoreline_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
 
@@ -78,8 +77,7 @@ impl ShorelineRenderer {
             for ring in &self.shoreline_rings {
                 gl::DrawArrays(gl::LINE_STRIP, ring.0 as GLint, ring.1 as GLint);
             }
-            gl::BindBuffer(gl::ARRAY_BUFFER,0 ); //Bind GL_ARRAY_BUFFER to our handle
-
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0); //Bind GL_ARRAY_BUFFER to our handle
         }
     }
 

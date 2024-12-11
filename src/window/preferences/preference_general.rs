@@ -68,7 +68,6 @@ mod imp {
     }
 
     impl PreferenceGeneralPage {
-
         fn initialise(&self) {
             let prefs = manager();
             self.btn_use_mag_hdg.set_active(prefs.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false));
@@ -102,7 +101,6 @@ mod imp {
         fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
-
     }
 
 
@@ -112,37 +110,37 @@ mod imp {
 
             self.initialise();
 
-            self.btn_use_dft_paths.connect_toggled(| button| {
-                    manager().put(FGFS_USE_DFT_PATH, button.is_active());
+            self.btn_use_dft_paths.connect_toggled(|button| {
+                manager().put(FGFS_USE_DFT_PATH, button.is_active());
             });
             self.btn_use_mag_hdg.connect_toggled(|button| {
-                    manager().put(USE_MAGNETIC_HEADINGS, button.is_active());
+                manager().put(USE_MAGNETIC_HEADINGS, button.is_active());
             });
-            self.btn_dist_nm.connect_toggled(| button | {
+            self.btn_dist_nm.connect_toggled(|button| {
                 if button.is_active() {
                     manager().put(UNITS, UNITS_NM);
                 }
             });
-            self.btn_dist_mi.connect_toggled(| button | {
+            self.btn_dist_mi.connect_toggled(|button| {
                 if button.is_active() {
                     manager().put(UNITS, UNITS_MI);
                 }
             });
-            self.btn_dist_km.connect_toggled( | button| {
+            self.btn_dist_km.connect_toggled(|button| {
                 if button.is_active() {
                     crate::preference::manager().put(UNITS, UNITS_KM);
                 }
             });
-            self.fg_path.connect_changed(| editable | {
+            self.fg_path.connect_changed(|editable| {
                 manager().put(FGFS_DIR, editable.text());
             });
-            self.apt_path.connect_changed(| editable | {
+            self.apt_path.connect_changed(|editable| {
                 manager().put(AIRPORTS_PATH, editable.text());
             });
-            self.nav_path.connect_changed(| editable | {
+            self.nav_path.connect_changed(|editable| {
                 manager().put(NAVAIDS_PATH, editable.text());
             });
-            self.fix_path.connect_changed(| editable | {
+            self.fix_path.connect_changed(|editable| {
                 manager().put(FIXES_PATH, editable.text());
             });
             self.fg_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
@@ -160,11 +158,9 @@ mod imp {
         }
     }
 
-    impl BoxImpl for PreferenceGeneralPage {
-    }
-    impl WidgetImpl for PreferenceGeneralPage {
-    }
+    impl BoxImpl for PreferenceGeneralPage {}
 
+    impl WidgetImpl for PreferenceGeneralPage {}
 }
 
 glib::wrapper! {

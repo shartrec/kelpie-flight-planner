@@ -195,7 +195,6 @@ impl AirportParserFG850 {
                                     latitude = r_lat;
                                     longitude = r_long;
                                 }
-
                             }
                         }
                         buf2.clear();
@@ -258,7 +257,8 @@ impl AirportParserFG850 {
                         buf.push_str(ccc);
                     }
                     Err(e) => {
-                        warn!("{}", e);                    }
+                        warn!("{}", e);
+                    }
                 }
                 Ok(bytes)
             }
@@ -290,7 +290,7 @@ impl AirportParserFG850 {
                     Ok(_bytes) => (),
                     Err(_) => {
                         warn!("Seeking for airport runways failed");
-                        return Ok(())
+                        return Ok(());
                     }
                 }
             }
@@ -299,7 +299,7 @@ impl AirportParserFG850 {
 
         loop {
             buf.clear();
-            match Self::read_ascii_line(reader, &mut buf)  {
+            match Self::read_ascii_line(reader, &mut buf) {
                 Ok(0) => return Ok(()), // EOF
                 Ok(_) => (),
                 Err(msg) => {
@@ -335,7 +335,7 @@ impl AirportParserFG850 {
         let mut match_found = true;
 
         let mut buf = String::new();
-        match Self::read_ascii_line(reader, &mut buf)  {
+        match Self::read_ascii_line(reader, &mut buf) {
             Ok(0) => return Ok(()), // EOF
             Ok(_bytes) => (),
             Err(msg) => {
@@ -408,43 +408,43 @@ impl AirportParserFG850 {
                     }
                 }
             } else if r_type == "102" {
-                    // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
-                    // let r_surface = tokens.next().unwrap_or("");
-                    let r_number = tokens.next().unwrap_or("");
-                    let r_lat = crate::util::airport_parser::token_f64(tokens.next());
-                    let r_long = crate::util::airport_parser::token_f64(tokens.next());
-                    let r_hdg = token_f64(tokens.next()); //Orientation
-                    let r_length = token_f64(tokens.next()) * 3.28;
-                    let r_width = token_f64(tokens.next()) * 3.28;
-                    let r_surface = tokens.next().unwrap_or(""); // Surface
-                    tokens.next(); // Markings
-                    tokens.next(); // Shoulder
-                    tokens.next(); // Smoothness
-                    let r_edge_lights = tokens.next().unwrap_or(""); //edge lights
+                // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
+                // let r_surface = tokens.next().unwrap_or("");
+                let r_number = tokens.next().unwrap_or("");
+                let r_lat = crate::util::airport_parser::token_f64(tokens.next());
+                let r_long = crate::util::airport_parser::token_f64(tokens.next());
+                let r_hdg = token_f64(tokens.next()); //Orientation
+                let r_length = token_f64(tokens.next()) * 3.28;
+                let r_width = token_f64(tokens.next()) * 3.28;
+                let r_surface = tokens.next().unwrap_or(""); // Surface
+                tokens.next(); // Markings
+                tokens.next(); // Shoulder
+                tokens.next(); // Smoothness
+                let r_edge_lights = tokens.next().unwrap_or(""); //edge lights
 
 
-                    let runway = Runway::new(
-                        r_number.to_string(),
-                        Some(RunwayType::Helipad),
-                        r_lat,
-                        r_long,
-                        r_length as i32,
-                        r_width as i32,
-                        r_hdg,
-                        false,
-                        r_surface.to_string(),
-                        r_edge_lights.to_string(),
-                    );
+                let runway = Runway::new(
+                    r_number.to_string(),
+                    Some(RunwayType::Helipad),
+                    r_lat,
+                    r_long,
+                    r_length as i32,
+                    r_width as i32,
+                    r_hdg,
+                    false,
+                    r_surface.to_string(),
+                    r_edge_lights.to_string(),
+                );
 
-                    airport.add_runway(runway);
-                    buf.clear();
-                    match Self::read_ascii_line(reader, &mut buf)  {
-                        Ok(_bytes) => (),
-                        Err(msg) => {
-                            let err_msg = format!("{}", msg).to_string();
-                            return Err(err_msg);
-                        }
+                airport.add_runway(runway);
+                buf.clear();
+                match Self::read_ascii_line(reader, &mut buf) {
+                    Ok(_bytes) => (),
+                    Err(msg) => {
+                        let err_msg = format!("{}", msg).to_string();
+                        return Err(err_msg);
                     }
+                }
             } else if r_type == "110" {
                 // Taxiway processing
                 // We don't care about anything but the nodes that we use to draw it.
@@ -452,7 +452,7 @@ impl AirportParserFG850 {
 
                 loop {
                     buf.clear();
-                    match Self::read_ascii_line(reader, &mut buf)  {
+                    match Self::read_ascii_line(reader, &mut buf) {
                         Ok(_bytes) => (),
                         Err(msg) => {
                             let err_msg = format!("{}", msg).to_string();
@@ -501,7 +501,7 @@ impl AirportParserFG850 {
                 match_found = false;
             } else {
                 buf.clear();
-                match Self::read_ascii_line(reader, &mut buf)  {
+                match Self::read_ascii_line(reader, &mut buf) {
                     Ok(_bytes) => (),
                     Err(msg) => {
                         let err_msg = format!("{}", msg).to_string();

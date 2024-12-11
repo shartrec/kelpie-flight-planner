@@ -21,6 +21,9 @@
  *      Trevor Campbell
  *
  */
+
+#![forbid(unsafe_code)]
+
 use async_channel::Sender;
 use gtk::{self, Adjustment, CompositeTemplate, glib};
 use gtk::prelude::AdjustmentExt;
@@ -137,11 +140,10 @@ mod imp {
             let recurring_handle = scheduling::Scheduler::delayed_recurring(
                 std::time::Duration::from_secs(2),
                 std::time::Duration::from_secs(5),
-                move || get_aircraft_position_task(tx.clone())
+                move || get_aircraft_position_task(tx.clone()),
             )
                 .start();
             self.scheduler_handle.replace(Some(recurring_handle));
-
         }
 
         pub fn airports_loaded(&self) {

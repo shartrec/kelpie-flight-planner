@@ -38,7 +38,7 @@ pub enum Event {
     PlanChanged,
     PreferencesChanged,
     SetupRequired,
-    StatusChange(String)
+    StatusChange(String),
 }
 
 lazy_static! {

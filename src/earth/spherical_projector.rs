@@ -26,15 +26,14 @@ use std::f32::consts::PI;
 
 pub struct SphericalProjector {
     r: f32,
-    _90rad: f32
+    _90rad: f32,
 }
 
 impl SphericalProjector {
-
     pub fn new(size: f32) -> Self {
         Self {
             r: size,
-            _90rad: PI / 2.0
+            _90rad: PI / 2.0,
         }
     }
     /**
@@ -42,7 +41,7 @@ impl SphericalProjector {
      * @param lon
      * @return
      */
-    pub fn  project(&self, lat: &f64, lon: &f64) -> [f32; 3] {
+    pub fn project(&self, lat: &f64, lon: &f64) -> [f32; 3] {
         let lat1: f32 = lat.to_radians() as f32;
         let lon1: f32 = lon.to_radians() as f32;
 
@@ -51,10 +50,9 @@ impl SphericalProjector {
         let z: f32 = self.r * lat1.cos() * (lon1 + self._90rad).sin();
         // For OpenGL we flip the z-axis
         [x, y, -z]
-
     }
 
-    pub fn  un_project(&self,  x: f32,  y: f32,  z: f32) -> Result<[f32; 2], String>  {
+    pub fn un_project(&self, x: f32, y: f32, z: f32) -> Result<[f32; 2], String> {
         let y1: f32;
         if y > self.r {
             y1 = self.r;

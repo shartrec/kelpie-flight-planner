@@ -60,14 +60,13 @@ mod imp {
 
     impl PreferenceAircraftPage {
         fn setup_aircraft_list(&self) {
-            self.aircraft_list.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject|{
+            self.aircraft_list.set_factory(Some(&build_column_factory(|label: Label, string_object: &StringObject| {
                 label.set_label(string_object.string().as_ref());
                 label.set_xalign(0.0);
             })));
 
             let selection_model = SingleSelection::new(Some(get_hangar().clone()));
             self.aircraft_list.set_model(Some(&selection_model));
-
         }
     }
 
@@ -167,7 +166,6 @@ mod imp {
                         }
                     }
             }));
-
         }
 
         fn dispose(&self) {

@@ -79,7 +79,7 @@ impl Hangar {
     }
 }
 
-impl Default for Hangar{
+impl Default for Hangar {
     fn default() -> Self {
         Self::new()
     }
@@ -131,9 +131,9 @@ mod imp {
             drop(binding);
             self.save();
             if let Some(pos) = old_p {
-                self.obj().items_changed(pos,0,0);
+                self.obj().items_changed(pos, 0, 0);
             } else if let Some(pos) = self.get_item_position(&name) {
-                self.obj().items_changed(pos,0,1);
+                self.obj().items_changed(pos, 0, 1);
             }
         }
 
@@ -144,7 +144,7 @@ mod imp {
             drop(binding);
             self.save();
             if let Some(pos) = p {
-                self.obj().items_changed(pos,1,0);
+                self.obj().items_changed(pos, 1, 0);
             }
         }
 
@@ -163,7 +163,7 @@ mod imp {
                 );
                 self.put(prior_default);
                 if let Some(pos) = self.get_item_position(a.get_name()) {
-                    self.obj().items_changed(pos,1,1);
+                    self.obj().items_changed(pos, 1, 1);
                 }
             }
             if let Some(a) = self.get(name) {
@@ -179,7 +179,7 @@ mod imp {
                 );
                 self.put(new_default);
                 if let Some(pos) = self.get_item_position(name) {
-                    self.obj().items_changed(pos,1,1);
+                    self.obj().items_changed(pos, 1, 1);
                 }
             }
         }
@@ -195,7 +195,7 @@ mod imp {
                 .expect("Unable to get a lock on the aircraft hangar");
             for (i, name) in (0_u32..).zip(aircraft.keys()) {
                 if name == plane {
-                    return Some(i)
+                    return Some(i);
                 }
             }
             None
@@ -208,7 +208,6 @@ mod imp {
                 .expect("Unable to get a lock on the aircraft hangar");
             aircraft.values().nth(position as usize).cloned()
         }
-
     }
 
     /// Basic declaration of our type for the GObject type system
@@ -216,7 +215,7 @@ mod imp {
     impl ObjectSubclass for Hangar {
         const NAME: &'static str = "Hangar";
         type Type = super::Hangar;
-        type Interfaces = (gio::ListModel,);
+        type Interfaces = (gio::ListModel, );
     }
 
     impl ObjectImpl for Hangar {
@@ -258,8 +257,8 @@ mod imp {
             }
         }
     }
-
 }
+
 const KEY_NAME: &str = "name";
 const KEY_CRUISE_SPEED: &str = "cruise-speed";
 const KEY_CRUISE_ALTITUDE: &str = "cruise-altitude";

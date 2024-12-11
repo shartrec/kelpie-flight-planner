@@ -99,13 +99,13 @@ mod imp {
         }
 
         fn validate(&self) -> bool {
-            validate_not_empty(&self.ac_name,"Name" ) &&
-            validate_numeric(&self.ac_cruise_speed,"Cruise Speed" ) &&
-            validate_numeric(&self.ac_cruise_alt,"Cruise Altitude" ) &&
-            validate_numeric(&self.ac_climb_speed,"Climb Speed" ) &&
-            validate_numeric(&self.ac_climb_rate,"Climb Rate" ) &&
-            validate_numeric(&self.ac_sink_speed,"Sink Speed" ) &&
-            validate_numeric(&self.ac_sink_rate,"Sink Rate" )
+            validate_not_empty(&self.ac_name, "Name") &&
+                validate_numeric(&self.ac_cruise_speed, "Cruise Speed") &&
+                validate_numeric(&self.ac_cruise_alt, "Cruise Altitude") &&
+                validate_numeric(&self.ac_climb_speed, "Climb Speed") &&
+                validate_numeric(&self.ac_climb_rate, "Climb Rate") &&
+                validate_numeric(&self.ac_sink_speed, "Sink Speed") &&
+                validate_numeric(&self.ac_sink_rate, "Sink Rate")
         }
 
         fn save_aircraft(&self) -> bool {
@@ -197,9 +197,10 @@ impl Default for AircraftDialog {
 fn number_from(entry: &Entry) -> i32 {
     entry.text().as_str().parse::<i32>().unwrap_or(0)
 }
+
 fn validate_numeric(entry: &Entry, name: &str) -> bool {
     match entry.text().as_str().parse::<i32>() {
-        Ok(_) => {true}
+        Ok(_) => { true }
         Err(_) => {
             show_error_dialog(&entry.root(), format!("{} should be numeric", name).as_str());
             false
@@ -214,5 +215,4 @@ fn validate_not_empty(entry: &Entry, name: &str) -> bool {
     } else {
         true
     }
-
 }

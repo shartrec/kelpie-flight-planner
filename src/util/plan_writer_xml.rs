@@ -27,8 +27,8 @@ use std::ops::Deref;
 use std::path::Path;
 
 use xmltree::{Element, EmitterConfig, XMLNode};
-use crate::model::location::Location;
 
+use crate::model::location::Location;
 use crate::model::plan::Plan;
 use crate::model::waypoint::Waypoint;
 
@@ -42,7 +42,7 @@ pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
     if let Some(aircraft) = plan.get_aircraft() {
         plan_element.attributes.insert("aircraft".to_string(), aircraft.get_name().to_string());
     }
-    for sector in   plan.get_sectors().deref() {
+    for sector in plan.get_sectors().deref() {
         let mut sector_element = Element::new("sector");
 
         if let Some(start) = sector.get_start() {
@@ -59,10 +59,10 @@ pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
                 Waypoint::Navaid { navaid: n, elevation: _b, locked: _c } => {
                     wp_element.attributes.insert("id".to_string(), n.get_id().to_string());
                 }
-                Waypoint::Airport{airport: a, locked: _b} => {
+                Waypoint::Airport { airport: a, locked: _b } => {
                     wp_element.attributes.insert("id".to_string(), a.get_id().to_string());
                 }
-                Waypoint::Fix { fix: f,elevation: _b,locked: _c} => {
+                Waypoint::Fix { fix: f, elevation: _b, locked: _c } => {
                     wp_element.attributes.insert("id".to_string(), f.get_id().to_string());
                 }
                 _ => {
@@ -87,7 +87,7 @@ pub fn write_plan(plan: &Plan, file_path: &Path) -> Result<(), String> {
         .perform_indent(true);
 
     match plan_element.write_with_config(out, config) {
-        Ok(_) => { Ok(())}
-        Err(e) => {Err(e.to_string())}
+        Ok(_) => { Ok(()) }
+        Err(e) => { Err(e.to_string()) }
     }
 }

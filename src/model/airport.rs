@@ -25,8 +25,8 @@
 use std::{fmt, fs};
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
-use flate2::read;
 
+use flate2::read;
 use log::{error, warn};
 
 use crate::earth::{FEET_PER_DEGREE, get_earth_model};
@@ -567,6 +567,7 @@ impl AirportType {
         }
     }
 }
+
 #[derive(Clone, PartialEq)]
 pub enum RunwayType {
     Runway,

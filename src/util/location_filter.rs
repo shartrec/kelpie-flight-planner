@@ -36,7 +36,7 @@ use crate::model::location::Location;
 use crate::model::navaid_object::NavaidObject;
 
 pub fn new_airport_filter(filter: Box<dyn Filter>) -> CustomFilter {
-    CustomFilter::new ( move | obj | {
+    CustomFilter::new(move |obj| {
         let airport_object = obj.clone()
             .downcast::<AirportObject>()
             .expect("The item has to be an `Airport`.");
@@ -44,12 +44,11 @@ pub fn new_airport_filter(filter: Box<dyn Filter>) -> CustomFilter {
         let airport = airport_object.imp().airport();
         let airport: &dyn Location = &*airport;
         filter.filter(airport)
-
     })
 }
 
 pub fn set_airport_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
-    custom_filter.set_filter_func ( move | obj | {
+    custom_filter.set_filter_func(move |obj| {
         let airport_object = obj.clone()
             .downcast::<AirportObject>()
             .expect("The item has to be an `Airport`.");
@@ -61,7 +60,7 @@ pub fn set_airport_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>)
 }
 
 pub fn new_navaid_filter(filter: Box<dyn Filter>) -> CustomFilter {
-    CustomFilter::new ( move | obj | {
+    CustomFilter::new(move |obj| {
         let navaid_object = obj.clone()
             .downcast::<NavaidObject>()
             .expect("The item has to be an `Navaid`.");
@@ -69,12 +68,11 @@ pub fn new_navaid_filter(filter: Box<dyn Filter>) -> CustomFilter {
         let navaid = navaid_object.imp().navaid();
         let navaid: &dyn Location = &*navaid;
         filter.filter(navaid)
-
     })
 }
 
 pub fn set_navaid_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
-    custom_filter.set_filter_func ( move | obj | {
+    custom_filter.set_filter_func(move |obj| {
         let navaid_object = obj.clone()
             .downcast::<NavaidObject>()
             .expect("The item has to be an `Navaid`.");
@@ -86,7 +84,7 @@ pub fn set_navaid_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) 
 }
 
 pub fn new_fix_filter(filter: Box<dyn Filter>) -> CustomFilter {
-    CustomFilter::new ( move | obj | {
+    CustomFilter::new(move |obj| {
         let fix_object = obj.clone()
             .downcast::<FixObject>()
             .expect("The item has to be an `Fix`.");
@@ -94,12 +92,11 @@ pub fn new_fix_filter(filter: Box<dyn Filter>) -> CustomFilter {
         let fix = fix_object.imp().fix();
         let fix: &dyn Location = &*fix;
         filter.filter(fix)
-
     })
 }
 
 pub fn set_fix_filter(custom_filter: &CustomFilter, filter: Box<dyn Filter>) {
-    custom_filter.set_filter_func ( move | obj | {
+    custom_filter.set_filter_func(move |obj| {
         let fix_object = obj.clone()
             .downcast::<FixObject>()
             .expect("The item has to be an `Fix`.");
@@ -137,6 +134,7 @@ impl RangeFilter {
         })
     }
 }
+
 impl Filter for RangeFilter {
     // returns true if the coordinate passes the filter
     fn filter(&self, location: &dyn Location) -> bool {
@@ -151,12 +149,11 @@ impl Filter for RangeFilter {
     }
 }
 
-pub struct NilFilter {
-}
+pub struct NilFilter {}
 
 impl NilFilter {
     pub fn new() -> Self {
-        Self{}
+        Self {}
     }
 }
 

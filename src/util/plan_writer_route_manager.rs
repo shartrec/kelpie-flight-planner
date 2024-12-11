@@ -27,8 +27,8 @@ use std::ops::Deref;
 use std::path::Path;
 
 use xmltree::{Element, EmitterConfig, XMLNode};
-use crate::model::location::Location;
 
+use crate::model::location::Location;
 use crate::model::plan::Plan;
 use crate::model::waypoint::Waypoint;
 
@@ -49,8 +49,7 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
     element.children.push(XMLNode::Text(dur));
     plan_element.children.push(XMLNode::Element(element));
 
-    for sector in   plan.get_sectors().deref() {
-
+    for sector in plan.get_sectors().deref() {
         if let Some(start) = sector.get_start() {
             if let Some(from) = make_airport(&start, true) {
                 plan_element.children.push(XMLNode::Element(from));
@@ -79,13 +78,12 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
         .perform_indent(true);
 
     match plan_element.write_with_config(out, config) {
-        Ok(_) => { Ok(())}
-        Err(e) => {Err(e.to_string())}
+        Ok(_) => { Ok(()) }
+        Err(e) => { Err(e.to_string()) }
     }
 }
 
 fn make_cruise(plan: &Plan) -> Option<Element> {
-
     let mut cruise = Element::new("cruise");
     let mut alt = Element::new("altitude-ft");
     alt.attributes.insert("type".to_string(), "int".to_string());
@@ -108,7 +106,7 @@ fn make_airport(waypoint: &Waypoint, start: bool) -> Option<Element> {
     let airport = waypoint.get_airport();
     let runway = airport.get_longest_runway();
     if let Some(runway) = runway {
-        let mut wp = Element::new(if start {"departure"} else {"destination"});
+        let mut wp = Element::new(if start { "departure" } else { "destination" });
 
         let mut ap = Element::new("airport");
         ap.attributes.insert("type".to_string(), "string".to_string());

@@ -158,23 +158,27 @@ mod tests {
         let formatter = LatLongFormat::lat_format();
         assert_eq!(formatter.format(34.5), "34\u{00b0}30\"00\'N");
     }
+
     #[test]
     fn test_fmt_long() {
         let formatter = LatLongFormat::long_format();
         assert_eq!(formatter.format(34.5), "34\u{00b0}30\"00\'E");
     }
+
     #[test]
     fn test_parse_lat() {
         let formatter = LatLongFormat::lat_format();
         assert_eq!(formatter.parse("34\u{00b0}30\"00\'N").unwrap(), 34.5);
         assert_eq!(formatter.parse("34\u{00b0}30\"00\'S").unwrap(), -34.5);
     }
+
     #[test]
     fn test_parse_long() {
         let formatter = LatLongFormat::long_format();
         assert_eq!(formatter.parse("34\u{00b0}30\"00\'E").unwrap(), 34.5);
         assert_eq!(formatter.parse("34\u{00b0}30\"00\'W").unwrap(), -34.5);
     }
+
     #[test]
     fn test_parse_error() -> Result<(), String> {
         let formatter = LatLongFormat::lat_format();

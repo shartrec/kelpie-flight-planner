@@ -292,5 +292,4 @@ impl AirportPainter {
         let _ = cr.show_text(&text);
         let _ = cr.stroke();
     }
-
 }

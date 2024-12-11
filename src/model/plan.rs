@@ -78,15 +78,18 @@ impl Plan {
 
     pub fn remove_sector_at(&mut self, pos: usize) {
         self.sectors.remove(pos);
-        self.dirty = true;    }
+        self.dirty = true;
+    }
 
     pub fn move_sector_up(&mut self, pos: usize) {
         self.sectors.swap(pos - 1, pos);
-        self.dirty = true;    }
+        self.dirty = true;
+    }
 
     pub fn move_sector_down(&mut self, pos: usize) {
         self.sectors.swap(pos, pos + 1);
-        self.dirty = true;    }
+        self.dirty = true;
+    }
 
     pub fn get_sectors(&self) -> &Vec<Sector> {
         &self.sectors
@@ -138,16 +141,16 @@ impl Plan {
             None => {
                 let mut start: String = "".to_string();
                 let mut end: String = "".to_string();
-                let sectors = & self.sectors;
+                let sectors = &self.sectors;
                 if !sectors.is_empty() {
-                    if let Some(airport_start) = sectors.first().and_then( | s | s.get_start()) {
+                    if let Some(airport_start) = sectors.first().and_then(|s| s.get_start()) {
                         start = airport_start.get_id().to_string();
                     }
-                    if let Some(airport_end) = sectors.last().and_then( | s | s.get_end()) {
+                    if let Some(airport_end) = sectors.last().and_then(|s| s.get_end()) {
                         end = airport_end.get_id().to_string();
                     }
                     if !start.is_empty() || !end.is_empty() {
-                        format ! ("{}-{}", start, end)
+                        format!("{}-{}", start, end)
                     } else {
                         String::from("new_plan")
                     }

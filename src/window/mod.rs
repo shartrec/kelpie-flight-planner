@@ -22,6 +22,7 @@
  *
  */
 
+// This module uses OpenGL and all of which functions are unsafe by their very nature.
 #![allow(unsafe_code)]
 
 use adw::Application;
@@ -92,5 +93,4 @@ impl Window {
             }
         }
     }
-
 }

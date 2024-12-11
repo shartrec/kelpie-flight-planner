@@ -38,6 +38,7 @@ use log::error;
 use simplelog::*;
 
 use window::{preferences::PreferenceDialog, Window};
+
 use crate::util::info;
 use crate::window::util::show_help_about;
 
@@ -216,7 +217,6 @@ fn connect_actions(app: &Application, window: &Window) {
             .launch(Some(&window), Some(&Cancellable::default()), |_| {});
     }));
     app.add_action(&action);
-
 }
 
 fn build_ui(app: &Application) {

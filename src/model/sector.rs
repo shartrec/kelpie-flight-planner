@@ -71,8 +71,8 @@ impl Sector {
     }
 
     pub fn insert_waypoint(&mut self, index: usize, waypoint: Waypoint) {
-            if index <= self.waypoints.len() {
-                self.waypoints.insert(index, waypoint);
+        if index <= self.waypoints.len() {
+            self.waypoints.insert(index, waypoint);
         }
         self.dirty = true;
     }
@@ -83,61 +83,61 @@ impl Sector {
     }
 
     pub fn add_waypoint_optimised(&mut self, waypoint: Waypoint) {
-            if self.waypoints.len() == 0 {
-                self.waypoints.push(waypoint);
-            } else {
-                // Find the nearest waypoint in the sector to this waypoint
-                let mut min_distance = f64::MAX;
-                let mut close_wp_index = 0;
-                let mut close_wp = None;
-                for i in 0..self.waypoints.len() {
-                    let w = &self.waypoints.as_slice()[i];
-                    let dist = w.get_loc().distance_to(waypoint.get_loc());
-                    if dist < min_distance {
-                        min_distance = dist;
-                        close_wp = Some(w);
-                        close_wp_index = i;
-                    }
-                }
-                if let Some(wp) = close_wp {
-                    // Now if the distance from the prior wp to the one to be inserted
-                    // is less that from the prior wp to the closest then insert before
-                    // else insert after
-                    let dist_before_cl = if close_wp_index == 0 {
-                            match self.get_start() {
-                                Some(airport) => airport.get_loc().distance_to(wp.get_loc()),
-                                None => 0.0
-                            }
-                        } else {
-                            let w = &self.waypoints.as_slice()[close_wp_index - 1];
-                            w.get_loc().distance_to(wp.get_loc())
-                    };
-                    let dist_before_wp = if close_wp_index == 0 {
-                            match self.get_start() {
-                                Some(airport) => airport.get_loc().distance_to(waypoint.get_loc()),
-                                None => 0.0
-                            }
-                        } else {
-                            let w = &self.waypoints.as_slice()[close_wp_index - 1];
-                            w.get_loc().distance_to(waypoint.get_loc())
-                    };
-                    if dist_before_wp < dist_before_cl {
-                        self.waypoints.insert(close_wp_index, waypoint);
-                    } else {
-                        self.waypoints.insert(close_wp_index + 1, waypoint);
-                    }
-                } else {
-                    self.waypoints.push(waypoint);
+        if self.waypoints.len() == 0 {
+            self.waypoints.push(waypoint);
+        } else {
+            // Find the nearest waypoint in the sector to this waypoint
+            let mut min_distance = f64::MAX;
+            let mut close_wp_index = 0;
+            let mut close_wp = None;
+            for i in 0..self.waypoints.len() {
+                let w = &self.waypoints.as_slice()[i];
+                let dist = w.get_loc().distance_to(waypoint.get_loc());
+                if dist < min_distance {
+                    min_distance = dist;
+                    close_wp = Some(w);
+                    close_wp_index = i;
                 }
             }
+            if let Some(wp) = close_wp {
+                // Now if the distance from the prior wp to the one to be inserted
+                // is less that from the prior wp to the closest then insert before
+                // else insert after
+                let dist_before_cl = if close_wp_index == 0 {
+                    match self.get_start() {
+                        Some(airport) => airport.get_loc().distance_to(wp.get_loc()),
+                        None => 0.0
+                    }
+                } else {
+                    let w = &self.waypoints.as_slice()[close_wp_index - 1];
+                    w.get_loc().distance_to(wp.get_loc())
+                };
+                let dist_before_wp = if close_wp_index == 0 {
+                    match self.get_start() {
+                        Some(airport) => airport.get_loc().distance_to(waypoint.get_loc()),
+                        None => 0.0
+                    }
+                } else {
+                    let w = &self.waypoints.as_slice()[close_wp_index - 1];
+                    w.get_loc().distance_to(waypoint.get_loc())
+                };
+                if dist_before_wp < dist_before_cl {
+                    self.waypoints.insert(close_wp_index, waypoint);
+                } else {
+                    self.waypoints.insert(close_wp_index + 1, waypoint);
+                }
+            } else {
+                self.waypoints.push(waypoint);
+            }
+        }
         self.dirty = true;
     }
 
     pub fn add_all_waypoint(&mut self, waypoints: Vec<Waypoint>) {
         self.waypoints.clear();
-            for wp in waypoints {
-                self.waypoints.push(wp);
-            }
+        for wp in waypoints {
+            self.waypoints.push(wp);
+        }
         self.dirty = true;
     }
 
@@ -156,21 +156,21 @@ impl Sector {
     }
 
     pub fn move_waypoint_up(&mut self, index: usize) {
-            if index > 0 && index < self.waypoints.len() {
-                self.waypoints.swap(index - 1, index);
-            }
+        if index > 0 && index < self.waypoints.len() {
+            self.waypoints.swap(index - 1, index);
+        }
         self.dirty = true;
     }
 
     pub fn move_waypoint_down(&mut self, index: usize) {
-            if index < self.waypoints.len() - 1{
-                self.waypoints.swap(index, index + 1);
+        if index < self.waypoints.len() - 1 {
+            self.waypoints.swap(index, index + 1);
         }
         self.dirty = true;
     }
 
     pub fn is_empty(&self) -> bool {
-        ! (self.airport_start.is_some()
+        !(self.airport_start.is_some()
             || self.airport_end.is_some()
             || self.waypoints.len() > 0)
     }
@@ -180,7 +180,7 @@ impl Sector {
             Some(w) => w.get_id(),
             None => "",
         };
-        let n2 =match &self.airport_end {
+        let n2 = match &self.airport_end {
             Some(w) => w.get_id(),
             None => "",
         };
@@ -219,10 +219,10 @@ impl Sector {
 
     pub fn get_duration(&self, plan: &Plan) -> f64 {
         self.waypoints
-                .iter()
-                .map(move |wp| plan.get_time_to(wp))
-                .reduce(|acc, t| acc + t)
-                .unwrap_or(0.0)
+            .iter()
+            .map(move |wp| plan.get_time_to(wp))
+            .reduce(|acc, t| acc + t)
+            .unwrap_or(0.0)
     }
     pub fn get_distance_as_string(&self, plan: &Plan) -> String {
         let pref = crate::preference::manager();
@@ -233,10 +233,10 @@ impl Sector {
     }
     pub fn get_distance(&self, plan: &Plan) -> f64 {
         self.waypoints
-                .iter()
-                .map(move |wp| plan.get_leg_distance_to(wp))
-                .reduce(|acc, t| acc + t)
-                .unwrap_or(0.0)
+            .iter()
+            .map(move |wp| plan.get_leg_distance_to(wp))
+            .reduce(|acc, t| acc + t)
+            .unwrap_or(0.0)
     }
 
     pub fn is_dirty(&self) -> bool {

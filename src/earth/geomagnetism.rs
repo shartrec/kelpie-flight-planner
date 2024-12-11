@@ -199,9 +199,9 @@ pub struct Geomagnetism {
     k: [[f64; 13]; 13],
 
     /** The variables otime (old time), oalt (old altitude),
-     * olat (old latitude), olon (old longitude), are used to
-     * store the values used from the previous calculation to
-     * save on calculation time if some inputs don't change*/
+        * olat (old latitude), olon (old longitude), are used to
+        * store the values used from the previous calculation to
+        * save on calculation time if some inputs don't change*/
     otime: f64,
     oalt: f64,
     olat: f64,
@@ -354,10 +354,10 @@ impl Geomagnetism {
     }
 
     /** Initialise the instance and calculate for given location, altitude and date
-     * @param latitude Latitude in decimal degrees
-     * @param longitude Longitude in decimal degrees
-     * @param altitude Altitude in metres (with respect to WGS-1984 ellipsoid)
-     * @param calendar Calendar for date of calculation*/
+        * @param latitude Latitude in decimal degrees
+        * @param longitude Longitude in decimal degrees
+        * @param altitude Altitude in metres (with respect to WGS-1984 ellipsoid)
+        * @param calendar Calendar for date of calculation*/
     pub fn new(
         latitude: f64,
         longitude: f64,
@@ -370,10 +370,10 @@ impl Geomagnetism {
     }
 
     /** Calculate for given location, altitude and date
-     * @param latitude Latitude in decimal degrees
-     * @param longitude Longitude in decimal degrees
-     * @param altitude Altitude in metres (with respect to WGS-1984 ellipsoid)
-     * @param calendar Calendar for date of calculation*/
+        * @param latitude Latitude in decimal degrees
+        * @param longitude Longitude in decimal degrees
+        * @param altitude Altitude in metres (with respect to WGS-1984 ellipsoid)
+        * @param calendar Calendar for date of calculation*/
     fn calculate(
         &mut self,
         latitude: f64,
@@ -595,13 +595,14 @@ impl Geomagnetism {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use chrono::prelude::*;
+    use chrono::Utc;
+
     use super::Geomagnetism;
 
     #[test]
     fn test_declination() {
-        let date =  Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).latest();
+        let date = Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).latest();
 
         let geo = Geomagnetism::new(-34.1356, 150.9231, None, date);
         assert_between(geo.declination, 12.75, 12.85);

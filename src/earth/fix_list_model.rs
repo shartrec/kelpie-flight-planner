@@ -54,11 +54,9 @@ mod imp {
     use crate::model::fix_object::FixObject;
 
     #[derive(Default)]
-    pub struct Fixes {
-    }
+    pub struct Fixes {}
 
-    impl Fixes {
-    }
+    impl Fixes {}
 
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
@@ -97,6 +95,5 @@ mod imp {
             }
         }
     }
-
 }
 

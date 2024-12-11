@@ -34,7 +34,6 @@ pub struct SphereRenderer {
 }
 
 impl SphereRenderer {
-
     pub fn new() -> Self {
         let mut sphere_builder = map_utils::GLSphereBuilder::new();
         let (vertices, indices) = sphere_builder.draw_sphere(0.995);
@@ -54,14 +53,13 @@ impl SphereRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, sphere_index_buffer);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (indices.len()* std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
+                (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
                 indices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-
         }
 
         SphereRenderer {

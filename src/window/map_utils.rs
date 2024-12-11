@@ -33,7 +33,6 @@ pub(super) struct Vertex {
 }
 
 
-
 pub(super) struct GLSphereBuilder {
     vdata: [[f32; 3]; 12],
     tindices: [[usize; 3]; 20],
@@ -97,11 +96,11 @@ impl GLSphereBuilder {
             let v1 = self.vdata[self.tindices[i][0]];
             let v2 = self.vdata[self.tindices[i][1]];
             let v3 = self.vdata[self.tindices[i][2]];
-            vertices.push(Vertex { position: self.scale(&v1, &radius)});
+            vertices.push(Vertex { position: self.scale(&v1, &radius) });
             let i1 = vertices.len() - 1;
-            vertices.push(Vertex { position: self.scale(&v2, &radius)});
+            vertices.push(Vertex { position: self.scale(&v2, &radius) });
             let i2 = vertices.len() - 1;
-            vertices.push(Vertex { position: self.scale(&v3, &radius)});
+            vertices.push(Vertex { position: self.scale(&v3, &radius) });
             let i3 = vertices.len() - 1;
 
             self.subdivide(
@@ -111,7 +110,7 @@ impl GLSphereBuilder {
                 i2,
                 i3,
                 6,
-                &radius
+                &radius,
             );
         }
 
@@ -141,11 +140,11 @@ impl GLSphereBuilder {
         self.normalize(&mut v23);
         self.normalize(&mut v31);
 
-        vertices.push(Vertex { position: self.scale(&v12, radius)});
+        vertices.push(Vertex { position: self.scale(&v12, radius) });
         let i12 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v23, radius)});
+        vertices.push(Vertex { position: self.scale(&v23, radius) });
         let i23 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v31, radius)});
+        vertices.push(Vertex { position: self.scale(&v31, radius) });
         let i31 = vertices.len() - 1;
 
         self.subdivide(vertices, indices, i1, i12, i31, depth - 1, radius);
@@ -169,11 +168,9 @@ impl GLSphereBuilder {
         indices.push(i3 as u32);
     }
 
-    fn scale(&self, v: &[f32; 3], radius: &f32) -> [f32; 3]{
-        [v[0] * radius, v[1] * radius, v[2]*radius]
+    fn scale(&self, v: &[f32; 3], radius: &f32) -> [f32; 3] {
+        [v[0] * radius, v[1] * radius, v[2] * radius]
     }
-
-
 }
 
 pub(super) struct GLShorelineBuilder {

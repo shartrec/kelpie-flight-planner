@@ -37,7 +37,6 @@ struct Asset;
 
 // Read shape file into a Vector of shapes for the shorelines of the world.
 pub fn read_shapes() -> Option<Vec<Polygon>> {
-
     let mut world: Vec<Polygon> = Vec::new();
 
     let file_1 = Asset::get("GSHHS_l_L1.shp");
@@ -55,7 +54,7 @@ pub fn read_shapes() -> Option<Vec<Polygon>> {
                                     Shape::Polygon(pts) => world.push(pts.clone()),
                                     _ => {
                                         error!("World shoreline data in file is not polygons as expected: ");
-                                    },
+                                    }
                                 }
                             }
                         }
@@ -64,11 +63,10 @@ pub fn read_shapes() -> Option<Vec<Polygon>> {
                         error!("Unable to open file for world shoreline data");
                     }
                 }
-
             }
             None => {
                 error!("Unable to find the path in preferences for world shoreline data");
-            },
+            }
         }
     }
     Some(world)
@@ -81,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_construct() {
-        let v  = read_shapes();
+        let v = read_shapes();
         assert!(&v.is_some());
         let vec = v.unwrap();
         assert!(!vec.is_empty());

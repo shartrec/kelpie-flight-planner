@@ -195,28 +195,28 @@ mod imp {
         }
 
         fn get_id_sorter() -> CustomSorter {
-            let f = |a: Arc<Fix>, b: Arc<Fix> | {
+            let f = |a: Arc<Fix>, b: Arc<Fix>| {
                 Ordering::from(a.get_id().partial_cmp(b.get_id()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_lat_sorter() -> CustomSorter {
-            let f = |a: Arc<Fix>, b: Arc<Fix> | {
+            let f = |a: Arc<Fix>, b: Arc<Fix>| {
                 Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_long_sorter() -> CustomSorter {
-            let f = |a: Arc<Fix>, b: Arc<Fix> | {
+            let f = |a: Arc<Fix>, b: Arc<Fix>| {
                 Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_common_sorter(f: fn(Arc<Fix>, Arc<Fix>) -> Ordering) -> CustomSorter {
-            CustomSorter::new( move |a, b| {
+            CustomSorter::new(move |a, b| {
                 let fix_a = a.clone().downcast::<FixObject>()
                     .expect("The item has to be an `Fix`.");
                 let fix_b = b.clone().downcast::<FixObject>()
@@ -225,7 +225,6 @@ mod imp {
                 f(fix_a.imp().fix(), fix_b.imp().fix())
             })
         }
-
     }
 
     #[glib::object_subclass]

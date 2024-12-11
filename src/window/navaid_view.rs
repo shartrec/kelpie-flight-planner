@@ -22,6 +22,7 @@
  *
  */
 #![forbid(unsafe_code)]
+
 use gtk::{self, CompositeTemplate, glib, prelude::*, subclass::prelude::*};
 
 mod imp {

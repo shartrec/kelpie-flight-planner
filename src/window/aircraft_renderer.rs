@@ -134,9 +134,9 @@ impl AircraftRenderer {
 
 // Calculate positions of key points based on aircraft heading
         let nose_r = aircraft_position.coordinate_at(fuselage_length / 2.0, heading).coordinate_at(fuselage_width / 2.0, (heading + 90.0) % 360.0);
-        let nose_l = nose_r.coordinate_at(fuselage_width,(heading + 270.0) % 360.0);
-        let tail_r = nose_r.coordinate_at(fuselage_length , (heading + 180.0) % 360.0);
-        let tail_l = nose_l.coordinate_at(fuselage_length , (heading + 180.0) % 360.0);
+        let nose_l = nose_r.coordinate_at(fuselage_width, (heading + 270.0) % 360.0);
+        let tail_r = nose_r.coordinate_at(fuselage_length, (heading + 180.0) % 360.0);
+        let tail_l = nose_l.coordinate_at(fuselage_length, (heading + 180.0) % 360.0);
         let left_wing_r = aircraft_position.coordinate_at(wing_length / 2.0, (heading + 270.0) % 360.0);
         let left_wing_f = left_wing_r.coordinate_at(wing_width, heading);
         let right_wing_f = left_wing_f.coordinate_at(wing_length, (heading + 90.0) % 360.0);
@@ -178,7 +178,5 @@ impl AircraftRenderer {
         vertices.push(Vertex { position: left_tail_projected_f });
 
         vertices
-
     }
-
 }

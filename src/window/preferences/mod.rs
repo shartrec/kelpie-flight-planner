@@ -74,15 +74,14 @@ mod imp {
         fn instance_init(obj: &InitializingObject<Self>) {
             obj.init_template();
         }
-
     }
 
 
     impl ObjectImpl for PreferenceDialog {}
 
     impl WidgetImpl for PreferenceDialog {}
-    impl WindowImpl for PreferenceDialog {}
 
+    impl WindowImpl for PreferenceDialog {}
 }
 
 glib::wrapper! {
@@ -97,18 +96,17 @@ impl PreferenceDialog {
         glib::Object::new::<PreferenceDialog>()
     }
 }
+
 impl Default for PreferenceDialog {
     fn default() -> Self {
         PreferenceDialog::new()
     }
 }
 
-pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder: bool) {
-
+pub fn process_file_browse(field: Entry, button: Button, title: &str, is_folder: bool) {
     let text = field.text();
     let path = Path::new(&text);
     let f = File::for_path(path);
-
 
 
     let dialog = FileDialog::new();
@@ -136,7 +134,7 @@ pub fn process_file_browse (field: Entry, button: Button, title: &str, is_folder
         None => None,
     };
 
-    let closure = move | result: Result<File, _>| {
+    let closure = move |result: Result<File, _>| {
         if let Ok(file) = result {
             if let Some(path) = file.path() {
                 let s = path.to_str();

@@ -42,7 +42,6 @@ pub(crate) mod fg_link;
 pub(crate) mod info;
 
 pub fn get_plan_file_filter(ext: &str) -> ListStore {
-
     let store = ListStore::new::<FileFilter>();
     let filter = FileFilter::new();
     filter.add_suffix(ext);
