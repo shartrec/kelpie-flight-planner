@@ -21,7 +21,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install libglib2.0
         sudo apt-get install libgtk-4-1
-        sudo apt-get install libpango1.0-0
+        sudo apt-get install libpango1.0
     - name: Build
       run: cargo build --verbose
     - name: Run tests
