@@ -32,7 +32,7 @@ mod imp {
 
     use glib::subclass::InitializingObject;
     use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
-    use gtk::gdk::Rectangle;
+    use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
     use log::error;
@@ -299,6 +299,16 @@ mod imp {
                 }
             }));
             self.airport_list.add_controller(gesture);
+            // Add airport to plan on Enter.
+            let ev_key = gtk::EventControllerKey::new();
+            ev_key.connect_key_released(clone!(#[weak(rename_to = view)] self, move | _event, key_val, _key_code, modifier | {
+                if key_val == Key::Return && modifier == ModifierType::empty() {
+                    if let Some(airport) = view.get_selection() {
+                        view.add_to_plan(airport);
+                    }
+                }
+            }));
+            self.airport_list.add_controller(ev_key);
 
             // build popover menu
             let builder = Builder::from_resource("/com/shartrec/kelpie_planner/airport_popover.ui");
