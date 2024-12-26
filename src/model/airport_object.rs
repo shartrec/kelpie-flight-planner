@@ -49,7 +49,7 @@ mod imp {
     use std::cell::RefCell;
     use std::sync::Arc;
 
-    use gtk::glib;
+    use gtk::{glib, Label};
     use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::airport::Airport;
@@ -57,6 +57,7 @@ mod imp {
     #[derive(Default)]
     pub struct AirportObject {
         airport: RefCell<Option<Arc<Airport>>>,
+        ui: RefCell<Option<Label>>
     }
 
     impl AirportObject {
@@ -66,6 +67,14 @@ mod imp {
 
         pub fn airport(&self) -> Arc<Airport> {
             self.airport.borrow().as_ref().unwrap().clone()
+        }
+
+        pub fn set_ui(&self, label: Option<Label>) {
+            self.ui.replace(label);
+        }
+
+        pub fn ui(&self) -> Option<Label> {
+            self.ui.borrow().clone()
         }
     }
 

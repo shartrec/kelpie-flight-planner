@@ -30,7 +30,9 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter,
+              Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow,
+              SingleSelection, SortListModel};
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
@@ -39,6 +41,7 @@ mod imp {
     use crate::earth::coordinate::Coordinate;
     use crate::earth::fix_list_model::Fixes;
     use crate::event;
+    use crate::glib::Propagation;
     use crate::event::Event;
     use crate::model::fix::Fix;
     use crate::model::fix_object::FixObject;
@@ -79,29 +82,29 @@ mod imp {
 
     impl FixView {
         pub fn initialise(&self) {
+            // Add a sorter
+            self.col_id.set_sorter(Some(&Self::get_id_sorter()));
+            self.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+            self.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+
+            let sorter = self.fix_list.sorter();
+
+            let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
+            self.filter_list_model.replace(Some(fm.clone()));
+
+            let slm = SortListModel::new(Some(fm), sorter);
+            slm.set_incremental(true);
+
+            let selection_model = SingleSelection::new(Some(slm));
+            selection_model.set_autoselect(false);
+            self.fix_list.set_model(Some(&selection_model));
+            self.fix_list.set_single_click_activate(true);
+
             if let Some(rx) = event::manager().register_listener() {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                     while let Ok(ev) = rx.recv().await {
                         if let Event::FixesLoaded = ev {
                             view.fix_search.set_sensitive(true);
-                            let fm = FilterListModel::new(Some(Fixes::new()), Some(new_fix_filter(Box::new(NilFilter::new()))));
-
-                            view.filter_list_model.replace(Some(fm.clone()));
-
-                             // Add a sorter
-                            view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                            view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                            view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
-
-                            let sorter = view.fix_list.sorter();
-
-                            let slm = SortListModel::new(Some(fm), sorter);
-                            slm.set_incremental(true);
-
-                            let selection_model = SingleSelection::new(Some(slm));
-                            selection_model.set_autoselect(false);
-                            view.fix_list.set_model(Some(&selection_model));
-                            view.fix_list.set_single_click_activate(true);
                         }
                     }
                 }));
@@ -149,11 +152,13 @@ mod imp {
                     }
                 }
             }
-            let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
+            if let Some(filter_ref) = self.filter_list_model.borrow().as_ref() {
+                let custom_filter = filter_ref.filter().unwrap().downcast::<CustomFilter>().unwrap();
 
-            self.fix_list.model().unwrap().unselect_all();
-            set_fix_filter(&custom_filter, Box::new(combined_filter));
-            custom_filter.changed(FilterChange::Different);
+                self.fix_list.model().unwrap().unselect_all();
+                set_fix_filter(&custom_filter, Box::new(combined_filter));
+                custom_filter.changed(FilterChange::Different);
+            }
         }
 
         fn add_to_plan(&self, fix: Arc<Fix>) {
@@ -167,18 +172,20 @@ mod imp {
             }
         }
 
-        fn get_selection(&self) -> Option<Arc<Fix>> {
-            let selection = self.fix_list.model().unwrap().selection();
-            let sel_ap = selection.nth(0);
-            self.get_model_navaid(sel_ap)
+        fn get_selected_fix(&self) -> Option<Arc<Fix>> {
+            self.get_selection().map(|fix| fix.imp().fix().clone())
         }
 
-        fn get_model_navaid(&self, sel_ap: u32) -> Option<Arc<Fix>> {
+        fn get_selection(&self) -> Option<FixObject> {
+            let selection = self.fix_list.model().unwrap().selection();
+            let sel_ap = selection.nth(0);
+            self.get_model_fix(sel_ap)
+        }
+
+        fn get_model_fix(&self, sel_ap: u32) -> Option<FixObject> {
             let selection = self.fix_list.model().unwrap().item(sel_ap);
             if let Some(object) = selection {
-                let fix_object = object.downcast::<FixObject>()
-                    .expect("The item has to be an `Fix`.");
-                Some(fix_object.imp().fix())
+                object.downcast::<FixObject>().ok()
             } else {
                 None
             }
@@ -251,6 +258,7 @@ mod imp {
             self.col_id.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
                 label.set_label(fix.imp().fix().get_id());
                 label.set_xalign(0.0);
+                fix.imp().set_ui(Some(label.clone()));
             })));
 
 
@@ -264,33 +272,14 @@ mod imp {
                 label.set_xalign(0.0);
             })));
 
-            // Add fix to plan on Double click.
-            // This only works because we have  ```view.fix_list.set_single_click_activate(true)```
-            // and the single click activate absorbs the first click and the second is passed to the gesture.
-            // This is probably best described as undocumented behaviour.
-            let gesture = gtk::GestureClick::new();
-            gesture.set_button(1);
-            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move | gesture, n, _x, _y| {
-                if n == 1 {
-                    gesture.set_state(gtk::EventSequenceState::Claimed);
-                    if let Some(fix) = view.get_selection() {
-                        view.add_to_plan(fix);
-                    }
-                }
-            }));
-            self.fix_list.add_controller(gesture);
-            // Add fix to plan on Enter.
-            let ev_key = gtk::EventControllerKey::new();
-            ev_key.connect_key_released(clone!(#[weak(rename_to = view)] self, move | _event, key_val, _key_code, modifier | {
-                if key_val == Key::Return && modifier == ModifierType::empty() {
-                    if let Some(fix) = view.get_selection() {
-                        view.add_to_plan(fix);
-                    }
-                }
-            }));
-            self.fix_list.add_controller(ev_key);
 
-
+            self.fix_list.connect_activate(
+                clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
+                    if let Some(fix) = view.get_model_fix(position) {
+                        view.add_to_plan(fix.imp().fix().clone());
+                    }
+                }),
+            );
             // build popover menu
 
             let builder = Builder::from_resource("/com/shartrec/kelpie_planner/fix_popover.ui");
@@ -306,6 +295,29 @@ mod imp {
                 }
                 None => error!(" Not a popover"),
             }
+
+            // Enable context menu key
+            let ev_key = gtk::EventControllerKey::new();
+            ev_key.connect_key_pressed(clone!(#[weak(rename_to = view)] self, #[upgrade_or] Propagation::Proceed,
+                    move | _event, key_val, _key_code, modifier | {
+                if key_val == Key::Menu && modifier == ModifierType::empty() {
+                    if let Some(fix) = view.get_selection() {
+                        if let Some(label) = fix.imp().ui().as_ref() {
+                            let rect = label.compute_bounds(&view.fix_list.get()).unwrap();
+                            let rect = Rectangle::new(rect.x() as i32, rect.y() as i32, 1, 1);
+                            if let Some(popover) = view.popover.borrow().as_ref() {
+                                popover.set_pointing_to(Some(&rect));
+                                popover.popup();
+                            };
+                        }
+                    }
+                    Propagation::Stop
+                } else {
+                    Propagation::Proceed
+                }
+
+            }));
+            self.fix_list.add_controller(ev_key);
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
@@ -339,25 +351,29 @@ mod imp {
             self.fix_window
                 .get()
                 .insert_action_group("fix", Some(&actions));
+
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-               view.fix_list.activate();
+                if let Some(fix) = view.get_selected_fix() {
+                    view.add_to_plan(fix);
+                }
             }));
+            actions.add_action(&action);
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                    if let Some(fix) = view.get_selection() {
-                        if let Some(airport_view) = get_airport_view(&view.fix_window.get()) {
-                            show_airport_view(&view.fix_window.get());
-                            airport_view.imp().search_near(fix.get_loc());
-                        }
+                if let Some(fix) = view.get_selected_fix() {
+                    if let Some(airport_view) = get_airport_view(&view.fix_window.get()) {
+                        show_airport_view(&view.fix_window.get());
+                        airport_view.imp().search_near(fix.get_loc());
                     }
+                }
             }));
             actions.add_action(&action);
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-               if let Some(fix) = view.get_selection() {
+               if let Some(fix) = view.get_selected_fix() {
                     if let Some(navaid_view) = get_airport_view(&view.fix_window.get()) {
                         show_navaid_view(&view.fix_window.get());
                         navaid_view.imp().search_near(fix.get_loc());
@@ -368,17 +384,9 @@ mod imp {
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(fix) = view.get_selection() {
+                if let Some(fix) = view.get_selected_fix() {
                         view.search_near(fix.get_loc());
                }
-            }));
-            actions.add_action(&action);
-
-            let action = SimpleAction::new("add_to_plan", None);
-            action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(navaid) = view.get_selection() {
-                    view.add_to_plan(navaid);
-                }
             }));
             actions.add_action(&action);
         }

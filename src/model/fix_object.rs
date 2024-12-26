@@ -49,7 +49,7 @@ mod imp {
     use std::cell::RefCell;
     use std::sync::Arc;
 
-    use gtk::glib;
+    use gtk::{glib, Label};
     use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::fix::Fix;
@@ -57,6 +57,7 @@ mod imp {
     #[derive(Default)]
     pub struct FixObject {
         fix: RefCell<Option<Arc<Fix>>>,
+        ui: RefCell<Option<Label>>
     }
 
     impl FixObject {
@@ -66,6 +67,14 @@ mod imp {
 
         pub fn fix(&self) -> Arc<Fix> {
             self.fix.borrow().as_ref().unwrap().clone()
+        }
+
+        pub fn set_ui(&self, label: Option<Label>) {
+            self.ui.replace(label);
+        }
+
+        pub fn ui(&self) -> Option<Label> {
+            self.ui.borrow().clone()
         }
     }
 

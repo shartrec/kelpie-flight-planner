@@ -49,7 +49,7 @@ mod imp {
     use std::cell::RefCell;
     use std::sync::Arc;
 
-    use gtk::glib;
+    use gtk::{glib, Label};
     use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::navaid::Navaid;
@@ -57,6 +57,7 @@ mod imp {
     #[derive(Default)]
     pub struct NavaidObject {
         navaid: RefCell<Option<Arc<Navaid>>>,
+        ui: RefCell<Option<Label>>
     }
 
     impl NavaidObject {
@@ -66,6 +67,14 @@ mod imp {
 
         pub fn navaid(&self) -> Arc<Navaid> {
             self.navaid.borrow().as_ref().unwrap().clone()
+        }
+
+        pub fn set_ui(&self, label: Option<Label>) {
+            self.ui.replace(label);
+        }
+
+        pub fn ui(&self) -> Option<Label> {
+            self.ui.borrow().clone()
         }
     }
 

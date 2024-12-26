@@ -31,7 +31,9 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter,
+              Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow,
+              SingleSelection, SortListModel};
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
@@ -41,6 +43,7 @@ mod imp {
     use crate::earth::coordinate::Coordinate;
     use crate::event;
     use crate::event::Event;
+    use crate::glib::Propagation;
     use crate::model::airport::Airport;
     use crate::model::airport_object::AirportObject;
     use crate::model::location::Location;
@@ -83,30 +86,30 @@ mod imp {
 
     impl AirportView {
         pub fn initialise(&self) {
+            // Add a sorter
+            self.col_id.set_sorter(Some(&Self::get_id_sorter()));
+            self.col_name.set_sorter(Some(&Self::get_name_sorter()));
+            self.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
+            self.col_lon.set_sorter(Some(&Self::get_long_sorter()));
+
+            let sorter = self.airport_list.sorter();
+
+            let fm = FilterListModel::new(Some(Airports::new()), Some(new_airport_filter(Box::new(NilFilter::new()))));
+            self.filter_list_model.replace(Some(fm.clone()));
+
+            let slm = SortListModel::new(Some(fm), sorter);
+            slm.set_incremental(true);
+
+            let selection_model = SingleSelection::new(Some(slm));
+            selection_model.set_autoselect(false);
+            self.airport_list.set_model(Some(&selection_model));
+            self.airport_list.set_single_click_activate(true);
+
             if let Some(rx) = event::manager().register_listener() {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                     while let Ok(ev) = rx.recv().await {
                         if let Event::AirportsLoaded = ev {
                             view.airport_search.set_sensitive(true);
-
-                            let fm = FilterListModel::new(Some(Airports::new()), Some(new_airport_filter(Box::new(NilFilter::new()))));
-                            view.filter_list_model.replace(Some(fm.clone()));
-
-                             // Add a sorter
-                            view.col_id.set_sorter(Some(&Self::get_id_sorter()));
-                            view.col_name.set_sorter(Some(&Self::get_name_sorter()));
-                            view.col_lat.set_sorter(Some(&Self::get_lat_sorter()));
-                            view.col_lon.set_sorter(Some(&Self::get_long_sorter()));
-
-                            let sorter = view.airport_list.sorter();
-
-                            let slm = SortListModel::new(Some(fm), sorter);
-                            slm.set_incremental(true);
-
-                            let selection_model = SingleSelection::new(Some(slm));
-                            selection_model.set_autoselect(false);
-                            view.airport_list.set_model(Some(&selection_model));
-                            view.airport_list.set_single_click_activate(true);
                         }
                     }
                 }));
@@ -156,11 +159,13 @@ mod imp {
                 }
             }
 
-            let custom_filter = self.filter_list_model.borrow().as_ref().unwrap().filter().unwrap().downcast::<CustomFilter>().unwrap();
+            if let Some(filter_ref) = self.filter_list_model.borrow().as_ref() {
+                let custom_filter = filter_ref.filter().unwrap().downcast::<CustomFilter>().unwrap();
 
-            self.airport_list.model().unwrap().unselect_all();
-            set_airport_filter(&custom_filter, Box::new(combined_filter));
-            custom_filter.changed(FilterChange::Different);
+                self.airport_list.model().unwrap().unselect_all();
+                set_airport_filter(&custom_filter, Box::new(combined_filter));
+                custom_filter.changed(FilterChange::Different);
+            }
         }
 
         fn add_to_plan(&self, airport: Arc<Airport>) {
@@ -170,19 +175,20 @@ mod imp {
             }
         }
 
-        fn get_selection(&self) -> Option<Arc<Airport>> {
+        fn get_selected_airport(&self) -> Option<Arc<Airport>> {
+            self.get_selection().map(|airport| airport.imp().airport().clone())
+        }
+
+        fn get_selection(&self) -> Option<AirportObject> {
             let selection = self.airport_list.model().unwrap().selection();
             let sel_ap = selection.nth(0);
             self.get_model_airport(sel_ap)
         }
 
-        fn get_model_airport(&self, sel_ap: u32) -> Option<Arc<Airport>> {
+        fn get_model_airport(&self, sel_ap: u32) -> Option<AirportObject> {
             let selection = self.airport_list.model().unwrap().item(sel_ap);
             if let Some(object) = selection {
-                let airport_object = object.downcast::<AirportObject>()
-                    .expect("The item has to be an `Airport`.");
-
-                Some(airport_object.imp().airport())
+                object.downcast::<AirportObject>().ok()
             } else {
                 None
             }
@@ -262,6 +268,7 @@ mod imp {
             self.col_id.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
                 label.set_label(airport.imp().airport().get_id());
                 label.set_xalign(0.0);
+                airport.imp().set_ui(Some(label.clone()));
             })));
 
             self.col_name.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
@@ -284,31 +291,13 @@ mod imp {
                 label.set_xalign(1.0);
             })));
 
-            // Add airport to plan on Double click.
-            // This only works because we have  ```view.airport_list.set_single_click_activate(true)```
-            // and the single click activate absorbs the first click and the second is passed to the gesture.
-            // This is probably best described as undocumented behaviour.
-            let gesture = gtk::GestureClick::new();
-            gesture.set_button(1);
-            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move | gesture, n, _x, _y| {
-                if n == 1 {
-                    gesture.set_state(gtk::EventSequenceState::Claimed);
-                    if let Some(airport) = view.get_selection() {
-                        view.add_to_plan(airport);
+            self.airport_list.connect_activate(
+                clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
+                    if let Some(airport) = view.get_model_airport(position) {
+                        view.add_to_plan(airport.imp().airport().clone());
                     }
-                }
-            }));
-            self.airport_list.add_controller(gesture);
-            // Add airport to plan on Enter.
-            let ev_key = gtk::EventControllerKey::new();
-            ev_key.connect_key_released(clone!(#[weak(rename_to = view)] self, move | _event, key_val, _key_code, modifier | {
-                if key_val == Key::Return && modifier == ModifierType::empty() {
-                    if let Some(airport) = view.get_selection() {
-                        view.add_to_plan(airport);
-                    }
-                }
-            }));
-            self.airport_list.add_controller(ev_key);
+                }),
+            );
 
             // build popover menu
             let builder = Builder::from_resource("/com/shartrec/kelpie_planner/airport_popover.ui");
@@ -324,6 +313,29 @@ mod imp {
                 }
                 None => error!(" Not a popover"),
             }
+
+            // Enable context menu key
+            let ev_key = gtk::EventControllerKey::new();
+            ev_key.connect_key_pressed(clone!(#[weak(rename_to = view)] self, #[upgrade_or] Propagation::Proceed,
+                    move | _event, key_val, _key_code, modifier | {
+                if key_val == Key::Menu && modifier == ModifierType::empty() {
+                    if let Some(airport) = view.get_selection() {
+                        if let Some(label) = airport.imp().ui().as_ref() {
+                            let rect = label.compute_bounds(&view.airport_list.get()).unwrap();
+                            let rect = Rectangle::new(rect.x() as i32, rect.y() as i32, 1, 1);
+                            if let Some(popover) = view.popover.borrow().as_ref() {
+                                popover.set_pointing_to(Some(&rect));
+                                popover.popup();
+                            };
+                        }
+                    }
+                    Propagation::Stop
+                } else {
+                    Propagation::Proceed
+                }
+
+            }));
+            self.airport_list.add_controller(ev_key);
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
@@ -364,7 +376,7 @@ mod imp {
 
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(airport) = view.get_selection() {
+                if let Some(airport) = view.get_selected_airport() {
                     view.add_to_plan(airport);
                 }
             }));
@@ -372,7 +384,7 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                    if let Some(airport) = view.get_selection() {
+                    if let Some(airport) = view.get_selected_airport() {
                         view.search_near(airport.get_loc());
                     }
             }));
@@ -380,7 +392,7 @@ mod imp {
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                    if let Some(airport) = view.get_selection() {
+                    if let Some(airport) = view.get_selected_airport() {
                         if let Some(navaid_view) = get_navaid_view(&view.airport_window.get()) {
                             show_navaid_view(&view.airport_window.get());
                             navaid_view.imp().search_near(airport.get_loc());
@@ -391,7 +403,7 @@ mod imp {
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(airport) = view.get_selection() {
+                if let Some(airport) = view.get_selected_airport() {
                         if let Some(fix_view) = get_fix_view(&view.airport_window.get()) {
                             show_fix_view(&view.airport_window.get());
                             fix_view.imp().search_near(airport.get_loc());
@@ -402,12 +414,12 @@ mod imp {
 
             let action = SimpleAction::new("view", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(airport) = view.get_selection() {
-                        if let Some(airport_map_view) = get_airport_map_view(&view.airport_window.get()) {
-                            show_airport_map_view(&view.airport_window.get());
-                            airport_map_view.imp().set_airport(airport.clone());
-                        }
+                if let Some(airport) = view.get_selected_airport() {
+                    if let Some(airport_map_view) = get_airport_map_view(&view.airport_window.get()) {
+                        show_airport_map_view(&view.airport_window.get());
+                        airport_map_view.imp().set_airport(airport.clone());
                     }
+                }
             }));
             actions.add_action(&action);
         }

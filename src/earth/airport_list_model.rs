@@ -45,6 +45,8 @@ impl Default for Airports {
 }
 
 mod imp {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
     use gtk::{gio, glib};
     use gtk::glib::Object;
     use gtk::prelude::StaticType;
@@ -54,7 +56,9 @@ mod imp {
     use crate::model::airport_object::AirportObject;
 
     #[derive(Default)]
-    pub struct Airports {}
+    pub struct Airports {
+        cache: RefCell<HashMap<u32, AirportObject>>,
+    }
 
     impl Airports {}
 
@@ -82,17 +86,19 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            match get_earth_model().airports
-                .read()
-                .expect("Unable to get a lock on the airports")
-                .iter().nth(position as usize) {
-                Some(airport) => {
-                    let ao = AirportObject::new(airport);
-                    Some(Object::from(ao))
-                }
+            let mut ref_mut = self.cache.borrow_mut();
+            ref_mut.get(&position).map(|ao| Object::from(ao.clone())).or_else(|| {
+                let binding = get_earth_model().airports
+                    .read()
+                    .expect("Unable to get a lock on the airports");
+                let airport = binding.iter().nth(position as usize);
 
-                None => None
-            }
+                airport.map(|airport| {
+                    let ao = AirportObject::new(airport);
+                    ref_mut.insert(position, ao.clone());
+                    Object::from(ao)
+                })
+            })
         }
     }
 }

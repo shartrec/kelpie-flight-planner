@@ -45,6 +45,8 @@ impl Default for Fixes {
 }
 
 mod imp {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
     use gtk::{gio, glib};
     use gtk::glib::Object;
     use gtk::prelude::StaticType;
@@ -54,7 +56,9 @@ mod imp {
     use crate::model::fix_object::FixObject;
 
     #[derive(Default)]
-    pub struct Fixes {}
+    pub struct Fixes {
+        cache: RefCell<HashMap<u32, FixObject>>,
+    }
 
     impl Fixes {}
 
@@ -82,17 +86,19 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            match get_earth_model().fixes
-                .read()
-                .expect("Unable to get a lock on the fixes")
-                .iter().nth(position as usize) {
-                Some(fix) => {
-                    let ao = FixObject::new(fix);
-                    Some(Object::from(ao))
-                }
+            let mut ref_mut = self.cache.borrow_mut();
+            ref_mut.get(&position).map(|ao| Object::from(ao.clone())).or_else(|| {
+                let binding = get_earth_model().fixes
+                    .read()
+                    .expect("Unable to get a lock on the fixs");
+                let fix = binding.iter().nth(position as usize);
 
-                None => None
-            }
+                fix.map(|fix| {
+                    let ao = FixObject::new(fix);
+                    ref_mut.insert(position, ao.clone());
+                    Object::from(ao)
+                })
+            })
         }
     }
 }

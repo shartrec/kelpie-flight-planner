@@ -45,6 +45,8 @@ impl Default for Navaids {
 }
 
 mod imp {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
     use gtk::{gio, glib};
     use gtk::glib::Object;
     use gtk::prelude::StaticType;
@@ -54,7 +56,9 @@ mod imp {
     use crate::model::navaid_object::NavaidObject;
 
     #[derive(Default)]
-    pub struct Navaids {}
+    pub struct Navaids {
+        cache: RefCell<HashMap<u32, NavaidObject>>,
+    }
 
     impl Navaids {}
 
@@ -82,17 +86,19 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            match get_earth_model().navaids
-                .read()
-                .expect("Unable to get a lock on the navaids")
-                .iter().nth(position as usize) {
-                Some(navaid) => {
-                    let ao = NavaidObject::new(navaid);
-                    Some(Object::from(ao))
-                }
+            let mut ref_mut = self.cache.borrow_mut();
+            ref_mut.get(&position).map(|ao| Object::from(ao.clone())).or_else(|| {
+                let binding = get_earth_model().navaids
+                    .read()
+                    .expect("Unable to get a lock on the navaids");
+                let navaid = binding.iter().nth(position as usize);
 
-                None => None
-            }
+                navaid.map(|navaid| {
+                    let ao = NavaidObject::new(navaid);
+                    ref_mut.insert(position, ao.clone());
+                    Object::from(ao)
+                })
+            })
         }
     }
 }
