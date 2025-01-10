@@ -194,7 +194,7 @@
             </child>
             <child>
               <object class="GtkTreeViewColumn">
-                <property name="title" translatable="yes">Speed</property>
+                <property name="title" translatable="yes">Speed - IAS</property>
                 <child>
                   <object class="GtkCellRendererText" id="a-speed-renderer">
                     <property name="xalign">1.0</property>

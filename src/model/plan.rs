@@ -166,7 +166,7 @@ impl Plan {
     //	 @param loc
     //	 @return previous location
 
-    pub fn get_previous_location(&self, wp: &Waypoint) -> Option<Coordinate> {
+    pub fn get_previous_waypoint(&self, wp: &Waypoint) -> Option<Waypoint> {
         for s in &self.sectors {
             let wp_comp = wp.clone();
             if let Some(start_wp) = s.get_start() {
@@ -179,12 +179,12 @@ impl Plan {
                 if compare_wp(&end_wp, &wp_comp) {
                     if s.get_waypoint_count() == 0 {
                         if let Some(start_wp) = s.get_start() {
-                            return Some(start_wp.get_loc().clone());
+                            return Some(start_wp.clone());
                         }
                     } else {
                         return s
                             .get_waypoint(s.get_waypoint_count() - 1)
-                            .map(|wp| wp.get_loc().clone());
+                            .map(|wp| wp.clone());
                     }
                 }
             }
@@ -198,12 +198,12 @@ impl Plan {
                         if compare_wp(&wpx, &wp_comp) {
                             if i == 0 {
                                 if let Some(start_wp) = s.get_start() {
-                                    return Some(start_wp.get_loc().clone());
+                                    return Some(start_wp.clone());
                                 }
                             } else {
                                 return s
                                     .get_waypoint(i - 1)
-                                    .map(|wp| wp.get_loc().clone());
+                                    .map(|wp| wp.clone());
                             }
                         }
                     }
@@ -211,6 +211,16 @@ impl Plan {
             }
         }
         None
+    }
+
+    //
+    //	 Get the coordinate of the waypoint that precedes this one in the plan.
+    //	 @param loc
+    //	 @return previous location
+
+    pub fn get_previous_location(&self, wp: &Waypoint) -> Option<Coordinate> {
+        self.get_previous_waypoint(wp)
+            .map(|wp| wp.get_loc().clone())
     }
 
     pub fn add_airport(&mut self, airport: Arc<Airport>) {
@@ -263,6 +273,20 @@ impl Plan {
     }
 
     /**
+     * Get average altitude for the leg.
+     * @param loc
+     * @return double Distance
+     */
+    pub fn get_leg_avg_alt_to(&self, wp: &Waypoint) -> i32 {
+        match self.get_previous_waypoint(wp) {
+            Some(prev) => {
+                (prev.get_elevation() + wp.get_elevation()) / 2
+            },
+            None => wp.get_elevation()
+        }
+    }
+
+    /**
      * Get the distance from the previous waypoint to the specified one as a string.
      * @param loc
      * @return String Distance
@@ -275,12 +299,16 @@ impl Plan {
         distance_format.format(distance)
     }
     pub fn get_time_to(&self, waypoint: &Waypoint) -> f64 {
-        let speed = self.get_speed_to(waypoint);
-        if speed == 0 {
+        let isa = self.get_speed_to(waypoint);
+        if isa == 0 {
             return 0.0;
         }
+        let alt = self.get_leg_avg_alt_to(waypoint);
+        let tas = isa as f64 * (1.0 + (alt as f64 / 1000.0) * 0.02);
+
+
         let leg_distance = self.get_leg_distance_to(waypoint);
-        leg_distance / speed as f64
+        leg_distance / tas
     }
 
     pub fn get_time_to_as_string(&self, waypoint: &Waypoint) -> String {
