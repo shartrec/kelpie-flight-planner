@@ -25,7 +25,7 @@
 use std::ffi::CStr;
 
 use gl::types;
-use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory};
+use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory, Expander};
 use gtk::gdk::Texture;
 use gtk::glib::Object;
 use gtk::prelude::{Cast, CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
@@ -103,6 +103,45 @@ pub(crate) fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalLi
             .downcast_ref::<ListItem>()
             .expect("Needs to be ListItem")
             .child()
+            .and_downcast::<Label>()
+            .expect("The child has to be a `Label`.");
+
+        // Set "label" to "number"
+        f(label, &obj);
+    });
+    factory
+}
+
+pub(crate) fn build_tree_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalListItemFactory {
+    let factory = SignalListItemFactory::new();
+    factory.connect_setup(move |_, list_item| {
+        let label = Label::new(None);
+        let expander = Expander::new(None);
+        expander.set_child(Some(&label));
+        list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .set_child(Some(&label));
+    });
+
+    factory.connect_bind(move |_, list_item| {
+        // Get `StringObject` from `ListItem`
+        let obj = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .item()
+            .and_downcast::<T>()
+            .expect("The item has to be an <T>.");
+
+        // Get `Label` from `ListItem`
+        let exp = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .child()
+            .and_downcast::<Expander>()
+            .expect("The child has to be a `Expander`.");
+
+        let label = exp.child()
             .and_downcast::<Label>()
             .expect("The child has to be a `Label`.");
 
