@@ -149,13 +149,13 @@ impl PlanRenderer {
         // We also add an index for each airport, which is drawn as a point
         let plan = plan.borrow();
         for s in plan.get_sectors() {
-            if let Some(airport) = s.get_start() {
+            if let Some(airport) = s.borrow().get_start() {
                 let position = projector.project(airport.get_lat(), airport.get_long());
                 vertices.push(Vertex { position });
                 indices_airports.push(vertices.len() as u32 - 1);
                 let mut last_p = position;
 
-                for wp in s.get_waypoints() {
+                for wp in s.borrow().get_waypoints() {
                     let position = projector.project(wp.get_lat(), wp.get_long());
                     let arc = Self::draw_arc(last_p, position);
                     for v in arc {
@@ -165,7 +165,7 @@ impl PlanRenderer {
                     last_p = position;
                 }
 
-                if let Some(airport) = s.get_end() {
+                if let Some(airport) = s.borrow().get_end() {
                     let position = projector.project(airport.get_lat(), airport.get_long());
                     let arc = Self::draw_arc(last_p, position);
                     for v in arc {

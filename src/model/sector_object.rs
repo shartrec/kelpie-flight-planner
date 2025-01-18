@@ -21,7 +21,8 @@
  *      Trevor Campbell
  *
  */
-use std::sync::Arc;
+use std::cell::RefCell;
+use std::rc::Rc;
 use gtk::gio::ListModel;
 use gtk::glib;
 use gtk::prelude::Cast;
@@ -36,7 +37,7 @@ glib::wrapper! {
 }
 
 impl SectorObject {
-    pub fn new(sector: &Sector) -> SectorObject {
+    pub fn new(sector: Rc<RefCell<Sector>>) -> SectorObject {
         let obj: SectorObject = glib::Object::new();
         obj.downcast_ref::<SectorObject>()
             .expect("The item has to be an <SectorObject>.")
@@ -47,7 +48,8 @@ impl SectorObject {
 
 mod imp {
     use std::cell::RefCell;
-    use std::sync::Arc;
+    use std::ops::Deref;
+    use std::rc::Rc;
     use adw::gio;
     use adw::glib::Object;
     use adw::subclass::prelude::ListModelImpl;
@@ -60,16 +62,16 @@ mod imp {
 
     #[derive(Default)]
     pub struct SectorObject {
-        sector: RefCell<Option<Sector>>,
+        sector: RefCell<Option<Rc<RefCell<Sector>>>>,
         ui: RefCell<Option<Label>>
     }
 
     impl SectorObject {
-        pub fn set_sector(&self, sector: Sector) {
+        pub fn set_sector(&self, sector: Rc<RefCell<Sector>>) {
             self.sector.replace(Some(sector));
         }
 
-        pub fn sector(&self) -> Sector {
+        pub fn sector(&self) -> Rc<RefCell<Sector>> {
             self.sector.borrow().as_ref().unwrap().clone()
         }
 
@@ -102,23 +104,40 @@ mod imp {
         }
 
         fn n_items(&self) -> u32 {
-            (self.sector().get_waypoint_count() + 2) as u32
+            let binding = self.sector();
+            let sector = binding.borrow();
+            let mut x = sector.get_waypoint_count();
+            if sector.get_start().is_some() {
+                x += 1;
+            }
+            if sector.get_end().is_some() {
+                x += 1;
+            }
+            x as u32
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            if position == 0 {
-                self.sector().get_start().map(|waypoint| {
-                    Object::from(WaypointObject::new(&waypoint))
-                })
-            } else if position == self.n_items() + 1 {
-                self.sector().get_end().map(|waypoint| {
-                    Object::from(WaypointObject::new(&waypoint))
-                })
-            } else {
-                self.sector().get_waypoint(position as usize).as_ref().map(|waypoint| {
-                    Object::from(WaypointObject::new(&waypoint))
-                })
+            let binding = self.sector();
+            let sector = binding.borrow();
+
+            let mut pos = position as usize;
+            if let Some(wp) = sector.get_start() {
+                if pos == 0 {
+                    return Some(Object::from(WaypointObject::new(&wp)));
+                }
+                pos -= 1;
             }
+            if pos < sector.get_waypoint_count() {
+                if let Some(wp) =  sector.get_waypoint(pos) {
+                    return  Some(Object::from(WaypointObject::new(&wp)));
+                }
+            }
+            if pos == sector.get_waypoint_count() {
+                if let Some(wp) = sector.get_end() {
+                    return Some(Object::from(WaypointObject::new(&wp)))
+                }
+            }
+            None
         }
     }
 

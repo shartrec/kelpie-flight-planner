@@ -9,7 +9,7 @@ edition = "2021"
 app_dirs = "1.2.1"
 chrono = "0.4.38"
 dirs-next = "2.0.0"
-gtk = { version = "^0.9", package = "gtk4", features = ["v4_10"] }
+gtk = { version = "^0.9", package = "gtk4", features = ["v4_12"] }
 adw = { version = "0.7.0", package = "libadwaita", features = ["v1_5"] }
 lazy_static = "1.5.0"
 log = "^0.4"

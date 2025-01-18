@@ -477,14 +477,15 @@ impl Planner<'_> {
         let altitude = plan.get_plan_altitude();
 
         for sector in plan.get_sectors_mut() {
-            if sector.get_start().is_none() || sector.get_end().is_none() {
+            if sector.borrow().get_start().is_none() || sector.borrow().get_end().is_none() {
                 continue;
             }
-            let start_wp = &sector.get_start().unwrap();
-            let end_wp = &sector.get_end().unwrap();
+            let start_wp = &sector.borrow().get_start().unwrap();
+            let end_wp = &sector.borrow().get_end().unwrap();
 
             // Remove the previous top of climb and beginning of descent
-            let waypoints = sector.get_waypoints_mut();
+            let mut ref_mut = sector.borrow_mut();
+            let waypoints = ref_mut.get_waypoints_mut();
             waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
 
 

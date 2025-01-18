@@ -24,7 +24,6 @@
 use std::sync::Arc;
 
 use gtk::glib;
-use gtk::prelude::Cast;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::model::airport::Airport;
@@ -38,9 +37,7 @@ glib::wrapper! {
 impl AirportObject {
     pub fn new(airport: &Arc<Airport>) -> AirportObject {
         let obj: AirportObject = glib::Object::new();
-        obj.downcast_ref::<AirportObject>()
-            .expect("The item has to be an <AirportObject>.")
-            .imp().set_airport(airport.clone());
+        obj.imp().set_airport(airport.clone());
         obj
     }
 }

@@ -21,10 +21,9 @@
  *      Trevor Campbell
  *
  */
-use std::sync::Arc;
-
+use std::cell::RefCell;
+use std::rc::Rc;
 use gtk::glib;
-use gtk::prelude::Cast;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use gtk::gio::ListModel;
 
@@ -37,20 +36,20 @@ glib::wrapper! {
 }
 
 impl PlanObject {
-    pub fn new(plan: Plan) -> PlanObject {
+    pub fn new(plan: &Rc<RefCell<Plan>>) -> PlanObject {
         let obj: PlanObject = glib::Object::new();
-        obj.downcast_ref::<PlanObject>()
-            .expect("The item has to be an <PlanObject>.")
-            .imp().set_plan(plan);
+        obj.imp().set_plan(plan.clone());
         obj
     }
 }
 
 mod imp {
     use std::cell::RefCell;
+    use std::ops::Deref;
+    use std::rc::Rc;
     use adw::gio;
     use adw::glib::Object;
-    use gtk::{glib, Label};
+    use gtk::glib;
     use gtk::prelude::StaticType;
     use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
     use crate::model::plan::Plan;
@@ -58,21 +57,12 @@ mod imp {
 
     #[derive(Default)]
     pub struct PlanObject {
-        plan: RefCell<Option<Plan>>,
-        ui: RefCell<Option<Label>>
+        plan: RefCell<Option<Rc<RefCell<Plan>>>>,
     }
 
     impl PlanObject {
-        pub fn set_plan(&self, plan: Plan) {
+        pub fn set_plan(&self, plan: Rc<RefCell<Plan>>) {
             self.plan.replace(Some(plan));
-        }
-
-        pub fn set_ui(&self, label: Option<Label>) {
-            self.ui.replace(label);
-        }
-
-        pub fn ui(&self) -> Option<Label> {
-            self.ui.borrow().clone()
         }
     }
 
@@ -97,19 +87,18 @@ mod imp {
 
 
         fn n_items(&self) -> u32 {
-            let x = &self.plan.borrow();
-            if let Some(p) = x.as_ref() {
-                p.get_sectors().len() as u32
+            let plan_ref = &self.plan.borrow();
+            if let Some(p) = plan_ref.deref() {
+                p.borrow().get_sectors().len() as u32
             } else {
                 0
             }
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            let x = &self.plan.borrow();
-            if let Some(p) = x.as_ref() {
-                p.get_sectors().get(position as usize).map(|sector| {
-                let so = SectorObject::new(sector);
+            if let Some(p) = self.plan.borrow().deref() {
+                p.borrow().get_sectors().get(position as usize).map(|sector| {
+                let so = SectorObject::new(sector.clone());
                     Object::from(so)
                 })
             } else {

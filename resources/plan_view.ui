@@ -94,6 +94,9 @@
           <object class="GtkColumnView" id="plan_tree">
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
+            <style>
+              <class name="data-table"/>
+            </style>
             <child>
               <object class="GtkColumnViewColumn" id="col_name">
                 <property name="title" translatable="yes">Name</property>

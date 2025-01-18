@@ -21,8 +21,6 @@
  *      Trevor Campbell
  *
  */
-use std::sync::Arc;
-
 use gtk::glib;
 use gtk::prelude::Cast;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
@@ -47,8 +45,6 @@ impl WaypointObject {
 
 mod imp {
     use std::cell::RefCell;
-    use std::sync::Arc;
-
     use gtk::{glib, Label};
     use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
@@ -65,8 +61,8 @@ mod imp {
             self.waypoint.replace(Some(waypoint));
         }
 
-        pub fn waypoint(&self) -> Waypoint {
-            self.waypoint.borrow().as_ref().unwrap().clone()
+        pub fn waypoint(&self) -> RefCell<Option<Waypoint>> {
+            self.waypoint.clone()
         }
 
         pub fn set_ui(&self, label: Option<Label>) {
