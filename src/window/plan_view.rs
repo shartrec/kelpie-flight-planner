@@ -33,9 +33,7 @@ mod imp {
     use gtk::gdk::Rectangle;
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
-    use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry,
-              Label, PopoverMenu, ScrolledWindow, SingleSelection,
-              Stack, StringObject, TreeListModel, TreeListRow};
+    use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
     use log::error;
     use std::cell::RefCell;
     use std::ops::{Deref, DerefMut};
@@ -228,7 +226,7 @@ mod imp {
             };
 
             if let Some(sel) = selection {
-                selection_model.set_selected(sel);
+                self.plan_tree.scroll_to(sel, None, ListScrollFlags::SELECT, None);
             }
         }
 
