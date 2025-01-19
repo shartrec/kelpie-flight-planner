@@ -632,15 +632,14 @@ mod imp {
             let selection_model = SingleSelection::new(Some(get_hangar().clone()));
             self.aircraft_combo.set_model(Some(&selection_model));
 
-            self.aircraft_combo.connect_selected_notify(clone!(@weak self.plan as plan => move | combo | {
+            self.aircraft_combo.connect_selected_notify(clone!(#[weak(rename_to = view)] self, move | combo | {
                 // Get the selection
                 let index = combo.selected();
                 if let Some(aircraft) = get_hangar().imp().aircraft_at(index) {
-                    let mut plan1 = plan.borrow_mut();
+                    let mut plan1 = view.plan.borrow_mut();
                     plan1.set_aircraft(&Some(aircraft));
                 }
             }));
-
 
             // set the selection initially to the default
             let hangar = get_hangar().imp();
