@@ -91,118 +91,55 @@
         <property name="vexpand">true</property>
         <property name="hexpand">true</property>
         <child>
-          <object class="GtkTreeView" id="plan_tree">
+          <object class="GtkColumnView" id="plan_tree">
             <property name="vexpand">true</property>
             <property name="hexpand">true</property>
+            <style>
+              <class name="data-table"/>
+            </style>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_name">
                 <property name="title" translatable="yes">Name</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-name-renderer"/>
-                  <attributes>
-                    <attribute name="text">0</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_alt">>
                 <property name="title" translatable="yes">Alt</property>
-                <property name="alignment">1.0</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-elev-renderer">
-                    <property name="xalign">1.0</property>
-                  </object>
-                  <attributes>
-                    <attribute name="text">1</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_lat">
                 <property name="title" translatable="yes">Lat</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-lat-renderer"/>
-                  <attributes>
-                    <attribute name="text">2</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_long">
                 <property name="title" translatable="yes">Long</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-lon-renderer"/>
-                  <attributes>
-                    <attribute name="text">3</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_freq">
                 <property name="title" translatable="yes">Freq</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-freq-renderer">
-                    <property name="xalign">1.0</property>
-                  </object>
-                  <attributes>
-                    <attribute name="text">4</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_hdg">
                 <property name="title" translatable="yes">Hdg(mag)</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-hdg-renderer">
-                    <property name="xalign">1.0</property>
-                  </object>
-                  <attributes>
-                    <attribute name="text">5</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_dist">
                 <property name="title" translatable="yes">Dist</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-dist-renderer">
-                  </object>
-                  <attributes>
-                    <attribute name="text">6</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_time">
                 <property name="title" translatable="yes">Time</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-time-renderer">
-                    <property name="xalign">1.0</property>
-                  </object>
-                  <attributes>
-                    <attribute name="text">7</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
             <child>
-              <object class="GtkTreeViewColumn">
+              <object class="GtkColumnViewColumn" id="col_speed">
                 <property name="title" translatable="yes">Speed - IAS</property>
-                <child>
-                  <object class="GtkCellRendererText" id="a-speed-renderer">
-                    <property name="xalign">1.0</property>
-                  </object>
-                  <attributes>
-                    <attribute name="text">8</attribute>
-                  </attributes>
-                </child>
               </object>
             </child>
           </object>

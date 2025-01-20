@@ -50,12 +50,12 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
     plan_element.children.push(XMLNode::Element(element));
 
     for sector in plan.get_sectors().deref() {
-        if let Some(start) = sector.get_start() {
+        if let Some(start) = sector.borrow().get_start() {
             if let Some(from) = make_airport(&start, true) {
                 plan_element.children.push(XMLNode::Element(from));
             }
         }
-        if let Some(end) = sector.get_end() {
+        if let Some(end) = sector.borrow().get_end() {
             if let Some(to) = make_airport(&end, true) {
                 plan_element.children.push(XMLNode::Element(to));
             }
@@ -66,7 +66,7 @@ pub fn export_plan_fg(plan: &Plan, file_path: &Path) -> Result<(), String> {
 
 
         let mut route = Element::new("route"); //$NON-NLS-1$
-        for (wp_ordinal, wp) in sector.get_waypoints()
+        for (wp_ordinal, wp) in sector.borrow().get_waypoints()
             .iter().enumerate() {
             let wpt = make_waypoint(wp, wp_ordinal as i32, plan);
             route.children.push(XMLNode::Element(wpt));

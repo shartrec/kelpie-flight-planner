@@ -21,49 +21,48 @@
  *      Trevor Campbell
  *
  */
-use std::sync::Arc;
-
 use gtk::glib;
+use gtk::prelude::Cast;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
-use crate::model::airport::Airport;
+use crate::model::waypoint::Waypoint;
 
-// To use the Airport in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
+// To use the Waypoint in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
 // Public part of the Model type.
 glib::wrapper! {
-    pub struct AirportObject(ObjectSubclass<imp::AirportObject>);
+    pub struct WaypointObject(ObjectSubclass<imp::WaypointObject>);
 }
 
-impl AirportObject {
-    pub fn new(airport: &Arc<Airport>) -> AirportObject {
-        let obj: AirportObject = glib::Object::new();
-        obj.imp().set_airport(airport.clone());
+impl WaypointObject {
+    pub fn new(waypoint: &Waypoint) -> WaypointObject {
+        let obj: WaypointObject = glib::Object::new();
+        obj.downcast_ref::<WaypointObject>()
+            .expect("The item has to be an <WaypointObject>.")
+            .imp().set_waypoint(waypoint.clone());
         obj
     }
 }
 
 mod imp {
     use std::cell::RefCell;
-    use std::sync::Arc;
-
     use gtk::{glib, Label};
     use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
-    use crate::model::airport::Airport;
+    use crate::model::waypoint::Waypoint;
 
     #[derive(Default)]
-    pub struct AirportObject {
-        airport: RefCell<Option<Arc<Airport>>>,
+    pub struct WaypointObject {
+        waypoint: RefCell<Option<Waypoint>>,
         ui: RefCell<Option<Label>>
     }
 
-    impl AirportObject {
-        pub fn set_airport(&self, airport: Arc<Airport>) {
-            self.airport.replace(Some(airport));
+    impl WaypointObject {
+        pub fn set_waypoint(&self, waypoint: Waypoint) {
+            self.waypoint.replace(Some(waypoint));
         }
 
-        pub fn airport(&self) -> Arc<Airport> {
-            self.airport.borrow().as_ref().unwrap().clone()
+        pub fn waypoint(&self) -> RefCell<Option<Waypoint>> {
+            self.waypoint.clone()
         }
 
         pub fn set_ui(&self, label: Option<Label>) {
@@ -77,12 +76,12 @@ mod imp {
 
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
-    impl ObjectSubclass for AirportObject {
-        const NAME: &'static str = "AirportObject";
-        type Type = super::AirportObject;
+    impl ObjectSubclass for WaypointObject {
+        const NAME: &'static str = "WaypointObject";
+        type Type = super::WaypointObject;
     }
 
-    impl ObjectImpl for AirportObject {
+    impl ObjectImpl for WaypointObject {
         fn constructed(&self) {
             self.parent_constructed();
         }

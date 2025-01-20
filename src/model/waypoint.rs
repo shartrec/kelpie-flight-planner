@@ -231,55 +231,50 @@ impl Waypoint {
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
     use crate::earth::coordinate::Coordinate;
-    use crate::model::test_utils::make_airport;
-    use crate::model::waypoint::{self, AirportWaypoint, SimpleWaypoint, Waypoint};
+    use crate::model::test_utils::tests::make_airport;
+    use crate::model::waypoint::Waypoint;
 
     #[test]
     fn test_equality() {
         let w1 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 10, Coordinate::new(13.0, 111.0));
+            Waypoint::Simple{loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false};
         let w2 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 20, Coordinate::new(23.0, 121.0));
+            Waypoint::Simple{loc: Coordinate::new(23.0, 121.0), elevation: Cell::new(20), locked: false};
 
         let a = Box::new(w1.clone());
         let b = Box::new(w1.clone());
-        assert!(do_test(a, b));
+        assert!(a == b);
         let a = Box::new(w1.clone());
         let b = Box::new(w2.clone());
-        assert!(!do_test(a, b));
+        assert!(a != b);
     }
 
     #[test]
     fn test_equality_airport_type() {
         let ap = make_airport("YSSY");
-        let w1 = AirportWaypoint::new(ap, 20, false);
+        let w1 = Waypoint::Airport {airport: ap, locked: false};
         let ap = make_airport("YMLB");
-        let w2 = AirportWaypoint::new(ap, 20, false);
+        let w2 = Waypoint::Airport {airport: ap, locked: false};
         let a = Box::new(w1.clone());
         let b = Box::new(w1.clone());
-        assert!(do_test(a, b));
+        assert!(a == b);
         let a = Box::new(w1.clone());
         let b = Box::new(w2.clone());
-        assert!(!do_test(a, b));
+        assert!(a != b);
     }
 
     #[test]
     fn test_equality_diff_type() {
         let w1 =
-            SimpleWaypoint::new_gps_waypoint("".to_string(), 10, Coordinate::new(13.0, 111.0));
+            Waypoint::Simple { loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false };
         let ap = make_airport("YSSY");
-        let w2 = AirportWaypoint::new(ap, 20, false);
+        let w2 = Waypoint::Airport {airport: ap, locked: false};
         let a = Box::new(w1.clone());
         let b = Box::new(w2.clone());
-        assert!(!do_test(a, b));
-    }
-
-    fn do_test(a: Box<dyn Waypoint>, b: Box<dyn Waypoint>) -> bool {
-        waypoint::eq(a, b)
+        assert!(a != b);
     }
 }
-*/

@@ -36,3 +36,6 @@ pub(crate) mod test_utils;
 pub(crate) mod airport_object;
 pub(crate) mod navaid_object;
 pub(crate) mod fix_object;
+pub(crate) mod sector_object;
+pub(crate) mod waypoint_object;
+pub(crate) mod plan_object;

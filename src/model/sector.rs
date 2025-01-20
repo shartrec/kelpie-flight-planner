@@ -32,7 +32,7 @@ use crate::util::hour_format::HourFormat;
 use super::airport::Airport;
 use super::waypoint::Waypoint;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Sector {
     airport_start: Option<Waypoint>,
     airport_end: Option<Waypoint>,

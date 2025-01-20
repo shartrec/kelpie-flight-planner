@@ -25,12 +25,11 @@
 use std::ffi::CStr;
 
 use gl::types;
-use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory};
+use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow};
 use gtk::gdk::Texture;
 use gtk::glib::Object;
 use gtk::prelude::{Cast, CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
-
 use crate::util;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -79,7 +78,7 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
     };
 }
 
-pub(crate) fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalListItemFactory {
+pub(crate) fn build_column_factory<F: Fn(Label, &T) + 'static, T: IsA<Object>>(f: F) -> SignalListItemFactory {
     let factory = SignalListItemFactory::new();
     factory.connect_setup(move |_, list_item| {
         let label = Label::new(None);
@@ -108,6 +107,51 @@ pub(crate) fn build_column_factory<T: IsA<Object>>(f: fn(Label, &T)) -> SignalLi
 
         // Set "label" to "number"
         f(label, &obj);
+    });
+    factory
+}
+
+pub(crate) fn build_tree_column_factory(f: fn(Label, &TreeListRow)) -> SignalListItemFactory {
+    let factory = SignalListItemFactory::new();
+    factory.connect_setup(move |_, list_item| {
+        let label = Label::new(None);
+        let expander = TreeExpander::new();
+        expander.set_child(Some(&label));
+        expander.set_indent_for_icon(true);
+        expander.set_indent_for_depth(true);
+        let list_item = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem");
+        list_item.set_child(Some(&expander));
+        list_item.set_focusable(false);
+    });
+
+    factory.connect_bind(move |_factory, list_item| {
+        // Get `StringObject` from `ListItem`
+        let obj = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .item()
+            .and_downcast::<TreeListRow>()
+            .expect("The item has to be an <T>.");
+
+        // Get `Label` from `ListItem`
+        if let Some(widget) = list_item
+            .downcast_ref::<ListItem>()
+            .expect("Needs to be ListItem")
+            .child() {
+            let expander = widget.downcast::<TreeExpander>()
+                .expect("The child has to be a `Expander`.");
+
+            let widget = expander.child()
+                .expect("The child has to be a `Widget`.");
+            let label = widget.downcast::<Label>()
+                .expect("The child has to be a `Label`.");
+            // Set "label" to "value"
+            f(label, &obj);
+
+            expander.set_list_row(Some(&obj));
+        }
     });
     factory
 }
