@@ -21,9 +21,9 @@
  *      Trevor Campbell
  *
  */
-
+use std::cell::Cell;
 use std::sync::Arc;
-
+use crate::earth::coordinate::Coordinate;
 use crate::model::plan::Plan;
 use crate::preference::UNITS;
 use crate::util::distance_format::DistanceFormat;
@@ -88,46 +88,85 @@ impl Sector {
         } else {
             // Find the nearest waypoint in the sector to this waypoint
             let mut min_distance = f64::MAX;
-            let mut close_wp_index = 0;
+
+            let mut close_wp_index : i32 = 0;
             let mut close_wp = None;
-            for i in 0..self.waypoints.len() {
-                let w = &self.waypoints.as_slice()[i];
-                let dist = w.get_loc().distance_to(waypoint.get_loc());
+
+            if let Some(airport) = &self.airport_start {
+                let dist = airport.get_loc().distance_to(waypoint.get_loc());
                 if dist < min_distance {
                     min_distance = dist;
-                    close_wp = Some(w);
-                    close_wp_index = i;
+                    close_wp = Some(airport);
+                    close_wp_index = -1;
                 }
             }
-            if let Some(wp) = close_wp {
-                // Now if the distance from the prior wp to the one to be inserted
-                // is less that from the prior wp to the closest then insert before
-                // else insert after
-                let dist_before_cl = if close_wp_index == 0 {
-                    match self.get_start() {
-                        Some(airport) => airport.get_loc().distance_to(wp.get_loc()),
-                        None => 0.0
-                    }
-                } else {
-                    let w = &self.waypoints.as_slice()[close_wp_index - 1];
-                    w.get_loc().distance_to(wp.get_loc())
-                };
-                let dist_before_wp = if close_wp_index == 0 {
-                    match self.get_start() {
-                        Some(airport) => airport.get_loc().distance_to(waypoint.get_loc()),
-                        None => 0.0
-                    }
-                } else {
-                    let w = &self.waypoints.as_slice()[close_wp_index - 1];
-                    w.get_loc().distance_to(waypoint.get_loc())
-                };
-                if dist_before_wp < dist_before_cl {
-                    self.waypoints.insert(close_wp_index, waypoint);
-                } else {
-                    self.waypoints.insert(close_wp_index + 1, waypoint);
+            if let Some(airport) = &self.airport_end {
+                let dist = airport.get_loc().distance_to(waypoint.get_loc());
+                if dist < min_distance {
+                    min_distance = dist;
+                    close_wp = Some(airport);
+                    close_wp_index = -2;
                 }
-            } else {
+            }
+
+            // iterate over waypoints to get closest
+            for (i, wp) in self.waypoints.iter().enumerate() {
+                let dist = wp.get_loc().distance_to(waypoint.get_loc());
+                if dist < min_distance {
+                    min_distance = dist;
+                    close_wp = Some(wp);
+                    close_wp_index = i as i32;
+                }
+            }
+
+            // If closest is an airport then we just put it at beginning or end
+            if close_wp_index == -1 {
+                self.waypoints.insert(0, waypoint);
+            } else if close_wp_index == -2 {
                 self.waypoints.push(waypoint);
+            } else {
+                if let Some(close_wp) = close_wp {
+
+                    // We need to find the shortest path when we add the new waypoint either before or after the closest waypoint
+                    // Get the distance from the prior waypoint to the new one
+                    // get the prior waypoint
+                    let prior_wp;
+                    if close_wp_index == 0 {
+                        prior_wp = self.get_start().unwrap_or_else(|| Waypoint::Simple {
+                            loc: Coordinate::new(0.0, 0.0),
+                            elevation: Cell::new(0),
+                            locked: false,
+                        });
+                    } else {
+                        prior_wp = self.waypoints.as_slice()[close_wp_index as usize - 1].clone()
+                    }
+                    // get the following waypoint
+                    let next_wp;
+                    if close_wp_index == (self.get_waypoint_count() - 1) as i32 {
+                        next_wp = self.get_end().unwrap_or_else(|| Waypoint::Simple {
+                            loc: Coordinate::new(0.0, 0.0),
+                            elevation: Cell::new(0),
+                            locked: false,
+                        });
+                    } else {
+                        next_wp = self.waypoints.as_slice()[close_wp_index as usize + 1].clone()
+                    }
+
+                    // now calculate the paths P_C_W_N and P_W_C_N
+                    let dist_pcwn = prior_wp.get_loc().distance_to(close_wp.get_loc())
+                        + close_wp.get_loc().distance_to(waypoint.get_loc())
+                        + waypoint.get_loc().distance_to(next_wp.get_loc());
+                    let dist_pwcwn = prior_wp.get_loc().distance_to(waypoint.get_loc())
+                        + waypoint.get_loc().distance_to(close_wp.get_loc())
+                        + close_wp.get_loc().distance_to(next_wp.get_loc());
+
+                    // Place waypoint so that the path is shortest
+                    if dist_pcwn < dist_pwcwn {
+                        self.waypoints.insert(close_wp_index as usize, waypoint);
+                    } else {
+                        self.waypoints.insert(close_wp_index as usize + 1, waypoint);
+                    }
+                }
             }
         }
         self.dirty = true;
