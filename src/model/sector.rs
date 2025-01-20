@@ -161,7 +161,7 @@ impl Sector {
                         + close_wp.get_loc().distance_to(next_wp.get_loc());
 
                     // Place waypoint so that the path is shortest
-                    if dist_pcwn < dist_pwcwn {
+                    if dist_pcwn > dist_pwcwn {
                         self.waypoints.insert(close_wp_index as usize, waypoint);
                     } else {
                         self.waypoints.insert(close_wp_index as usize + 1, waypoint);
