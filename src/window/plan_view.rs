@@ -310,7 +310,7 @@ mod imp {
                         // a Sector only is selected
                         let sector_index = path[0] as usize;
                         let sector = &mut plan.get_sectors_mut()[sector_index];
-                        sector.add_waypoint(waypoint);
+                        sector.add_waypoint_optimised(waypoint);
                     }
                     2 => {
                         let sector_index = path[0] as usize;
