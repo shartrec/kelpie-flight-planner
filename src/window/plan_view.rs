@@ -269,23 +269,25 @@ mod imp {
             // See if a sector is selected
             let selection = self.plan_tree.model().unwrap().selection();
 
-            let sector_index = selection.nth(0);
-            // Sectors are at the top level
-            let sector = &mut plan.get_sectors_mut()[sector_index as usize];
-            if sector.borrow().get_start().is_none() {
-                sector.borrow_mut().set_start(Some(loc.clone()));
-                added = true;
-            } else if sector.borrow().get_end().is_none() {
-                sector.borrow_mut().set_end(Some(loc.clone()));
-                added = true;
-            }
+            if !selection.is_empty() {
+                let sector_index = selection.nth(0);
+                // Sectors are at the top level
+                let sector = &mut plan.get_sectors_mut()[sector_index as usize];
+                if sector.borrow().get_start().is_none() {
+                    sector.borrow_mut().set_start(Some(loc.clone()));
+                    added = true;
+                } else if sector.borrow().get_end().is_none() {
+                    sector.borrow_mut().set_end(Some(loc.clone()));
+                    added = true;
+                }
 
-            if !added {
-                plan.add_airport(loc);
+                if !added {
+                    plan.add_airport(loc);
+                }
+                drop(plan);
+                self.plan_updated();
+                event::manager().notify_listeners(Event::PlanChanged);
             }
-            drop(plan);
-            self.plan_updated();
-            event::manager().notify_listeners(Event::PlanChanged);
         }
 
         pub fn add_waypoint_to_plan(&self, waypoint: Waypoint) {
