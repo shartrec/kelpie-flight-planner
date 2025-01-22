@@ -29,7 +29,7 @@ use gtk::gio::ListModel;
 
 use crate::model::plan::Plan;
 
-// To use the Plan in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
+// To use the Plan in a Gio::ListModel it needs to be a glib::Object, so we do all this fancy subclassing stuff
 // Public part of the Model type.
 glib::wrapper! {
     pub struct PlanObject(ObjectSubclass<imp::PlanObject>) @implements ListModel;
