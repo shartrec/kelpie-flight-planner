@@ -322,7 +322,7 @@ mod imp {
                     if let Some(airport) = view.get_selection() {
                         if let Some(label) = airport.imp().ui().as_ref() {
                             let rect = label.compute_bounds(&view.airport_list.get()).unwrap();
-                            let rect = Rectangle::new(10, 1, 1, 1);
+                            let rect = Rectangle::new(rect.x() as i32, rect.y() as i32, 1, 1);
                             if let Some(popover) = view.popover.borrow().as_ref() {
                                 popover.set_pointing_to(Some(&rect));
                                 popover.popup();
