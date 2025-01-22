@@ -30,9 +30,9 @@ mod imp {
     use adw::gio::ListModel;
     use adw::TabPage;
     use glib::subclass::InitializingObject;
-    use gtk::gdk::Rectangle;
+    use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext};
+    use gtk::glib::{clone, MainContext, Propagation};
     use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
     use log::error;
     use std::cell::RefCell;
@@ -824,6 +824,30 @@ mod imp {
                 None => error!(" Not a popover"),
             }
 
+
+            // Enable context menu key
+            let ev_key = gtk::EventControllerKey::new();
+            ev_key.connect_key_pressed(clone!(#[weak(rename_to = view)] self, #[upgrade_or] Propagation::Proceed,
+                    move | _event, key_val, _key_code, modifier | {
+                if key_val == Key::Menu && modifier == ModifierType::empty() {
+                    if view.get_selected_location().is_some() {
+                        // Need to get selected row x, y but that's not supported for ColumnViews
+                        let rect = Rectangle::new(50, 1, 1, 1);
+                        if let Some(popover) = view.popover.borrow().as_ref() {
+                            popover.set_pointing_to(Some(&rect));
+                            popover.popup();
+                            let r = popover.grab_focus();
+                            println!("Grab focus {:?}", r);
+                            println!("Focusable {:?}", popover.is_focusable());
+                        };
+                    }
+                    Propagation::Stop
+                } else {
+                    Propagation::Proceed
+                }
+
+            }));
+            self.plan_window.add_controller(ev_key);
 
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
