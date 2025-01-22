@@ -103,7 +103,7 @@ mod imp {
             let selection_model = SingleSelection::new(Some(slm));
             selection_model.set_autoselect(false);
             self.navaid_list.set_model(Some(&selection_model));
-            self.navaid_list.set_single_click_activate(true);
+            self.navaid_list.set_single_click_activate(false);
 
             if let Some(rx) = event::manager().register_listener() {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {

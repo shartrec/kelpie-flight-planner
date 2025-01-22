@@ -103,7 +103,7 @@ mod imp {
             let selection_model = SingleSelection::new(Some(slm));
             selection_model.set_autoselect(false);
             self.airport_list.set_model(Some(&selection_model));
-            self.airport_list.set_single_click_activate(true);
+            self.airport_list.set_single_click_activate(false);
 
             if let Some(rx) = event::manager().register_listener() {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
@@ -322,7 +322,7 @@ mod imp {
                     if let Some(airport) = view.get_selection() {
                         if let Some(label) = airport.imp().ui().as_ref() {
                             let rect = label.compute_bounds(&view.airport_list.get()).unwrap();
-                            let rect = Rectangle::new(rect.x() as i32, rect.y() as i32, 1, 1);
+                            let rect = Rectangle::new(10, 1, 1, 1);
                             if let Some(popover) = view.popover.borrow().as_ref() {
                                 popover.set_pointing_to(Some(&rect));
                                 popover.popup();
