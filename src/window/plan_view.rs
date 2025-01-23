@@ -818,7 +818,7 @@ mod imp {
                         .menu_model(&popover)
                         .has_arrow(false)
                         .build();
-                    popover.set_parent(&self.plan_window.get());
+                    popover.set_parent(&self.plan_tree.get());
                     let _ = self.popover.replace(Some(popover));
                 }
                 None => error!(" Not a popover"),
@@ -836,9 +836,6 @@ mod imp {
                         if let Some(popover) = view.popover.borrow().as_ref() {
                             popover.set_pointing_to(Some(&rect));
                             popover.popup();
-                            let r = popover.grab_focus();
-                            println!("Grab focus {:?}", r);
-                            println!("Focusable {:?}", popover.is_focusable());
                         };
                     }
                     Propagation::Stop
