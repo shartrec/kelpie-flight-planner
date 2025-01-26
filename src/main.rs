@@ -22,18 +22,17 @@
  *
  */
 
-#![allow(deprecated)]
 #![windows_subsystem = "windows"]
 
 use std::ptr;
 
 use adw::Application;
 use gtk::{CssProvider, gio, glib, UriLauncher};
-use gtk::gdk::Display;
+use adw::gdk::Display;
 use gtk::gio::{Cancellable, File, SimpleAction};
 use gtk::glib::clone;
-use gtk::prelude::*;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::prelude::*;
+use adw::subclass::prelude::ObjectSubclassIsExt;
 use log::error;
 use simplelog::*;
 
@@ -193,7 +192,7 @@ fn connect_actions(app: &Application, window: &Window) {
     action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
         let pref_dialog = PreferenceDialog::new();
         pref_dialog.set_transient_for(Some(&window));
-        pref_dialog.show();
+        pref_dialog.set_visible(true);
     }));
     app.add_action(&action);
 
@@ -204,7 +203,7 @@ fn connect_actions(app: &Application, window: &Window) {
     app.add_action(&action);
 
     let action = SimpleAction::new("help-about", None);
-    action.connect_activate(clone!(@strong window => move |_action, _parameter| {
+    action.connect_activate(clone!(#[weak] window, move |_action, _parameter| {
         show_help_about(&window);
     }));
     app.add_action(&action);

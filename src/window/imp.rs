@@ -31,8 +31,8 @@ use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned};
 use gtk::gio::{Cancellable, File};
 use gtk::glib::{clone, MainContext};
-use gtk::prelude::*;
-use gtk::subclass::prelude::*;
+use adw::prelude::*;
+use adw::subclass::prelude::*;
 
 use crate::event;
 use crate::event::Event;
@@ -331,7 +331,7 @@ impl ObjectImpl for Window {
                                 alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
                                     let pref_dialog = PreferenceDialog::new();
                                     pref_dialog.set_transient_for(win_clone.as_ref());
-                                    pref_dialog.show();
+                                    pref_dialog.set_visible(true);
                                 });
                             }
                             Event::StatusChange(s) => {
@@ -348,7 +348,7 @@ impl ObjectImpl for Window {
             // Check if plan dirty and if so do save.
             if let (dirty, Some(name)) = window.is_dirty(&page.clone()) {
                 if dirty {
-                    window.query_save_dirty(&name, clone!(@weak window, @weak view, @weak page, => move |button| {
+                    window.query_save_dirty(&name, clone!(#[weak] window, #[weak] view, #[weak] page, move |button| {
 
                         if button == 0 {
                             window.save_page_plan("Save Plan", SaveType::Native, &page, false);

@@ -24,8 +24,8 @@
 use std::sync::Arc;
 
 use gtk::glib;
-use gtk::prelude::Cast;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::prelude::Cast;
+use adw::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::model::navaid::Navaid;
 
@@ -50,7 +50,7 @@ mod imp {
     use std::sync::Arc;
 
     use gtk::{glib, Label};
-    use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
+    use adw::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::navaid::Navaid;
 

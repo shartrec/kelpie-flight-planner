@@ -28,8 +28,8 @@ mod imp {
     use gtk::{Button, CheckButton, CompositeTemplate, Entry, glib, TemplateChild};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
-    use gtk::prelude::{ButtonExt, CheckButtonExt, EditableExt};
-    use gtk::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
+    use adw::prelude::{ButtonExt, CheckButtonExt, EditableExt};
+    use adw::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::preference::*;

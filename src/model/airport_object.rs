@@ -24,7 +24,7 @@
 use std::sync::Arc;
 
 use gtk::glib;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::model::airport::Airport;
 
@@ -47,7 +47,7 @@ mod imp {
     use std::sync::Arc;
 
     use gtk::{glib, Label};
-    use gtk::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
+    use adw::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::airport::Airport;
 

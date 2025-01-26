@@ -25,8 +25,8 @@
 // Range filer for determining if a coordinate is within the specified distance of another
 
 use gtk::CustomFilter;
-use gtk::prelude::Cast;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::prelude::Cast;
+use adw::subclass::prelude::ObjectSubclassIsExt;
 use regex_lite::{Regex, RegexBuilder};
 
 use crate::earth::coordinate::Coordinate;

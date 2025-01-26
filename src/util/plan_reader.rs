@@ -26,7 +26,7 @@ use std::cell::Cell;
 use std::fs::File;
 use std::path::Path;
 
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::subclass::prelude::ObjectSubclassIsExt;
 use xmltree::Element;
 
 use crate::earth::coordinate::Coordinate;

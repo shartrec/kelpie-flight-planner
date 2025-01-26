@@ -23,13 +23,13 @@
  */
 
 use std::ffi::CStr;
-
+use adw::AlertDialog;
 use gl::types;
-use gtk::{AboutDialog, ButtonsType, glib, Label, ListItem, MessageDialog, MessageType, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow};
+use gtk::{AboutDialog, glib, Label, ListItem, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow};
 use gtk::gdk::Texture;
 use gtk::glib::Object;
-use gtk::prelude::{Cast, CastNone, DialogExtManual, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::prelude::{AdwDialogExt, AlertDialogExt, Cast, CastNone, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
+use adw::subclass::prelude::ObjectSubclassIsExt;
 use crate::util;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -65,16 +65,9 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
         .clone()
         .downcast::<gtk::Window>()
     {
-        let dialog = MessageDialog::new(
-            Some(&w),
-            gtk::DialogFlags::MODAL,
-            MessageType::Error,
-            ButtonsType::Ok,
-            message,
-        );
-        dialog.run_async(|obj, _answer| {
-            obj.close();
-        });
+        let dialog = AlertDialog::new(None, Some(message));
+        dialog.add_response("OK", "Ok");
+        dialog.present(Some(&w));
     };
 }
 
@@ -177,7 +170,7 @@ pub(crate) fn show_help_about(window: &Window) {
     about_dialog.set_modal(true);
     about_dialog.set_destroy_with_parent(true);
 
-    about_dialog.show();
+    about_dialog.set_visible(true);
 }
 
 fn get_gl_info() -> String {

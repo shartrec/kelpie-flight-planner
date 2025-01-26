@@ -26,7 +26,7 @@ extern crate gtk;
 
 use gtk::cairo::{Antialias, Context, FontSlant, FontWeight};
 use gtk::gdk::ffi::GdkRectangle;
-use gtk::prelude::WidgetExt;
+use adw::prelude::WidgetExt;
 
 use crate::earth::FEET_PER_DEGREE;
 use crate::model::airport::{Airport, Runway, Taxiway};
@@ -44,9 +44,8 @@ impl AirportPainter {
         // Function to draw the airport on the GTK DrawingArea
 
         // Get the size of the DrawingArea
-        let allocation = drawing_area.allocation();
-        let width = allocation.width() as f64;
-        let height = allocation.height() as f64;
+        let width = drawing_area.width() as f64;
+        let height = drawing_area.height() as f64;
 
         // Calculate the scale factor (pixels per foot)
         let extents = airport.calc_airport_extent();

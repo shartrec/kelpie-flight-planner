@@ -26,7 +26,7 @@
 
 use async_channel::Sender;
 use gtk::{self, Adjustment, CompositeTemplate, glib};
-use gtk::prelude::AdjustmentExt;
+use adw::prelude::AdjustmentExt;
 
 use crate::util::fg_link::{AircraftPositionInfo, get_aircraft_position};
 
@@ -43,8 +43,8 @@ mod imp {
     use gtk::glib::{clone, MainContext, Propagation};
     use gtk::glib::subclass::InitializingObject;
     use gtk::graphene::Point;
-    use gtk::prelude::*;
-    use gtk::subclass::prelude::*;
+    use adw::prelude::*;
+    use adw::subclass::prelude::*;
     use log::error;
     use scheduling::SchedulerHandle;
 

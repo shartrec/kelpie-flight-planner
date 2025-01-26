@@ -31,7 +31,7 @@ use std::time::Duration;
 use adw::glib::timeout_add_local_once;
 use glm::*;
 use gtk::GLArea;
-use gtk::prelude::WidgetExt;
+use adw::prelude::WidgetExt;
 
 use crate::earth::coordinate::Coordinate;
 use crate::earth::spherical_projector::SphericalProjector;

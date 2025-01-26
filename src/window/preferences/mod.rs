@@ -26,7 +26,7 @@ use std::path::Path;
 
 use gtk::{self, Button, Entry, FileDialog, FileFilter, gio, glib, Window};
 use gtk::gio::{Cancellable, File, ListStore};
-use gtk::prelude::{Cast, EditableExt, FileExt, WidgetExt};
+use adw::prelude::{Cast, EditableExt, FileExt, WidgetExt};
 
 mod preference_general;
 mod preference_fglink;
@@ -37,7 +37,7 @@ mod preference_edit_aircraft;
 mod imp {
     use gtk::{CompositeTemplate, glib, TemplateChild};
     use gtk::glib::subclass::InitializingObject;
-    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassExt, WindowImpl};
+    use adw::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectSubclass, WidgetClassExt, WindowImpl};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::window::preferences::preference_aircraft::PreferenceAircraftPage;

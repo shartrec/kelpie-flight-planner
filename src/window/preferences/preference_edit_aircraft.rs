@@ -24,7 +24,7 @@
 
 
 use gtk::{Entry, gio, glib};
-use gtk::prelude::{EditableExt, WidgetExt};
+use adw::prelude::{EditableExt, WidgetExt};
 
 use crate::window::util::show_error_dialog;
 
@@ -32,8 +32,8 @@ mod imp {
     use gtk::{AlertDialog, Button, CompositeTemplate, Entry, glib, TemplateChild};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
-    use gtk::prelude::{ButtonExt, EditableExt, GtkWindowExt, WidgetExt};
-    use gtk::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassExt, ObjectSubclassIsExt, WidgetClassExt, WindowImpl};
+    use adw::prelude::{ButtonExt, EditableExt, GtkWindowExt, WidgetExt};
+    use adw::subclass::prelude::{CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassExt, ObjectSubclassIsExt, WidgetClassExt, WindowImpl};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::hangar::hangar::get_hangar;

@@ -24,7 +24,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 use gtk::glib;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
+use adw::subclass::prelude::ObjectSubclassIsExt;
 use gtk::gio::ListModel;
 
 use crate::model::plan::Plan;
@@ -50,8 +50,8 @@ mod imp {
     use adw::gio;
     use adw::glib::Object;
     use gtk::glib;
-    use gtk::prelude::StaticType;
-    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
+    use adw::prelude::StaticType;
+    use adw::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
     use crate::model::plan::Plan;
     use crate::model::sector_object::SectorObject;
 

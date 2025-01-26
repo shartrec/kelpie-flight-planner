@@ -31,10 +31,10 @@ mod imp {
     use gtk::{Button, CompositeTemplate, glib, Label, ListView, SingleSelection, StringObject, TemplateChild, Window};
     use gtk::glib::clone;
     use gtk::glib::subclass::InitializingObject;
-    use gtk::prelude::{GtkWindowExt, SelectionModelExt};
-    use gtk::prelude::{ButtonExt, WidgetExt};
-    use gtk::prelude::Cast;
-    use gtk::subclass::prelude::{BoxImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt, WidgetClassExt};
+    use adw::prelude::{GtkWindowExt, SelectionModelExt};
+    use adw::prelude::{ButtonExt, WidgetExt};
+    use adw::prelude::Cast;
+    use adw::subclass::prelude::{BoxImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassIsExt, WidgetClassExt};
     use gtk::subclass::widget::{CompositeTemplate, CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::hangar::hangar::get_hangar;

@@ -90,8 +90,8 @@ mod imp {
     use std::sync::{Arc, RwLock};
 
     use gtk::{gio, glib, StringObject};
-    use gtk::prelude::{ListModelExt, StaticType};
-    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassExt};
+    use adw::prelude::{ListModelExt, StaticType};
+    use adw::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass, ObjectSubclassExt};
 
     use crate::hangar::hangar::{load_hangar, save_hangar};
     use crate::model::aircraft::Aircraft;

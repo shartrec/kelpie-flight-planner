@@ -49,8 +49,8 @@ mod imp {
     use std::collections::HashMap;
     use gtk::{gio, glib};
     use gtk::glib::Object;
-    use gtk::prelude::StaticType;
-    use gtk::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
+    use adw::prelude::StaticType;
+    use adw::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::earth::get_earth_model;
     use crate::model::airport_object::AirportObject;
