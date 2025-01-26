@@ -36,8 +36,8 @@ mod imp {
     use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
-
-    use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton};
+    use adw::gdk::ModifierType;
+    use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton, EventControllerScroll, EventControllerScrollFlags};
     use gtk::gdk::Rectangle;
     use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, Propagation};
@@ -45,6 +45,7 @@ mod imp {
     use gtk::graphene::Point;
     use adw::prelude::*;
     use adw::subclass::prelude::*;
+    use gtk::builders::EventControllerScrollBuilder;
     use log::error;
     use scheduling::SchedulerHandle;
 
@@ -392,6 +393,27 @@ mod imp {
                 window.renderer.borrow().as_ref().unwrap().draw(area, airports, navaids);
                 Propagation::Proceed
             }));
+
+            // Use ctl-Scroll to zoom
+            let gesture = EventControllerScroll::new(EventControllerScrollFlags::VERTICAL);
+            gesture.connect_scroll(clone!(#[weak(rename_to = window)] self, #[upgrade_or] Propagation::Proceed, move |gesture, _dx, dy| {
+                let parent = gesture.upcast_ref::<gtk::EventController>();
+                if let Some(ev) = parent.current_event() {
+                    if ev.modifier_state().contains(ModifierType::CONTROL_MASK) {
+                        if dy > 0.0 {
+                            window.zoom(0.95);
+                        } else {
+                            window.zoom(1.0 / 0.95);
+                        }
+                        Propagation::Stop
+                    } else {
+                        Propagation::Proceed
+                    }
+                } else {
+                    Propagation::Proceed
+                }
+            }));
+            self.gl_area.add_controller(gesture);
 
             // Set double click to centre map
             let gesture = gtk::GestureClick::new();
