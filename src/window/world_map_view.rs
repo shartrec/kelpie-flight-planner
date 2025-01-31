@@ -45,7 +45,6 @@ mod imp {
     use gtk::graphene::Point;
     use adw::prelude::*;
     use adw::subclass::prelude::*;
-    use gtk::builders::EventControllerScrollBuilder;
     use log::error;
     use scheduling::SchedulerHandle;
 

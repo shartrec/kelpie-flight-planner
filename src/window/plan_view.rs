@@ -53,7 +53,7 @@ mod imp {
     use crate::model::waypoint_object::WaypointObject;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
-    use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view};
+    use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path};
     use crate::{earth, event};
 
     use super::*;
@@ -180,10 +180,12 @@ mod imp {
                     let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
                     if let Some(row) = trm.row(sel_pos) {
 
+                    let tree_path = get_tree_path(sel_pos, &trm);
+
                         let item = row.item().unwrap();
                         if item.is::<SectorObject>() {
                             let sectors = plan.get_sectors();
-                            let sector_index = row.position();
+                            let sector_index = tree_path[0];
                             if sector_index > 0 && sector_index < sectors.len() as u32 {
                                 view.btn_move_up.set_sensitive(true);
                             }
@@ -395,13 +397,14 @@ mod imp {
                 let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
+                    let tree_path = get_tree_path(sel_pos, &trm);
                     let item = row.item().unwrap();
                     if item.is::<SectorObject>() {
-                        // let sector_index = row.position();
-                        // if sector_index > 0 {
-                        //     plan.move_sector_up(sector_index as usize);
-                        //     new_selection = None;
-                        // }
+                        let sector_index = tree_path[0];
+                        if sector_index > 0 {
+                            plan.move_sector_up(sector_index as usize);
+                            new_selection = None;
+                        }
                     } else if item.is::<WaypointObject>() {
                         let parent = row.parent().unwrap();
                         let parent_item = parent.item().unwrap();
@@ -450,13 +453,14 @@ mod imp {
                 let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
+                    let tree_path = get_tree_path(sel_pos, &trm);
                     let item = row.item().unwrap();
                     if item.is::<SectorObject>() {
-                        // let sector_index = row.position();
-                        // if sector_index < (plan.get_sectors().len() - 1) as u32 {
-                        //     plan.move_sector_down(sector_index as usize);
-                        //     new_selection = None;
-                        // }
+                        let sector_index = tree_path[0];
+                        if sector_index < (plan.get_sectors().len() - 1) as u32 {
+                            plan.move_sector_down(sector_index as usize);
+                            new_selection = None;
+                        }
                     } else if item.is::<WaypointObject>() {
                         let parent = row.parent().unwrap();
                         let parent_item = parent.item().unwrap();

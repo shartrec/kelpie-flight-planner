@@ -25,7 +25,7 @@
 use std::ffi::CStr;
 use adw::AlertDialog;
 use gl::types;
-use gtk::{AboutDialog, glib, Label, ListItem, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow};
+use gtk::{AboutDialog, glib, Label, ListItem, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow, TreeListModel};
 use gtk::gdk::Texture;
 use gtk::glib::Object;
 use adw::prelude::{AdwDialogExt, AlertDialogExt, Cast, CastNone, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
@@ -320,4 +320,24 @@ pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
             }
         }
     }
+}
+
+// Get a tree path vector from a TreeListModel
+pub(crate) fn get_tree_path(row: u32, trm: &TreeListModel) -> Vec<u32> {
+    let mut path: Vec<u32> = Vec::new();
+    // Walk the tree filling in the path vector according to the depth we are at
+    for i in 0..=row {
+        if let Some(r) = trm.row(i) {
+            let path_index = r.depth();
+            if path_index as usize >= path.len() {
+                path.push(0);
+            } else {
+                let old_val = path.remove(path_index as usize);
+                path.insert(path_index as usize, old_val + 1);
+            }
+            // clear lower level paths
+            path.truncate((path_index + 1) as usize);
+        }
+    }
+    path
 }
