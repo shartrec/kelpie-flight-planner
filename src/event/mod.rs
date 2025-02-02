@@ -24,10 +24,9 @@
 
 #![forbid(unsafe_code)]
 
-use std::sync::RwLock;
+use std::sync::{LazyLock, RwLock};
 
 use async_channel::{Receiver, Sender, TrySendError};
-use lazy_static::lazy_static;
 use log::warn;
 
 #[derive(Clone, PartialEq)]
@@ -41,11 +40,10 @@ pub enum Event {
     StatusChange(String),
 }
 
-lazy_static! {
-    static ref MANAGER: EventManager = EventManager {
-        listeners: RwLock::new(Vec::new()),
-    };
-}
+static MANAGER: LazyLock<EventManager> = LazyLock::new(|| EventManager {
+    listeners: RwLock::new(Vec::new()),
+});
+
 pub fn manager() -> &'static EventManager {
     &MANAGER
 }

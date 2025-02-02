@@ -29,13 +29,12 @@ use std::{
     str::FromStr,
     sync::{Arc, RwLock},
 };
-
-use lazy_static::lazy_static;
+use std::sync::LazyLock;
 use log::error;
 use preferences::{AppInfo, Preferences, PreferencesMap};
 
 use crate::event;
-use crate::event::Event;
+use crate::event::{Event, EventManager};
 
 const PREFS_PATH: &str = "planner";
 pub const APP_INFO: AppInfo = AppInfo {
@@ -82,20 +81,19 @@ pub const FGFS_LINK_ENABLED: &str = "FlightGearLink.enabled";
 pub const FGFS_LINK_HOST: &str = "FlightGearLink.host";
 pub const FGFS_LINK_PORT: &str = "FlightGearLink.port";
 
-lazy_static! {
-    static ref MANAGER: PreferenceManager = PreferenceManager {
-        preferences: {
-            match PreferencesMap::<String>::load(&APP_INFO, PREFS_PATH) {
-                Ok(map) => Arc::new(RwLock::new(map)),
-                Err(e) => {
-                    error!("Error opening preferences {}", e);
-                    Arc::new(RwLock::new(PreferencesMap::new()))
-                }
+static MANAGER: LazyLock<PreferenceManager> = LazyLock::new(|| PreferenceManager {
+    preferences: {
+        match PreferencesMap::<String>::load(&APP_INFO, PREFS_PATH) {
+            Ok(map) => Arc::new(RwLock::new(map)),
+            Err(e) => {
+                error!("Error opening preferences {}", e);
+                Arc::new(RwLock::new(PreferencesMap::new()))
             }
-        },
-        path: PREFS_PATH,
-    };
-}
+        }
+    },
+    path: PREFS_PATH,
+});
+
 
 pub struct PreferenceManager {
     preferences: Arc<RwLock<PreferencesMap>>,

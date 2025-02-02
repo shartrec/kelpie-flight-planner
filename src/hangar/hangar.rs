@@ -24,22 +24,18 @@
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use dirs_next::config_dir;
 use gtk::{gio, glib, subclass::prelude::*};
-use lazy_static::lazy_static;
 use log::{error, warn};
 use yaml_rust::{Yaml, YamlEmitter, YamlLoader};
 use yaml_rust::yaml::Hash;
-
 use crate::model::aircraft::Aircraft;
 use crate::preference::APP_INFO;
 
 // This is where all the planes live.
-lazy_static! {
-    static ref HANGAR: Hangar = Hangar::new();
-}
+static HANGAR: LazyLock<Hangar> = LazyLock::new(|| Hangar::new());
 
 static DEFAULT_AICRAFT: &str = "---
 - climb-rate: 5000

@@ -26,10 +26,9 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::BufReader;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, LazyLock, RwLock};
 
 use flate2::read;
-use lazy_static::lazy_static;
 use log::info;
 
 use crate::event;
@@ -52,15 +51,14 @@ pub(crate) mod fix_list_model;
 
 pub const FEET_PER_DEGREE: i32 = 6076 * 60;
 
-lazy_static! {
-    static ref EARTH: Earth = Earth {
-        airports: RwLock::new(Vec::new()),
-        navaids: RwLock::new(Vec::new()),
-        fixes: RwLock::new(Vec::new()),
-        runway_offsets: RwLock::new(HashMap::new()),
-        ils: RwLock::new(HashMap::new()),
-    };
-}
+
+static EARTH: LazyLock<Earth> = LazyLock::new(|| Earth {
+    airports: RwLock::new(Vec::new()),
+    navaids: RwLock::new(Vec::new()),
+    fixes: RwLock::new(Vec::new()),
+    runway_offsets: RwLock::new(HashMap::new()),
+    ils: RwLock::new(HashMap::new()),
+});
 
 pub struct Earth {
     airports: RwLock<Vec<Arc<Airport>>>,
