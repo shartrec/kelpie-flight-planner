@@ -42,13 +42,16 @@ impl SphericalProjector {
      * @return
      */
     pub fn project(&self, lat: &f64, lon: &f64) -> [f32; 3] {
-        let lat1: f32 = lat.to_radians() as f32;
-        let lon1: f32 = lon.to_radians() as f32;
+        let lat_rad: f32 = lat.to_radians() as f32;
+        let lon_rad: f32 = lon.to_radians() as f32;
 
-        let x: f32 = self.r * lat1.cos() * lon1.sin();
-        let y: f32 = self.r * lat1.sin();
-        let z: f32 = self.r * lat1.cos() * (lon1 + self._90rad).sin();
-        // For OpenGL we flip the z-axis
+        let (sin_lat, cos_lat) = lat_rad.sin_cos();
+        let (sin_lon, cos_lon) = lon_rad.sin_cos();
+
+        let x = self.r * cos_lat * sin_lon;
+        let y = self.r * sin_lat;
+        let z = self.r * cos_lat * cos_lon;
+       // For OpenGL we flip the z-axis
         [x, y, -z]
     }
 
