@@ -119,19 +119,19 @@ pub struct RangeFilter {
 }
 
 impl RangeFilter {
-    pub fn new(lat: f64, lon: f64, range: f64) -> Option<Self> {
+    pub fn new(lat: f64, lon: f64, range: f64) -> Self {
         // We do a little optimization here rather than calculating
         // all distances accurately; we make a quick rough calculation to exclude many coordinates
         let rough_lat_sep = range / 60.0;
         let x = lat.to_radians().cos();
         let rough_long_sep = if x < 0.01 { 181.0 } else { range / (60.0 * x) };
 
-        Some(Self {
+        Self {
             this: Coordinate::new(lat, lon),
             range,
             rough_lat_sep,
             rough_long_sep,
-        })
+        }
     }
 }
 

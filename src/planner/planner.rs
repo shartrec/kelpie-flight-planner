@@ -23,7 +23,6 @@
  */
 
 use std::cell::Cell;
-use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 
 use crate::earth;
@@ -200,11 +199,18 @@ impl Planner<'_> {
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
-        let near_aids = self.get_navaids_near(self.navaids, midpoint, range);
         let mut best_loc: Option<Arc<Navaid>> = None;
         let mut best_ndb: Option<Arc<Navaid>> = None;
         let mut nearest = 100000.0;
         let mut nearest_ndb = 100000.0;
+
+        let f = RangeFilter::new(*midpoint.get_latitude(), *midpoint.get_longitude(), range);
+        let binding = self.navaids
+            .read()
+            .unwrap();
+        let near_aids = binding
+            .iter()
+            .filter(move |loc| f.filter(&***loc));
 
         for navaid in near_aids {
             if self.vor_only && navaid.get_type() != NavaidType::Vor {
@@ -247,12 +253,19 @@ impl Planner<'_> {
     }
 
     fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Navaid>> {
-        let near_aids = self.get_navaids_near(self.navaids, coord, max_range);
 
         let mut best_loc: Option<Arc<Navaid>> = None;
         let mut best_ndb: Option<Arc<Navaid>> = None;
         let mut nearest = 100000.0;
         let mut nearest_ndb = 100000.0;
+
+        let f = RangeFilter::new(*coord.get_latitude(), *coord.get_longitude(), max_range);
+        let binding = self.navaids
+            .read()
+            .unwrap();
+        let near_aids = binding
+            .iter()
+            .filter(move |loc| f.filter(&***loc));
 
         for navaid in near_aids {
             if self.vor_only && navaid.get_type() != NavaidType::Vor {
@@ -290,9 +303,15 @@ impl Planner<'_> {
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
-        let near_aids = self.get_fixes_near(self.fixes, midpoint, range);
         let mut best_loc: Option<Arc<Fix>> = None;
         let mut nearest = 100000.0;
+        let f = RangeFilter::new(*midpoint.get_latitude(), *midpoint.get_longitude(), range);
+        let binding = self.fixes
+            .read()
+            .unwrap();
+        let near_aids = binding
+            .iter()
+            .filter(move |loc| f.filter(&***loc));
 
         for fix in near_aids {
             let deviation_to =
@@ -317,7 +336,14 @@ impl Planner<'_> {
 
     #[allow(dead_code)]
     fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Fix>> {
-        let near_aids = self.get_fixes_near(self.fixes, coord, max_range);
+
+        let f = RangeFilter::new(*coord.get_latitude(), *coord.get_longitude(), max_range);
+        let binding = self.fixes
+            .read()
+            .unwrap();
+        let near_aids = binding
+            .iter()
+            .filter(move |loc| f.filter(&***loc));
 
         let mut best_loc: Option<Arc<Fix>> = None;
         let mut nearest = 100000.0;
@@ -414,54 +440,6 @@ impl Planner<'_> {
             last_wp = save_wp;
         }
         extra_points
-    }
-
-    fn get_navaids_near(
-        &self,
-        locations: &RwLock<Vec<Arc<Navaid>>>,
-        point: &Coordinate,
-        range: f64,
-    ) -> Vec<Arc<Navaid>> {
-        let mut near_locations: Vec<Arc<Navaid>> = Vec::new();
-
-        if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range)
-        {
-            let guard = locations.read().unwrap();
-            let locations = guard.deref();
-            let near_navaids: Vec<&Arc<Navaid>> = locations
-                .iter()
-                .filter(move |loc| filter.filter(&***loc))
-                .collect();
-
-            for navaid in near_navaids {
-                near_locations.push(navaid.clone());
-            }
-        }
-        near_locations
-    }
-
-    fn get_fixes_near(
-        &self,
-        locations: &RwLock<Vec<Arc<Fix>>>,
-        point: &Coordinate,
-        range: f64,
-    ) -> Vec<Arc<Fix>> {
-        let mut near_locations: Vec<Arc<Fix>> = Vec::new();
-
-        if let Some(filter) = RangeFilter::new(*point.get_latitude(), *point.get_longitude(), range)
-        {
-            let guard = locations.read().unwrap();
-            let locations = guard.deref();
-            let near_fixes: Vec<&Arc<Fix>> = locations
-                .iter()
-                .filter(move |loc| filter.filter(&***loc))
-                .collect();
-
-            for fix in near_fixes {
-                near_locations.push(fix.clone());
-            }
-        }
-        near_locations
     }
 
     fn get_deviation(&self, heading_from: f64, bearing_to_deg: f64) -> f64 {

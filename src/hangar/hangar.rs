@@ -99,16 +99,12 @@ mod imp {
 
     impl Hangar {
         pub fn get_default_aircraft(&self) -> Option<Arc<Aircraft>> {
-            let aircraft = self
-                .aircraft
+            self.aircraft
                 .read()
-                .expect("Unable to get a lock on the aircraft hangar");
-            for (_name, a) in aircraft.iter() {
-                if *a.is_default() {
-                    return Some(a.clone());
-                }
-            }
-            None
+                .expect("Unable to get a lock on the aircraft hangar")
+                .values()
+                .find(|a| *a.is_default())
+                .cloned()
         }
 
         pub fn get_all(&self) -> &Arc<RwLock<BTreeMap<String, Arc<Aircraft>>>> {
@@ -189,12 +185,10 @@ mod imp {
                 .aircraft
                 .read()
                 .expect("Unable to get a lock on the aircraft hangar");
-            for (i, name) in (0_u32..).zip(aircraft.keys()) {
-                if name == plane {
-                    return Some(i);
-                }
-            }
-            None
+
+            (0_u32..).zip(aircraft.keys())
+                .find(|(_i, name)| *name == plane)
+                .map(|(i, _name)| i)
         }
 
         pub fn aircraft_at(&self, position: u32) -> Option<Arc<Aircraft>> {
@@ -239,18 +233,14 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<glib::Object> {
-            match self.aircraft_at(position) {
-                Some(plane) => {
-                    let mut name_string = plane.get_name().to_string();
+            self.aircraft_at(position).map(|plane| {
+                let mut name_string = plane.get_name().to_string();
                     // Get the aircraft and see if it is the default
-                    if *plane.is_default() {
-                        name_string.push('*');
-                    }
-                    Some(glib::Object::from(StringObject::new(name_string.as_str())))
+                if *plane.is_default() {
+                    name_string.push('*');
                 }
-
-                None => None
-            }
+                glib::Object::from(StringObject::new(name_string.as_str()))
+            })
         }
     }
 }

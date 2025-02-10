@@ -91,13 +91,13 @@ impl Location for Navaid {
         self.coordinate.get_latitude()
     }
     fn get_lat_as_string(&self) -> String {
-        self.coordinate.get_latitude_as_string().clone()
+        self.coordinate.get_latitude_as_string()
     }
     fn get_long(&self) -> &f64 {
         self.coordinate.get_longitude()
     }
     fn get_long_as_string(&self) -> String {
-        self.coordinate.get_longitude_as_string().clone()
+        self.coordinate.get_longitude_as_string()
     }
     fn get_loc(&self) -> &Coordinate {
         &self.coordinate

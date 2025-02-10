@@ -152,9 +152,8 @@ mod imp {
                             return;
                         }
                     };
-                    if let Some(filter) = RangeFilter::new(lat_as_float, long_as_float, 100.0) {
-                        combined_filter.add(Box::new(filter));
-                    }
+                    let filter = RangeFilter::new(lat_as_float, long_as_float, 100.0);
+                    combined_filter.add(Box::new(filter));
                 }
             }
 

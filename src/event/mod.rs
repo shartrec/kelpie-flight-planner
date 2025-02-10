@@ -56,12 +56,10 @@ impl EventManager {
     pub fn register_listener(&self) -> Option<Receiver<Event>> {
         let (tx, rx) = async_channel::unbounded::<Event>();
 
-        if let Ok(mut listeners) = self.listeners.write() {
+        self.listeners.write().ok().map(|mut listeners| {
             listeners.push(tx);
-            Some(rx)
-        } else {
-            None
-        }
+            rx
+        })
     }
 
     pub fn notify_listeners(&self, ev: Event) {

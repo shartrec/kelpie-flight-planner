@@ -118,24 +118,13 @@ impl Airport {
     }
 
     pub fn get_longest_runway(&self) -> Option<Runway> {
-        let mut longest: Option<Runway> = None;
-
-        for runway in self
-            .get_runways()
+        let binding = self.get_runways()
             .read()
-            .expect("Can't get airport lock")
+            .expect("Can't get airport lock");
+        let runway = binding
             .iter()
-        {
-            match &longest {
-                Some(r_longest) => {
-                    if runway.get_length() > r_longest.get_length() {
-                        longest = Some(runway.clone());
-                    }
-                }
-                None => longest = Some(runway.clone())
-            }
-        }
-        longest
+            .max_by_key(|runway| runway.get_length());
+        runway.cloned()
     }
 
     pub fn get_show_default_buildings(&self) -> bool {
