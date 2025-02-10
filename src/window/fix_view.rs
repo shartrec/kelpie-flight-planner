@@ -48,7 +48,7 @@ mod imp {
     use crate::model::location::Location;
     use crate::model::waypoint::Waypoint;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{CombinedFilter, IdFilter, new_fix_filter, NilFilter, RangeFilter, set_fix_filter};
+    use crate::util::location_filter::{AndFilter, IdFilter, new_fix_filter, NilFilter, RangeFilter, set_fix_filter};
     use crate::window::util::{build_column_factory, get_airport_view, get_plan_view, show_airport_view, show_error_dialog, show_navaid_view};
 
     use super::*;
@@ -116,7 +116,7 @@ mod imp {
             let lat = self.fix_search_lat.text();
             let long = self.fix_search_long.text();
 
-            let mut combined_filter = CombinedFilter::new();
+            let mut combined_filter = AndFilter::new();
             if !term.is_empty() {
                 if let Some(filter) = IdFilter::new(term.as_str()) {
                     combined_filter.add(Box::new(filter));

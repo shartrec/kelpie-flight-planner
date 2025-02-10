@@ -22,8 +22,6 @@
  *
  */
 
-// Range filer for determining if a coordinate is within the specified distance of another
-
 use gtk::CustomFilter;
 use adw::prelude::Cast;
 use adw::subclass::prelude::ObjectSubclassIsExt;
@@ -111,6 +109,7 @@ pub trait Filter {
     fn filter(&self, location: &dyn Location) -> bool;
 }
 
+// Range filer for determining if a coordinate is within the specified distance of another
 pub struct RangeFilter {
     this: Coordinate,
     range: f64,
@@ -170,13 +169,11 @@ pub struct NameIdFilter {
 
 impl NameIdFilter {
     pub fn new(term: &str) -> Option<Self> {
-        match RegexBuilder::new(term).case_insensitive(true).build() {
-            Ok(regex) => Some(Self {
-                term: term.to_string(),
-                regex,
-            }),
-            Err(_) => None,
-        }
+        let regex = RegexBuilder::new(term).case_insensitive(true).build().ok()?;
+        Some(Self {
+            term: term.to_string(),
+            regex,
+        })
     }
 }
 
@@ -205,11 +202,12 @@ impl Filter for IdFilter {
     }
 }
 
-pub struct CombinedFilter {
+// Filter that combines two filters with an AND operation
+pub struct AndFilter {
     filters: Vec<Box<dyn Filter>>,
 }
 
-impl CombinedFilter {
+impl AndFilter {
     pub fn new() -> Self {
         Self {
             filters: Vec::new(),
@@ -221,7 +219,7 @@ impl CombinedFilter {
     }
 }
 
-impl Filter for CombinedFilter {
+impl Filter for AndFilter {
     fn filter(&self, location: &dyn Location) -> bool {
         for f in &self.filters {
             if !f.filter(location) {

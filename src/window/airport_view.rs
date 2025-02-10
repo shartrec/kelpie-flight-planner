@@ -48,7 +48,7 @@ mod imp {
     use crate::model::airport_object::AirportObject;
     use crate::model::location::Location;
     use crate::util::lat_long_format::LatLongFormat;
-    use crate::util::location_filter::{CombinedFilter, NameIdFilter, new_airport_filter, NilFilter, RangeFilter, set_airport_filter};
+    use crate::util::location_filter::{AndFilter, NameIdFilter, new_airport_filter, NilFilter, RangeFilter, set_airport_filter};
     use crate::window::util::{build_column_factory, get_airport_map_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_error_dialog, show_fix_view, show_navaid_view};
 
     use super::*;
@@ -122,7 +122,7 @@ mod imp {
             let lat = self.airport_search_lat.text();
             let long = self.airport_search_long.text();
 
-            let mut combined_filter = CombinedFilter::new();
+            let mut combined_filter = AndFilter::new();
             if !term.is_empty() {
                 if let Some(filter) = NameIdFilter::new(term.as_str()) {
                     combined_filter.add(Box::new(filter));
