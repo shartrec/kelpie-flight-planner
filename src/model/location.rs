@@ -21,10 +21,10 @@
  *      Trevor Campbell
  *
  */
-
+use std::any::Any;
 use crate::earth::coordinate::Coordinate;
 
-pub trait Location {
+pub trait Location: Any {
     fn get_elevation(&self) -> &i32;
     fn get_id(&self) -> &str;
     fn get_lat(&self) -> &f64;
@@ -33,4 +33,5 @@ pub trait Location {
     fn get_long_as_string(&self) -> String;
     fn get_loc(&self) -> &Coordinate;
     fn get_name(&self) -> &str;
+    fn as_any(&self) -> &dyn Any;
 }

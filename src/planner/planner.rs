@@ -24,7 +24,6 @@
 
 use std::cell::Cell;
 use std::sync::{Arc, RwLock};
-
 use crate::earth;
 use crate::earth::coordinate::Coordinate;
 use crate::model::aircraft::Aircraft;
@@ -35,7 +34,7 @@ use crate::model::plan::Plan;
 use crate::model::sector::Sector;
 use crate::model::waypoint::Waypoint;
 use crate::preference::*;
-use crate::util::location_filter::{Filter, RangeFilter};
+use crate::util::location_filter::{AndFilter, DeviationFilter, Filter, InverseRangeFilter, RangeFilter, VorFilter};
 
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
@@ -199,46 +198,58 @@ impl Planner<'_> {
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
-        let mut best_loc: Option<Arc<Navaid>> = None;
-        let mut best_ndb: Option<Arc<Navaid>> = None;
-        let mut nearest = 100000.0;
-        let mut nearest_ndb = 100000.0;
 
-        let f = RangeFilter::new(*midpoint.get_latitude(), *midpoint.get_longitude(), range);
+        let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
+        let rf = RangeFilter::new(midpoint.clone(), range);
+        let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
+        let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
+
+        let mut filter = AndFilter::new();
+        if self.vor_only {
+            let vf = VorFilter::new();
+            filter.add(Box::new(vf));
+        }
+        filter.add(Box::new(rf));
+        filter.add(Box::new(df));
+        filter.add(Box::new(irf1));
+        filter.add(Box::new(irf2));
+
+        self.get_nearest_navaids_with_filter(midpoint, Box::new(filter))
+    }
+
+    fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Navaid>> {
+
+        let mut filter = AndFilter::new();
+        if self.vor_only {
+            let vf = VorFilter::new();
+            filter.add(Box::new(vf));
+        }
+        let rf = RangeFilter::new(coord.clone(), max_range);
+        filter.add(Box::new(rf));
+
+        self.get_nearest_navaids_with_filter(coord, Box::new(filter))
+    }
+
+    fn get_nearest_navaids_with_filter(&self, midpoint: &Coordinate, filter: Box<dyn Filter>) -> Option<Arc<Navaid>> {
         let binding = self.navaids
             .read()
             .unwrap();
         let near_aids = binding
             .iter()
-            .filter(move |loc| f.filter(&***loc));
+            .filter(|loc| filter.filter(&***loc));
 
+        let mut best_loc: Option<Arc<Navaid>> = None;
+        let mut best_ndb: Option<Arc<Navaid>> = None;
+        let mut nearest = 100000.0;
+        let mut nearest_ndb = 100000.0;
         for navaid in near_aids {
-            if self.vor_only && navaid.get_type() != NavaidType::Vor {
-                continue;
-            }
-
-            let deviation_to =
-                self.get_deviation(heading_from, from.bearing_to_deg(navaid.get_loc()));
-            let deviation_from =
-                self.get_deviation(heading_to, navaid.get_loc().bearing_to_deg(to));
-
-            if deviation_to > self.max_deviation || deviation_from > self.max_deviation {
-                continue;
-            }
-
             if self.vor_preferred && navaid.get_type() != NavaidType::Vor {
-                if midpoint.distance_to(navaid.get_loc()) < nearest_ndb
-                    && from.distance_to(navaid.get_loc()) > self.min_leg_distance
-                    && to.distance_to(navaid.get_loc()) > self.min_leg_distance
-                {
+                if midpoint.distance_to(navaid.get_loc()) < nearest_ndb {
                     best_ndb = Some(navaid.clone());
                     nearest_ndb = midpoint.distance_to(navaid.get_loc());
                 }
             } else {
-                if midpoint.distance_to(navaid.get_loc()) < nearest
-                    && from.distance_to(navaid.get_loc()) > self.min_leg_distance
-                    && to.distance_to(navaid.get_loc()) > self.min_leg_distance
-                {
+                if midpoint.distance_to(navaid.get_loc()) < nearest {
                     best_loc = Some(navaid.clone());
                     nearest = midpoint.distance_to(navaid.get_loc());
                 }
@@ -252,45 +263,6 @@ impl Planner<'_> {
         best_loc
     }
 
-    fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Navaid>> {
-
-        let mut best_loc: Option<Arc<Navaid>> = None;
-        let mut best_ndb: Option<Arc<Navaid>> = None;
-        let mut nearest = 100000.0;
-        let mut nearest_ndb = 100000.0;
-
-        let f = RangeFilter::new(*coord.get_latitude(), *coord.get_longitude(), max_range);
-        let binding = self.navaids
-            .read()
-            .unwrap();
-        let near_aids = binding
-            .iter()
-            .filter(move |loc| f.filter(&***loc));
-
-        for navaid in near_aids {
-            if self.vor_only && navaid.get_type() != NavaidType::Vor {
-                continue;
-            }
-
-            if self.vor_preferred && navaid.get_type() != NavaidType::Vor {
-                if coord.distance_to(navaid.get_loc()) < nearest_ndb {
-                    best_ndb = Some(navaid.clone());
-                    nearest_ndb = coord.distance_to(navaid.get_loc());
-                }
-            } else {
-                if coord.distance_to(navaid.get_loc()) < nearest {
-                    best_loc = Some(navaid.clone());
-                    nearest = coord.distance_to(navaid.get_loc());
-                }
-            }
-        }
-
-        if best_loc.is_none() && best_ndb.is_some() {
-            best_loc = best_ndb;
-        }
-
-        best_loc
-    }
     fn get_fix_nearest_midpoint(
         &self,
         from: &Coordinate,
@@ -303,47 +275,35 @@ impl Planner<'_> {
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
-        let mut best_loc: Option<Arc<Fix>> = None;
-        let mut nearest = 100000.0;
-        let f = RangeFilter::new(*midpoint.get_latitude(), *midpoint.get_longitude(), range);
-        let binding = self.fixes
-            .read()
-            .unwrap();
-        let near_aids = binding
-            .iter()
-            .filter(move |loc| f.filter(&***loc));
+        let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
+        let rf = RangeFilter::new(midpoint.clone(), range);
+        let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
+        let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
 
-        for fix in near_aids {
-            let deviation_to =
-                self.get_deviation(heading_from, from.bearing_to_deg(fix.get_loc()));
-            let deviation_from = self.get_deviation(heading_to, fix.get_loc().bearing_to_deg(to));
+        let mut filter = AndFilter::new();
+        filter.add(Box::new(rf));
+        filter.add(Box::new(df));
+        filter.add(Box::new(irf1));
+        filter.add(Box::new(irf2));
 
-            if deviation_to > self.max_deviation || deviation_from > self.max_deviation {
-                continue;
-            }
-
-            if midpoint.distance_to(fix.get_loc()) < nearest
-                && from.distance_to(fix.get_loc()) > self.min_leg_distance
-                && to.distance_to(fix.get_loc()) > self.min_leg_distance
-            {
-                best_loc = Some(fix.clone());
-                nearest = midpoint.distance_to(fix.get_loc());
-            }
-        }
-
-        best_loc
+        self.get_fix_nearest_with_filter(midpoint, Box::new(filter))
     }
 
     #[allow(dead_code)]
     fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Fix>> {
 
-        let f = RangeFilter::new(*coord.get_latitude(), *coord.get_longitude(), max_range);
+        let filter = RangeFilter::new(coord.clone(), max_range);
+
+        self.get_fix_nearest_with_filter(coord, Box::new(filter))
+    }
+
+    fn get_fix_nearest_with_filter(&self, coord: &Coordinate, f: Box<dyn Filter>) -> Option<Arc<Fix>> {
         let binding = self.fixes
             .read()
             .unwrap();
         let near_aids = binding
             .iter()
-            .filter(move |loc| f.filter(&***loc));
+            .filter(|loc| f.filter(&***loc));
 
         let mut best_loc: Option<Arc<Fix>> = None;
         let mut nearest = 100000.0;
@@ -442,13 +402,6 @@ impl Planner<'_> {
         extra_points
     }
 
-    fn get_deviation(&self, heading_from: f64, bearing_to_deg: f64) -> f64 {
-        let mut raw_deviation = (bearing_to_deg - heading_from).abs();
-        if raw_deviation > 180.0 {
-            raw_deviation = 360.0 - raw_deviation;
-        }
-        raw_deviation
-    }
 
     pub fn recalc_plan_elevations(&self, plan: &mut Plan) {
         let aircraft = plan.get_aircraft().clone();

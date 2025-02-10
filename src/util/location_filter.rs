@@ -31,6 +31,7 @@ use crate::earth::coordinate::Coordinate;
 use crate::model::airport_object::AirportObject;
 use crate::model::fix_object::FixObject;
 use crate::model::location::Location;
+use crate::model::navaid::{Navaid, NavaidType};
 use crate::model::navaid_object::NavaidObject;
 
 pub fn new_airport_filter(filter: Box<dyn Filter>) -> CustomFilter {
@@ -118,15 +119,15 @@ pub struct RangeFilter {
 }
 
 impl RangeFilter {
-    pub fn new(lat: f64, lon: f64, range: f64) -> Self {
+    pub fn new(this: Coordinate, range: f64) -> Self {
         // We do a little optimization here rather than calculating
         // all distances accurately; we make a quick rough calculation to exclude many coordinates
         let rough_lat_sep = range / 60.0;
-        let x = lat.to_radians().cos();
+        let x = this.get_latitude().to_radians().cos();
         let rough_long_sep = if x < 0.01 { 181.0 } else { range / (60.0 * x) };
 
         Self {
-            this: Coordinate::new(lat, lon),
+            this,
             range,
             rough_lat_sep,
             rough_long_sep,
@@ -142,6 +143,85 @@ impl Filter for RangeFilter {
             & ((self.this.get_longitude() - other.get_longitude()).abs() < self.rough_long_sep)
         {
             self.this.distance_to(other) < self.range
+        } else {
+            false
+        }
+    }
+}
+pub struct InverseRangeFilter {
+    this: Coordinate,
+    range: f64,
+}
+
+impl InverseRangeFilter {
+    pub fn new(this: Coordinate, range: f64) -> Self {
+        Self {
+            this,
+            range,
+        }
+    }
+}
+
+impl Filter for InverseRangeFilter {
+    // returns true if the coordinate passes the filter
+    fn filter(&self, location: &dyn Location) -> bool {
+        let other = location.get_loc();
+        self.this.distance_to(other) >= self.range
+    }
+}
+
+pub struct DeviationFilter {
+    from: Coordinate,
+    to: Coordinate,
+    max_deviation: f64,
+    heading_from: f64,
+    heading_to: f64,
+}
+
+impl DeviationFilter {
+    pub fn new(from: Coordinate, to: Coordinate, heading_from: f64, heading_to: f64,max_deviation: f64) -> Self {
+        Self {
+            from,
+            to,
+            max_deviation,
+            heading_from: heading_from,
+            heading_to: heading_to,
+        }
+    }
+
+    fn get_deviation(&self, heading_from: f64, bearing_to_deg: f64) -> f64 {
+        let mut raw_deviation = (bearing_to_deg - heading_from).abs();
+        if raw_deviation > 180.0 {
+            raw_deviation = 360.0 - raw_deviation;
+        }
+        raw_deviation
+    }
+}
+
+impl Filter for DeviationFilter {
+    // returns true if the coordinate passes the filter
+    fn filter(&self, location: &dyn Location) -> bool {
+        let deviation_to =
+            self.get_deviation(self.heading_from, self.from.bearing_to_deg(location.get_loc()));
+        let deviation_from =
+            self.get_deviation(self.heading_to, location.get_loc().bearing_to_deg(&self.to));
+
+        deviation_to < self.max_deviation && deviation_from < self.max_deviation
+    }
+}
+
+pub struct VorFilter {}
+
+impl VorFilter {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Filter for VorFilter {
+    fn filter(&self, location: &dyn Location) -> bool {
+        if let Some(navaid) = location.as_any().downcast_ref::<Navaid>() {
+            navaid.get_type() == NavaidType::Vor
         } else {
             false
         }

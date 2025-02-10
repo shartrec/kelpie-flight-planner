@@ -21,7 +21,7 @@
  *      Trevor Campbell
  *
  */
-
+use std::any::Any;
 use crate::earth::coordinate::Coordinate;
 
 use super::location::Location;
@@ -104,6 +104,10 @@ impl Location for Navaid {
     }
     fn get_name(&self) -> &str {
         self.name.as_str()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

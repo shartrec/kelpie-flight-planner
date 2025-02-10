@@ -21,7 +21,7 @@
  *      Trevor Campbell
  *
  */
-
+use std::any::Any;
 use crate::earth::coordinate::Coordinate;
 
 use super::location::Location;
@@ -72,5 +72,9 @@ impl Location for Fix {
 
     fn get_name(&self) -> &str {
         self.get_id()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

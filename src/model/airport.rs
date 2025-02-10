@@ -23,6 +23,7 @@
  */
 
 use std::{fmt, fs};
+use std::any::Any;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
 
@@ -337,6 +338,10 @@ impl Location for Airport {
 
     fn get_name(&self) -> &str {
         self.name.as_str()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
