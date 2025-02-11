@@ -46,11 +46,11 @@ impl AirportParserFG850 {
         airports: &mut Vec<Arc<Airport>>,
         runway_offsets: &mut HashMap<String, usize>,
         reader: &mut BufReader<GzDecoder<File>>,
-    ) -> Result<(), String> {
+    ) -> Result<(), Error> {
         // Skip header rows
         let mut offset: usize = 0;
 
-        let mut buf = String::new();
+        let mut buf = String::with_capacity(256);
         for _i in 0..3 {
             buf.clear();
             // rather than read a line we need to read the non UTF-8 lines and decode ourselves
@@ -248,22 +248,22 @@ impl AirportParserFG850 {
     }
 
     fn read_ascii_line(reader: &mut BufReader<GzDecoder<File>>, buf: &mut String) -> Result<usize, Error> {
-        let mut byte_buf = Vec::<u8>::new();
-        match reader.read_until(b'\n', &mut byte_buf) {
-            Ok(0) => Ok(0), // EOF
-            Ok(bytes) => {
+        let mut byte_buf = Vec::<u8>::with_capacity(256);
+        let ret = reader.read_until(b'\n', &mut byte_buf);
+        if let Ok(bytes) = ret {
+            if bytes > 0 {
                 match std::str::from_utf8(&byte_buf) {
                     Ok(ccc) => {
                         buf.push_str(ccc);
                     }
                     Err(e) => {
-                        warn!("{}", e);
+                        buf.push_str(String::from_utf8_lossy(&byte_buf).as_ref());
+                        warn!("{} - {}", e, buf);
                     }
                 }
-                Ok(bytes)
             }
-            Err(e) => Err(e)
         }
+        ret
     }
 
     pub fn load_runways(
@@ -282,7 +282,7 @@ impl AirportParserFG850 {
 
         if let Some(o) = offset {
             // We want to quickly read upto the airport we want
-            let mut byte_buf = Vec::<u8>::new();
+            let mut byte_buf = Vec::<u8>::with_capacity(256);
             for _ in 0..o - 2 {
                 buf.clear();
                 match reader.read_until(b'\n', &mut byte_buf) {
@@ -334,7 +334,7 @@ impl AirportParserFG850 {
         let mut tokenizer;
         let mut match_found = true;
 
-        let mut buf = String::new();
+        let mut buf = String::with_capacity(256);
         match Self::read_ascii_line(reader, &mut buf) {
             Ok(0) => return Ok(()), // EOF
             Ok(_bytes) => (),

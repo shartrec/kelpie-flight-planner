@@ -187,24 +187,27 @@ impl AirportRenderer {
     fn build_airport_vertices(airports: RwLockReadGuard<Vec<Arc<Airport>>>) -> (Vec<Vertex>, Vec<u32>, Vec<u32>, Vec<u32>) {
         let projector = SphericalProjector::new(1.000);
 
-        let mut vertices: Vec<Vertex> = Vec::with_capacity(1000);
-        let mut indices_large: Vec<u32> = Vec::with_capacity(100);
-        let mut indices_medium: Vec<u32> = Vec::with_capacity(100);
-        let mut indices_small: Vec<u32> = Vec::with_capacity(100);
+        let mut vertices = Vec::with_capacity(airports.len());
+        let mut indices_large = Vec::with_capacity(1000);
+        let mut indices_medium = Vec::with_capacity(6000);
+        let mut indices_small = Vec::with_capacity(30000);
 
-        for airport in airports.iter() {
+        for (i, airport) in airports.iter().enumerate() {
             let position = projector.project(airport.get_lat(), airport.get_long());
             vertices.push(Vertex { position });
 
             // Now indices
             if airport.get_max_runway_length() > 10000 {
-                indices_large.push(vertices.len() as u32 - 1);
+                indices_large.push(i as u32);
             } else if airport.get_max_runway_length() > 5000 {
-                indices_medium.push(vertices.len() as u32 - 1);
+                indices_medium.push(i as u32);
             } else {
-                indices_small.push(vertices.len() as u32 - 1);
+                indices_small.push(i as u32);
             }
         }
+        indices_large.shrink_to_fit();
+        indices_medium.shrink_to_fit();
+        indices_small.shrink_to_fit();
         (vertices, indices_large, indices_medium, indices_small)
     }
 }

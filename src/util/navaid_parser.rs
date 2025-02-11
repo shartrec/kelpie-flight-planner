@@ -24,7 +24,7 @@
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Error};
 use std::sync::Arc;
 
 use flate2::read::GzDecoder;
@@ -40,7 +40,7 @@ impl NavaidParserFG {
         navaids: &mut Vec<Arc<Navaid>>,
         ils: &mut HashMap<String, Vec<(String, f64)>>,
         reader: &mut BufReader<GzDecoder<File>>,
-    ) -> Result<(), String> {
+    ) -> Result<(), Error> {
         let mut buf = String::new();
 
         // ignore first two lins
@@ -53,8 +53,7 @@ impl NavaidParserFG {
                     match msg.kind() {
                         std::io::ErrorKind::InvalidData => (),
                         _ => {
-                            let err_msg = format!("{}", msg).to_string();
-                            return Err(err_msg);
+                            return Err(msg);
                         }
                     }
                     info!("{}", msg.kind());
@@ -67,8 +66,7 @@ impl NavaidParserFG {
                 Ok(0) => return Ok(()), // EOF
                 Ok(_bytes) => (),
                 Err(msg) => {
-                    let err_msg = format!("{}", msg).to_string();
-                    return Err(err_msg);
+                    return Err(msg);
                 }
             }
             let is_empty = &buf.trim().is_empty();

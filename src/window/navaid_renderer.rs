@@ -156,24 +156,22 @@ impl NavaidRenderer {
     fn build_navaid_vertices(navaids: RwLockReadGuard<Vec<Arc<Navaid>>>) -> (Vec<Vertex>, Vec<u32>, Vec<u32>) {
         let projector = SphericalProjector::new(1.000);
 
-        let mut vertices: Vec<Vertex> = Vec::with_capacity(1000);
-        let mut indices_vor: Vec<u32> = Vec::with_capacity(100);
-        let mut indices_ndb: Vec<u32> = Vec::with_capacity(100);
+        let mut vertices = Vec::with_capacity(navaids.len());
+        let mut indices_vor = Vec::with_capacity(4000);
+        let mut indices_ndb = Vec::with_capacity(10000);
 
-        for navaid in navaids.iter() {
+        for (i, navaid) in navaids.iter().enumerate() {
             let position = projector.project(navaid.get_lat(), navaid.get_long());
             vertices.push(Vertex { position });
 
             // Now indices
             match navaid.get_type() {
-                NavaidType::Vor => {
-                    indices_vor.push(vertices.len() as u32 - 1);
-                }
-                _ => {
-                    indices_ndb.push(vertices.len() as u32 - 1);
-                }
+                NavaidType::Vor => indices_vor.push(i as u32),
+                _ => indices_ndb.push(i as u32),
             }
         }
+        indices_vor.shrink_to_fit();
+        indices_ndb.shrink_to_fit();
         (vertices, indices_vor, indices_ndb)
     }
 }

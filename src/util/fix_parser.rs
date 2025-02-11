@@ -23,7 +23,7 @@
  */
 
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Error};
 use std::sync::Arc;
 
 use flate2::read::GzDecoder;
@@ -38,7 +38,7 @@ impl FixParserFG {
         &mut self,
         fixes: &mut Vec<Arc<Fix>>,
         reader: &mut BufReader<GzDecoder<File>>,
-    ) -> Result<(), String> {
+    ) -> Result<(), Error> {
         let mut buf = String::new();
 
         // ignore first three lines
@@ -51,8 +51,7 @@ impl FixParserFG {
                     match msg.kind() {
                         std::io::ErrorKind::InvalidData => (),
                         _ => {
-                            let err_msg = format!("{}", msg).to_string();
-                            return Err(err_msg);
+                            return Err(msg);
                         }
                     }
                     info!("{}", msg.kind());
@@ -65,8 +64,7 @@ impl FixParserFG {
                 Ok(0) => return Ok(()), // EOF
                 Ok(_bytes) => (),
                 Err(msg) => {
-                    let err_msg = format!("{}", msg).to_string();
-                    return Err(err_msg);
+                    return Err(msg);
                 }
             }
             let is_empty = buf.trim().is_empty();

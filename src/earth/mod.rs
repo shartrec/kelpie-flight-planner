@@ -25,7 +25,7 @@
 
 use std::collections::HashMap;
 use std::fs;
-use std::io::BufReader;
+use std::io::{BufReader, Error};
 use std::sync::{Arc, LazyLock, RwLock};
 
 use flate2::read;
@@ -151,30 +151,30 @@ pub fn get_earth_model() -> &'static Earth {
     &EARTH
 }
 
-pub fn initialise() -> Result<(), String> {
+pub fn initialise() -> Result<(), Error> {
     let timer = std::time::Instant::now();
     let pref = crate::preference::manager();
     match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
         Some(p) => load_airports(&p)?,
-        None => return Err("Flightgear Airport path not set".to_string()),
+        None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Airport path not set")),
     }
     info!("{} Airports loaded in {:?}", get_earth_model().get_airports().read().expect("Unable to get lock on Airports").len(), timer.elapsed());
     let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
         Some(p) => load_navaids(&p)?,
-        None => return Err("Flightgear Navaid path not set".to_string()),
+        None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Navaid path not set")),
     }
     info!("{} Navaids loaded in {:?}", get_earth_model().get_navaids().read().expect("Unable to get lock on Navaids").len(), timer.elapsed());
     let timer = std::time::Instant::now();
     match pref.get::<String>(crate::preference::FIXES_PATH) {
         Some(p) => load_fixes(&p)?,
-        None => return Err("Flightgear Fix path not set".to_string()),
+        None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Fix path not set")),
     }
     info!("{} Fixes loaded in {:?}", get_earth_model().get_fixes().read().expect("Unable to get lock on Fixes").len(), timer.elapsed());
     Ok(())
 }
 
-fn load_airports(path: &str) -> Result<(), String> {
+fn load_airports(path: &str) -> Result<(), Error> {
     event::manager().notify_listeners(Event::StatusChange(format!("Loading Airports from : {}", path)));
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
@@ -194,13 +194,13 @@ fn load_airports(path: &str) -> Result<(), String> {
                 Err(msg) => Err(msg),
             }
         }
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e),
     };
     event::manager().notify_listeners(Event::StatusChange("".to_string()));
     result
 }
 
-fn load_navaids(path: &str) -> Result<(), String> {
+fn load_navaids(path: &str) -> Result<(), Error> {
     event::manager().notify_listeners(Event::StatusChange(format!("Loading Nav aids from : {}", path)));
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
@@ -220,13 +220,13 @@ fn load_navaids(path: &str) -> Result<(), String> {
                 Err(msg) => Err(msg),
             }
         }
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e),
     };
     event::manager().notify_listeners(Event::StatusChange("".to_string()));
     result
 }
 
-fn load_fixes(path: &str) -> Result<(), String> {
+fn load_fixes(path: &str) -> Result<(), Error> {
     event::manager().notify_listeners(Event::StatusChange(format!("Loading Fixes from : {}", path)));
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
@@ -244,7 +244,7 @@ fn load_fixes(path: &str) -> Result<(), String> {
                 Err(msg) => Err(msg),
             }
         }
-        Err(e) => Err(e.to_string()),
+        Err(e) => Err(e),
     };
     event::manager().notify_listeners(Event::StatusChange("".to_string()));
     result
