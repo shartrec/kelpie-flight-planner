@@ -33,7 +33,7 @@ time = "0.3.36"
 async-std = "1.13.0"
 
 [profile.release]
-opt-level = "z"
+opt-level = 3
 
 [build-dependencies]
 glib-build-tools = "0.20.0"

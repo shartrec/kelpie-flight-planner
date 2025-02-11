@@ -22,9 +22,9 @@
  *
  */
 
-use gtk::CustomFilter;
 use adw::prelude::Cast;
 use adw::subclass::prelude::ObjectSubclassIsExt;
+use gtk::CustomFilter;
 use regex_lite::{Regex, RegexBuilder};
 
 use crate::earth::coordinate::Coordinate;
@@ -110,6 +110,45 @@ pub trait Filter {
     fn filter(&self, location: &dyn Location) -> bool;
 }
 
+pub struct NameIdFilter {
+    term: String,
+    regex: Regex,
+}
+
+impl NameIdFilter {
+    pub fn new(term: &str) -> Option<Self> {
+        let regex = RegexBuilder::new(term).case_insensitive(true).build().ok()?;
+        Some(Self {
+            term: term.to_string(),
+            regex,
+        })
+    }
+}
+
+impl Filter for NameIdFilter {
+    fn filter(&self, location: &dyn Location) -> bool {
+        location.get_id().eq_ignore_ascii_case(&self.term)
+            || self.regex.is_match(location.get_name())
+    }
+}
+
+pub struct IdFilter {
+    term: String,
+}
+
+impl IdFilter {
+    pub fn new(term: &str) -> Option<Self> {
+        Some(Self {
+            term: term.to_string(),
+        })
+    }
+}
+
+impl Filter for IdFilter {
+    fn filter(&self, location: &dyn Location) -> bool {
+        location.get_id().eq_ignore_ascii_case(&self.term)
+    }
+}
 // Range filer for determining if a coordinate is within the specified distance of another
 pub struct RangeFilter {
     this: Coordinate,
@@ -210,6 +249,7 @@ impl Filter for DeviationFilter {
     }
 }
 
+
 pub struct VorFilter {}
 
 impl VorFilter {
@@ -242,46 +282,6 @@ impl Filter for NilFilter {
     }
 }
 
-pub struct NameIdFilter {
-    term: String,
-    regex: Regex,
-}
-
-impl NameIdFilter {
-    pub fn new(term: &str) -> Option<Self> {
-        let regex = RegexBuilder::new(term).case_insensitive(true).build().ok()?;
-        Some(Self {
-            term: term.to_string(),
-            regex,
-        })
-    }
-}
-
-impl Filter for NameIdFilter {
-    fn filter(&self, location: &dyn Location) -> bool {
-        location.get_id().eq_ignore_ascii_case(&self.term)
-            || self.regex.is_match(location.get_name())
-    }
-}
-
-pub struct IdFilter {
-    term: String,
-}
-
-impl IdFilter {
-    pub fn new(term: &str) -> Option<Self> {
-        Some(Self {
-            term: term.to_string(),
-        })
-    }
-}
-
-impl Filter for IdFilter {
-    fn filter(&self, location: &dyn Location) -> bool {
-        location.get_id().eq_ignore_ascii_case(&self.term)
-    }
-}
-
 // Filter that combines two filters with an AND operation
 pub struct AndFilter {
     filters: Vec<Box<dyn Filter>>,
@@ -301,11 +301,6 @@ impl AndFilter {
 
 impl Filter for AndFilter {
     fn filter(&self, location: &dyn Location) -> bool {
-        for f in &self.filters {
-            if !f.filter(location) {
-                return false;
-            }
-        }
-        true
+        self.filters.iter().all(|f| f.filter(location))
     }
 }

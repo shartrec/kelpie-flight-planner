@@ -24,6 +24,7 @@
 
 use std::cell::Cell;
 use std::sync::{Arc, RwLock};
+use std::time::Instant;
 use crate::earth;
 use crate::earth::coordinate::Coordinate;
 use crate::model::aircraft::Aircraft;
@@ -62,7 +63,7 @@ impl Planner<'_> {
             vor_only: pref.get::<bool>(VOR_ONLY).unwrap_or(false),
             vor_preferred: pref.get::<bool>(VOR_PREFERED).unwrap_or(true),
             add_gps_waypoints: pref.get::<bool>(ADD_WAYPOINTS).unwrap_or(false),
-            add_waypoint_bias: pref.get::<bool>(ADD_WAYPOINT_BIAS).unwrap_or(false),
+            add_waypoint_bias: pref.get::<bool>(ADD_WAYPOINT_BIAS).unwrap_or(true),
             plan_type: pref
                 .get::<String>(PLAN_TYPE)
                 .unwrap_or(USE_RADIO_BEACONS.to_string()),
@@ -71,6 +72,9 @@ impl Planner<'_> {
         }
     }
     pub(crate) fn make_plan(&self, sector: &Sector) -> Vec<Waypoint> {
+
+        let start_time = Instant::now();
+
         let mut plan: Vec<Waypoint> = Vec::new();
 
         let from = sector.get_start();
@@ -119,6 +123,10 @@ impl Planner<'_> {
                 }
             }
         }
+
+        let elapsed_time = start_time.elapsed();
+        println!("Time taken to make plan: {:?}", elapsed_time);
+
         plan
     }
 
@@ -204,15 +212,16 @@ impl Planner<'_> {
         let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
         let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
 
+        // Add the filters, putting the most discriminating ones first
         let mut filter = AndFilter::new();
-        if self.vor_only {
-            let vf = VorFilter::new();
-            filter.add(Box::new(vf));
-        }
         filter.add(Box::new(rf));
         filter.add(Box::new(df));
         filter.add(Box::new(irf1));
         filter.add(Box::new(irf2));
+        if self.vor_only {
+            let vf = VorFilter::new();
+            filter.add(Box::new(vf));
+        }
 
         self.get_nearest_navaids_with_filter(midpoint, Box::new(filter))
     }
