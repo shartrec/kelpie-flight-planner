@@ -91,7 +91,7 @@ mod imp {
         aircraft_position_info: RefCell<Option<AircraftPositionInfo>>,
     }
 
-    const MAX_ZOOM: f32 = 20.;
+    const MAX_ZOOM: f32 = 50.;
 
     impl WorldMapView {
         pub fn initialise(&self) {
@@ -146,19 +146,6 @@ mod imp {
             self.scheduler_handle.replace(Some(recurring_handle));
         }
 
-        pub fn airports_loaded(&self) {
-            if let Some(renderer) = self.renderer.borrow().as_ref() {
-                renderer.airports_loaded();
-            };
-            self.gl_area.queue_draw();
-        }
-        pub fn navaids_loaded(&self) {
-            if let Some(renderer) = self.renderer.borrow().as_ref() {
-                renderer.navaids_loaded();
-            }
-            self.gl_area.queue_draw();
-        }
-
         pub fn center_map(&self, point: Coordinate) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
                 renderer.set_map_centre(point, false);
@@ -193,38 +180,39 @@ mod imp {
         }
 
         fn zoom(&self, z_factor: f32) {
-            let zoom = self.zoom_level.get() * z_factor;
-            if zoom < MAX_ZOOM && zoom > 1. {
-                self.zoom_level.replace(zoom);
-                self.renderer.borrow().as_ref().unwrap().set_zoom_level(zoom);
+            let mut zoom = self.zoom_level.get() * z_factor;
+            zoom = zoom.max(1.0);
+            zoom = zoom.min(MAX_ZOOM);
 
-                // Save the old scrollbar height & Width
-                let old_ha_upper = self.map_window.hadjustment().upper();
-                let old_va_upper = self.map_window.vadjustment().upper();
-                let old_ha_value = self.map_window.hadjustment().value();
-                let old_va_value = self.map_window.vadjustment().value();
+            self.zoom_level.replace(zoom);
+            self.renderer.borrow().as_ref().unwrap().set_zoom_level(zoom);
 
-                let h = self.gl_area.height();
-                let w = self.gl_area.width();
-                if zoom > 1.01 {
-                    self.gl_area.set_width_request((w as f32 * z_factor) as i32);
-                    self.gl_area.set_height_request((h as f32 * z_factor) as i32);
-                } else {
-                    self.gl_area.set_width_request(-1);
-                    self.gl_area.set_height_request(-1);
-                }
-                self.gl_area.queue_draw();
+            // Save the old scrollbar height & Width
+            let old_ha_upper = self.map_window.hadjustment().upper();
+            let old_va_upper = self.map_window.vadjustment().upper();
+            let old_ha_value = self.map_window.hadjustment().value();
+            let old_va_value = self.map_window.vadjustment().value();
 
-                // adjust scroll position
-                self.map_window.hadjustment().set_upper(old_ha_upper * z_factor as f64);
-                self.map_window.vadjustment().set_upper(old_va_upper * z_factor as f64);
-                let ha_upper = self.map_window.hadjustment().upper();
-                let va_upper = self.map_window.vadjustment().upper();
-                let ha_value = (old_ha_value + (ha_upper - old_ha_upper) / 2.0).max(0.0);
-                let va_value = (old_va_value + (va_upper - old_va_upper) / 2.0).max(0.0);
-                self.map_window.hadjustment().set_value(ha_value);
-                self.map_window.vadjustment().set_value(va_value);
+            let h = self.gl_area.height();
+            let w = self.gl_area.width();
+            if zoom > 1.01 {
+                self.gl_area.set_width_request((w as f32 * z_factor) as i32);
+                self.gl_area.set_height_request((h as f32 * z_factor) as i32);
+            } else {
+                self.gl_area.set_width_request(-1);
+                self.gl_area.set_height_request(-1);
             }
+            self.gl_area.queue_draw();
+
+            // adjust scroll position
+            self.map_window.hadjustment().set_upper(old_ha_upper * z_factor as f64);
+            self.map_window.vadjustment().set_upper(old_va_upper * z_factor as f64);
+            let ha_upper = self.map_window.hadjustment().upper();
+            let va_upper = self.map_window.vadjustment().upper();
+            let ha_value = (old_ha_value + (ha_upper - old_ha_upper) / 2.0).max(0.0);
+            let va_value = (old_va_value + (va_upper - old_va_upper) / 2.0).max(0.0);
+            self.map_window.hadjustment().set_value(ha_value);
+            self.map_window.vadjustment().set_value(va_value);
         }
 
         fn find_airport_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
