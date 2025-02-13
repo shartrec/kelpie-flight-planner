@@ -305,6 +305,10 @@ impl Airport {
             None => None,
         }
     }
+
+    pub fn set_coordinate(&mut self, latitude: f64, longitude: f64,) {
+        self.coordinate = Coordinate::new(latitude, longitude);
+    }
 }
 
 impl Location for Airport {
@@ -487,7 +491,7 @@ impl fmt::Display for Runway {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Taxiway {
     nodes: Vec<LayoutNode>,
 }
@@ -502,7 +506,7 @@ impl Taxiway {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct LayoutNode {
     _type: String,
     lat: f64,

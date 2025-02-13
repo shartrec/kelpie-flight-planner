@@ -46,7 +46,7 @@ impl FixParserFG {
             buf.clear();
             match reader.read_line(&mut buf) {
                 Ok(0) => return Ok(()), // EOF
-                Ok(_bytes) => (),       // EOF
+                Ok(_bytes) => (),
                 Err(msg) => {
                     match msg.kind() {
                         std::io::ErrorKind::InvalidData => (),

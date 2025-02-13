@@ -79,17 +79,12 @@ impl NavaidParserFG {
 
                     let latitude = token_number::<f64>(tokenizer.next());
                     let longitude = token_number::<f64>(tokenizer.next());
-
                     let elevation = token_number::<i32>(tokenizer.next());
-
                     let mut frequency = token_number::<f64>(tokenizer.next());
-
                     if navaid_type.as_ref().unwrap_or(&NavaidType::Ndb) == &NavaidType::Vor {
                         frequency /= 100.;
                     }
-
                     let range = token_number::<i32>(tokenizer.next());
-
                     let mag_var = tokenizer.next().unwrap_or("");
                     let id = tokenizer.next().unwrap_or("");
 
