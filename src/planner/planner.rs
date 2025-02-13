@@ -24,7 +24,6 @@
 
 use std::cell::Cell;
 use std::sync::{Arc, RwLock};
-use std::time::Instant;
 use crate::earth;
 use crate::earth::coordinate::Coordinate;
 use crate::model::aircraft::Aircraft;
@@ -72,8 +71,6 @@ impl Planner<'_> {
         }
     }
     pub(crate) fn make_plan(&self, sector: &Sector) -> Vec<Waypoint> {
-
-        let start_time = Instant::now();
 
         let mut plan: Vec<Waypoint> = Vec::new();
 
@@ -123,10 +120,6 @@ impl Planner<'_> {
                 }
             }
         }
-
-        let elapsed_time = start_time.elapsed();
-        println!("Time taken to make plan: {:?}", elapsed_time);
-
         plan
     }
 
