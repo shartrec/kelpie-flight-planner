@@ -457,15 +457,16 @@ impl Runway {
             "E" => "W".to_string(),
             "W" => "E".to_string(),
             _ => {
-                let (heading_part, extra_part) = if self.number.ends_with('R') {
-                    (self.number.trim_end_matches('R'), "L")
-                } else if self.number.ends_with('L') {
-                    (self.number.trim_end_matches('L'), "R")
-                } else if self.number.ends_with('C') {
-                    (self.number.trim_end_matches('C'), "C")
-                } else {
-                    (self.number.as_str(), "")
-                };
+                let (heading_part, extra_part) =
+                    if self.number.ends_with('R') {
+                        (self.number.trim_end_matches('R'), "L")
+                    } else if self.number.ends_with('L') {
+                        (self.number.trim_end_matches('L'), "R")
+                    } else if self.number.ends_with('C') {
+                        (self.number.trim_end_matches('C'), "C")
+                    } else {
+                        (self.number.as_str(), "")
+                    };
 
                 let x = heading_part.parse::<i32>().unwrap_or(0);
                 format!("{:02}{}", if x < 18 { x + 18 } else { x - 18 }, extra_part)

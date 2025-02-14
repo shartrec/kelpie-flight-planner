@@ -119,7 +119,7 @@ mod imp {
             let name = aircraft.get_name().to_string().clone();
             let old_p = self.get_item_position(&name);
             let mut binding = self.aircraft.write().expect("Can't get aircraft lock");
-            binding.insert(aircraft.get_name().to_string(), Arc::new(aircraft));
+            let _old = binding.insert(aircraft.get_name().to_string(), Arc::new(aircraft));
             drop(binding);
             self.save();
             if let Some(pos) = old_p {
@@ -132,7 +132,7 @@ mod imp {
         pub fn remove(&self, name: &str) {
             let p = self.get_item_position(name);
             let mut binding = self.aircraft.write().expect("Can't get aircraft lock");
-            binding.remove(name);
+            let _old = binding.remove(name);
             drop(binding);
             self.save();
             if let Some(pos) = p {
@@ -154,9 +154,6 @@ mod imp {
                     false,
                 );
                 self.put(prior_default);
-                if let Some(pos) = self.get_item_position(a.get_name()) {
-                    self.obj().items_changed(pos, 1, 1);
-                }
             }
             if let Some(a) = self.get(name) {
                 let new_default = Aircraft::new(
@@ -170,9 +167,6 @@ mod imp {
                     true,
                 );
                 self.put(new_default);
-                if let Some(pos) = self.get_item_position(name) {
-                    self.obj().items_changed(pos, 1, 1);
-                }
             }
         }
 
