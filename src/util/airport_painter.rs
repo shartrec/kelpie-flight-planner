@@ -122,21 +122,21 @@ impl AirportPainter {
         runway: &Runway,
         airport: &Airport,
     ) {
-        let offset_lat = (runway.get_lat() - airport_extent[0]) * FEET_PER_DEGREE as f64;
-        let offset_long = (runway.get_long() - airport_extent[2])
+        let offset_lat = (runway.lat() - airport_extent[0]) * FEET_PER_DEGREE as f64;
+        let offset_long = (runway.long() - airport_extent[2])
             * FEET_PER_DEGREE as f64
             * airport.get_lat().to_radians().cos();
 
-        let heading_radians = runway.get_heading().to_radians();
+        let heading_radians = runway.heading().to_radians();
 
         // Calculate the runway rectangle offset from airport origin
         // Corner offset component contributed by the runway length
-        let feet_east_l = runway.get_length() as f64 / 2.0 * heading_radians.sin();
-        let feet_north_l = runway.get_length() as f64 / 2.0 * heading_radians.cos();
+        let feet_east_l = runway.length() as f64 / 2.0 * heading_radians.sin();
+        let feet_north_l = runway.length() as f64 / 2.0 * heading_radians.cos();
 
         // Corner offset component contributed by the runway width
-        let feet_east_w = runway.get_width() as f64 / 2.0 * heading_radians.cos();
-        let feet_north_w = runway.get_width() as f64 / 2.0 * heading_radians.sin();
+        let feet_east_w = runway.width() as f64 / 2.0 * heading_radians.cos();
+        let feet_north_w = runway.width() as f64 / 2.0 * heading_radians.sin();
 
         // Get the corner offsets (Corners A,B,C,D)
         let a_lat = feet_north_l + feet_north_w + offset_lat;

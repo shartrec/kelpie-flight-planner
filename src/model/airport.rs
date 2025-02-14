@@ -124,7 +124,7 @@ impl Airport {
             .expect("Can't get airport lock");
         let runway = binding
             .iter()
-            .max_by_key(|runway| runway.get_length());
+            .max_by_key(|runway| runway.length());
         runway.cloned()
     }
 
@@ -414,43 +414,43 @@ impl Runway {
         }
     }
 
-    pub fn get_centre_line_lights(&self) -> bool {
+    pub fn centre_line_lights(&self) -> bool {
         self.centre_line_lights
     }
 
-    pub fn get_edge_lights(&self) -> &str {
+    pub fn edge_lights(&self) -> &str {
         &self.edge_lights
     }
 
-    pub fn get_heading(&self) -> f64 {
+    pub fn heading(&self) -> f64 {
         self.heading
     }
 
-    pub fn get_lat(&self) -> f64 {
+    pub fn lat(&self) -> f64 {
         self.lat
     }
 
-    pub fn get_length(&self) -> i32 {
+    pub fn length(&self) -> i32 {
         self.length
     }
 
-    pub fn get_long(&self) -> f64 {
+    pub fn long(&self) -> f64 {
         self.long
     }
 
-    pub fn get_surface(&self) -> &str {
+    pub fn surface(&self) -> &str {
         &self.surface
     }
 
-    pub fn get_width(&self) -> i32 {
+    pub fn width(&self) -> i32 {
         self.width
     }
 
-    pub fn get_number(&self) -> &str {
+    pub fn number(&self) -> &str {
         &self.number
     }
 
-    pub(crate) fn get_opposite_number(&self) -> String {
+    pub(crate) fn opposite_number(&self) -> String {
         match self.number.as_str() {
             "N" => "S".to_string(),
             "S" => "N".to_string(),
@@ -473,10 +473,10 @@ impl Runway {
         }
     }
 
-    pub fn get_number_pair(&self) -> String {
-        format!("{}/{}", self.get_number(), self.get_opposite_number())
+    pub fn number_pair(&self) -> String {
+        format!("{}/{}", self.number(), self.opposite_number())
     }
-    pub fn get_runway_type(&self) -> Option<RunwayType> {
+    pub fn runway_type(&self) -> Option<RunwayType> {
         self.runway_type.clone()
     }
 }

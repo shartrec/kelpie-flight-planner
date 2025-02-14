@@ -25,7 +25,6 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use gtk::gio::ListModel;
 use gtk::glib;
-use adw::prelude::Cast;
 use adw::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::model::sector::Sector;
@@ -39,9 +38,7 @@ glib::wrapper! {
 impl SectorObject {
     pub fn new(sector: Rc<RefCell<Sector>>) -> SectorObject {
         let obj: SectorObject = glib::Object::new();
-        obj.downcast_ref::<SectorObject>()
-            .expect("The item has to be an <SectorObject>.")
-            .imp().set_sector(sector.clone());
+        obj.imp().set_sector(sector.clone());
         obj
     }
 }
@@ -51,10 +48,9 @@ mod imp {
     use std::rc::Rc;
     use adw::gio;
     use adw::glib::Object;
-    use adw::subclass::prelude::ListModelImpl;
     use gtk::{glib, Label};
     use adw::prelude::StaticType;
-    use adw::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
+    use adw::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
 
     use crate::model::sector::Sector;
     use crate::model::waypoint_object::WaypointObject;

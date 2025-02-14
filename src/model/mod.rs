@@ -39,3 +39,4 @@ pub(crate) mod fix_object;
 pub(crate) mod sector_object;
 pub(crate) mod waypoint_object;
 pub(crate) mod plan_object;
+pub(crate) mod runway_object;

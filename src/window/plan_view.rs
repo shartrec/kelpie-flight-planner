@@ -49,13 +49,13 @@ mod imp {
     use crate::model::plan_object::PlanObject;
     use crate::model::sector::Sector;
     use crate::model::sector_object::SectorObject;
+    use crate::model::runway_object::RunwayObject;
     use crate::model::waypoint::Waypoint;
     use crate::model::waypoint_object::WaypointObject;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
     use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path};
     use crate::{earth, event};
-
     use super::*;
 
     #[derive(Default, CompositeTemplate)]
@@ -159,6 +159,15 @@ mod imp {
                     let s = object.downcast_ref::<SectorObject>().expect("Sector Object");
                     let so = s.clone();
                     Some(so.upcast::<ListModel>())
+                } else if object.is::<WaypointObject>() {
+                    let wp = object.downcast_ref::<WaypointObject>().expect("Waypoint Object");
+                    match wp.imp().waypoint().borrow().as_ref() {
+                        Some(Waypoint::Airport { .. }) => {
+                            let wpo = wp.clone();
+                            Some(wpo.upcast::<ListModel>())
+                        }
+                        _ => None
+                    }
                 } else {
                     None
                 }
@@ -706,6 +715,10 @@ mod imp {
                     let cell = waypoint.imp().waypoint();
                     label.set_label(cell.borrow().as_ref().unwrap().get_name());
                     waypoint.imp().set_ui(Some(label.clone()));
+                } else if item.is::<RunwayObject>() {
+                    let runway = item.downcast_ref::<RunwayObject>().unwrap();
+                    let cell = runway.imp().runway();
+                    label.set_label(&*cell.borrow().as_ref().unwrap().number_pair());
                 }
                 label.set_xalign(0.0);
             })));
@@ -760,6 +773,26 @@ mod imp {
                     label.set_label(cell.borrow().as_ref().unwrap().get_freq().map_or("".to_string(), |f| {
                         f.to_string()
                     }).as_str());
+                } else if item.is::<RunwayObject>() {
+                    let runway = item.downcast_ref::<RunwayObject>().unwrap();
+                    let cell = runway.imp().runway();
+                    let rw_ref = cell.borrow();
+                    let id = rw_ref.as_ref().unwrap().number();
+                    let opp_id = rw_ref.as_ref().unwrap().opposite_number();
+                    let airport = runway.imp().airport();
+                    let ils = airport.get_ils(id);
+                    let ils_opp = airport.get_ils(opp_id.as_str());
+
+                    let text = if ils.is_some() || ils_opp.is_some() {
+                        format!(
+                            "{:0.3} / {:0.3}",
+                            ils.unwrap_or(0.),
+                            ils_opp.unwrap_or(0.),
+                        )
+                    } else {
+                        "".to_string()
+                    };
+                    label.set_label(text.as_str());
                 }
                 label.set_xalign(0.0);
             })));

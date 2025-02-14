@@ -249,3 +249,5 @@ fn load_fixes(path: &str) -> Result<(), Error> {
     event::manager().notify_listeners(Event::StatusChange("".to_string()));
     result
 }
+
+

@@ -99,16 +99,16 @@ mod imp {
                 .read()
                 .expect("Could not get airport lock");
             for runway in runways.iter() {
-                let ils = airport.get_ils(runway.get_number());
-                let ils_opp = airport.get_ils(&runway.get_opposite_number());
-                if runway.get_runway_type().is_some_and(|t| t == RunwayType::Runway) {
+                let ils = airport.get_ils(runway.number());
+                let ils_opp = airport.get_ils(&runway.opposite_number());
+                if runway.runway_type().is_some_and(|t| t == RunwayType::Runway) {
                     let text = if ils.is_none() && ils_opp.is_none() {
-                        format!("{:<9} {:<9}", runway.get_number_pair(), runway.get_length(), )
+                        format!("{:<9} {:<9}", runway.number_pair(), runway.length(), )
                     } else {
                         format!(
                             "{:<9} {:<9} ILS {:0.3} / {:0.3}",
-                            runway.get_number_pair(),
-                            runway.get_length(),
+                            runway.number_pair(),
+                            runway.length(),
                             ils.unwrap_or(0.),
                             ils_opp.unwrap_or(0.),
                         )

@@ -115,7 +115,7 @@ fn make_airport(waypoint: &Waypoint, start: bool) -> Option<Element> {
 
         let mut rw = Element::new("runway");
         rw.attributes.insert("type".to_string(), "string".to_string());
-        rw.children.push(XMLNode::Text(runway.get_number().to_string()));
+        rw.children.push(XMLNode::Text(runway.number().to_string()));
         wp.children.push(XMLNode::Element(rw));
 
         Some(wp)

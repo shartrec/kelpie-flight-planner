@@ -21,8 +21,8 @@
  *      Trevor Campbell
  *
  */
+use gtk::gio::ListModel;
 use gtk::glib;
-use adw::prelude::Cast;
 use adw::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::model::waypoint::Waypoint;
@@ -30,24 +30,25 @@ use crate::model::waypoint::Waypoint;
 // To use the Waypoint in a Gio::ListModel it needs to ba a glib::Object, so we do all this fancy subclassing stuff
 // Public part of the Model type.
 glib::wrapper! {
-    pub struct WaypointObject(ObjectSubclass<imp::WaypointObject>);
+    pub struct WaypointObject(ObjectSubclass<imp::WaypointObject>) @implements ListModel;
 }
 
 impl WaypointObject {
     pub fn new(waypoint: &Waypoint) -> WaypointObject {
         let obj: WaypointObject = glib::Object::new();
-        obj.downcast_ref::<WaypointObject>()
-            .expect("The item has to be an <WaypointObject>.")
-            .imp().set_waypoint(waypoint.clone());
+        obj.imp().set_waypoint(waypoint.clone());
         obj
     }
 }
 
 mod imp {
     use std::cell::RefCell;
+    use adw::gio;
+    use adw::glib::Object;
+    use adw::prelude::StaticType;
     use gtk::{glib, Label};
-    use adw::subclass::prelude::{ObjectImpl, ObjectImplExt, ObjectSubclass};
-
+    use adw::subclass::prelude::{ListModelImpl, ObjectImpl, ObjectImplExt, ObjectSubclass};
+    use crate::model::runway_object::RunwayObject;
     use crate::model::waypoint::Waypoint;
 
     #[derive(Default)]
@@ -79,11 +80,58 @@ mod imp {
     impl ObjectSubclass for WaypointObject {
         const NAME: &'static str = "WaypointObject";
         type Type = super::WaypointObject;
+        type Interfaces = (gio::ListModel, );
     }
 
     impl ObjectImpl for WaypointObject {
         fn constructed(&self) {
             self.parent_constructed();
+        }
+    }
+
+    impl ListModelImpl for WaypointObject {
+        fn item_type(&self) -> glib::Type {
+            RunwayObject::static_type()
+        }
+
+        fn n_items(&self) -> u32 {
+            match self.waypoint().borrow().as_ref() {
+                Some(waypoint) => {
+                    match waypoint {
+                        Waypoint::Airport{airport, ..} => {
+                            airport.get_runway_count() as u32
+                        }
+                        _ => 0
+                    }
+                },
+                None => 0
+            }
+        }
+
+        fn item(&self, position: u32) -> Option<Object> {
+            let pos = position as usize;
+
+            match self.waypoint().borrow().as_ref() {
+                Some(waypoint) => {
+                    match waypoint {
+                        Waypoint::Airport{airport, ..} => {
+                            if pos < airport.get_runway_count() {
+                                let runways = airport
+                                    .get_runways()
+                                    .read()
+                                    .expect("Could not get waypoint lock");
+                                runways.get(pos).map(|rwy| {
+                                    Object::from(RunwayObject::new(&rwy, airport.clone()))
+                                })
+                            } else {
+                                None
+                            }
+                        }
+                        _ => None
+                    }
+                },
+                None => None
+            }
         }
     }
 }

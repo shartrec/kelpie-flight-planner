@@ -373,6 +373,9 @@ impl AirportParserFG850 {
                 let lat = (r_lat + r1_lat) / 2.0;
                 let long = (r_long + r1_long) / 2.0;
 
+                airport.get_ils(r_number);
+                airport.get_ils(r_number);
+
                 let runway = Runway::new(
                     r_number.to_string(),
                     Some(RunwayType::Runway),
