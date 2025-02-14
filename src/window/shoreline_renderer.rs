@@ -34,7 +34,6 @@ pub struct ShorelineRenderer {
 }
 
 impl ShorelineRenderer {
-    //todo drop buffers at end of program
     pub fn new() -> Self {
         let mut shoreline_builder = map_utils::GLShorelineBuilder::new();
         let (vertices, rings) = shoreline_builder.draw_shoreline();
