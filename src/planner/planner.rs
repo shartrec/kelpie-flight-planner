@@ -609,11 +609,11 @@ fn calc_max_altitude(
     let mut dist = 0.0;
     let mut prev_wp = from;
 
-    for wp in waypoints {
+    waypoints.iter().for_each(|wp| {
         let leg_length = prev_wp.get_loc().distance_to(wp.get_loc());
         dist += leg_length;
         prev_wp = wp;
-    }
+    });
 
     let leg_length = prev_wp.get_loc().distance_to(to.get_loc());
     dist += leg_length;
@@ -623,7 +623,6 @@ fn calc_max_altitude(
     while calc_climb_sink_distance(&aircraft, to, from, alt) > dist {
         alt -= 500;
     }
-
     alt
 }
 
@@ -637,6 +636,13 @@ pub fn set_elevations(
     let mut alt = from.get_elevation();
     let mut ascent = true;
     let mut descent = false;
+
+    let (climb_rate, climb_speed, sink_rate, sink_speed) = aircraft.as_ref()
+        .map(|a| (
+            *a.get_climb_rate() as f64, *a.get_climb_speed() as f64,
+            *a.get_sink_rate() as f64, *a.get_sink_speed() as f64,
+        ))
+        .unwrap_or((1000.0, 120.0, 700.0, 80.0));
 
     let mut prev_wp = from;
 
@@ -654,33 +660,18 @@ pub fn set_elevations(
             _ => {
                 if ascent {
                     let distance = prev_wp.get_loc().distance_to(wp.get_loc());
-                    let leg_time = distance
-                        / aircraft.as_ref()
-                        .map(|a| *a.get_climb_speed() as f64)
-                        .unwrap_or(120.0);
-                    alt += (leg_time
-                        * aircraft.as_ref()
-                        .map(|a| *a.get_climb_rate() as f64)
-                        .unwrap_or(1000.0)
-                        * 60.0) as i32;
+                    let leg_time = distance / climb_speed;
+                    alt += (leg_time * climb_rate * 60.0) as i32;
 
                     if alt > max_alt {
                         alt = max_alt;
                         ascent = false;
                     }
-
                     wp.set_elevation(&alt);
                 } else if descent {
                     let distance = prev_wp.get_loc().distance_to(wp.get_loc());
-                    let leg_time = distance
-                        / aircraft.as_ref()
-                        .map(|a| *a.get_sink_speed() as f64)
-                        .unwrap_or(80.0);
-                    alt -= (leg_time
-                        * aircraft.as_ref()
-                        .map(|a| *a.get_sink_rate() as f64)
-                        .unwrap_or(700.0)
-                        * 60.0) as i32;
+                    let leg_time = distance / sink_speed;
+                    alt -= (leg_time * sink_rate * 60.0) as i32;
                     wp.set_elevation(&alt);
                 } else {
                     wp.set_elevation(&alt);
@@ -692,27 +683,20 @@ pub fn set_elevations(
 }
 
 fn calc_climb_sink_distance(aircraft: &Option<Arc<Aircraft>>, from: &Waypoint, to: &Waypoint, altitude: i32) -> f64 {
+    let (climb_rate, climb_speed, sink_rate, sink_speed) = aircraft.as_ref()
+        .map(|a| (
+            *a.get_climb_rate() as f64, *a.get_climb_speed() as f64,
+            *a.get_sink_rate() as f64, *a.get_sink_speed() as f64,
+        ))
+        .unwrap_or((1000.0, 120.0, 700.0, 80.0));
+
     let alt_to_toc = (altitude - from.get_elevation()) as f64;
-    let time_to_toc = alt_to_toc
-        / aircraft.as_ref()
-        .map(|a| *a.get_climb_rate() as f64)
-        .unwrap_or(1000.0)
-        / 60.0;
-    let dist_to_toc = aircraft.as_ref()
-        .map(|a| *a.get_climb_speed() as f64)
-        .unwrap_or(120.0)
-        * time_to_toc;
+    let time_to_toc = alt_to_toc / climb_rate / 60.0;
+    let dist_to_toc = time_to_toc * climb_speed;
 
     let alt_to_bod = (altitude - to.get_elevation()) as f64;
-    let time_to_bod = alt_to_bod
-        / aircraft.as_ref()
-        .map(|a| *a.get_sink_rate() as f64)
-        .unwrap_or(700.0)
-        / 60.0;
-    let dist_to_bod = aircraft.as_ref()
-        .map(|a| *a.get_sink_speed() as f64)
-        .unwrap_or(80.0)
-        * time_to_bod;
+    let time_to_bod = alt_to_bod / sink_rate / 60.0;
+    let dist_to_bod = time_to_bod * sink_speed;
 
     dist_to_toc + dist_to_bod
 }
