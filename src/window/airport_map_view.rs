@@ -100,13 +100,13 @@ mod imp {
                 .expect("Could not get airport lock");
             for runway in runways.iter() {
                 let ils = airport.get_ils(runway.number());
-                let ils_opp = airport.get_ils(&runway.opposite_number());
+                let ils_opp = runway.opposite_number().and_then(|op| airport.get_ils(&op));
                 if runway.runway_type().is_some_and(|t| t == RunwayType::Runway) {
                     let text = if ils.is_none() && ils_opp.is_none() {
                         format!("{:<9} {:<9}", runway.number_pair(), runway.length(), )
                     } else {
                         format!(
-                            "{:<9} {:<9} ILS {:0.3} / {:0.3}",
+                            "{:<9} {:<9} ILS {:0.3} / {:?}",
                             runway.number_pair(),
                             runway.length(),
                             ils.unwrap_or(0.),

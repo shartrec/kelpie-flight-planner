@@ -450,32 +450,41 @@ impl Runway {
         &self.number
     }
 
-    pub(crate) fn opposite_number(&self) -> String {
-        match self.number.as_str() {
-            "N" => "S".to_string(),
-            "S" => "N".to_string(),
-            "E" => "W".to_string(),
-            "W" => "E".to_string(),
-            _ => {
-                let (heading_part, extra_part) =
-                    if self.number.ends_with('R') {
-                        (self.number.trim_end_matches('R'), "L")
-                    } else if self.number.ends_with('L') {
-                        (self.number.trim_end_matches('L'), "R")
-                    } else if self.number.ends_with('C') {
-                        (self.number.trim_end_matches('C'), "C")
-                    } else {
-                        (self.number.as_str(), "")
-                    };
+    pub(crate) fn opposite_number(&self) -> Option<String> {
+        match self.runway_type() {
+            Some(RunwayType::Runway) | Some(RunwayType::WaterRunway) => {
+                match self.number.as_str() {
+                    "N" => Some("S".to_string()),
+                    "S" => Some("N".to_string()),
+                    "E" => Some("W".to_string()),
+                    "W" => Some("E".to_string()),
+                    _ => {
+                        let (heading_part, extra_part) =
+                            if self.number.ends_with('R') {
+                                (self.number.trim_end_matches('R'), "L")
+                            } else if self.number.ends_with('L') {
+                                (self.number.trim_end_matches('L'), "R")
+                            } else if self.number.ends_with('C') {
+                                (self.number.trim_end_matches('C'), "C")
+                            } else {
+                                (self.number.as_str(), "")
+                            };
 
-                let x = heading_part.parse::<i32>().unwrap_or(0);
-                format!("{:02}{}", if x < 18 { x + 18 } else { x - 18 }, extra_part)
+                        let x = heading_part.parse::<i32>().unwrap_or(0);
+                        Some(format!("{:02}{}", if x < 18 { x + 18 } else { x - 18 }, extra_part))
+                    },
+                }
             }
+            _ => None
         }
     }
 
     pub fn number_pair(&self) -> String {
-        format!("{}/{}", self.number(), self.opposite_number())
+        if let Some(opposite) = self.opposite_number() {
+            format!("{}/{}", self.number(), opposite)
+        } else {
+            self.number().to_string()
+        }
     }
     pub fn runway_type(&self) -> Option<RunwayType> {
         self.runway_type.clone()

@@ -781,7 +781,7 @@ mod imp {
                     let opp_id = rw_ref.as_ref().unwrap().opposite_number();
                     let airport = runway.imp().airport();
                     let ils = airport.get_ils(id);
-                    let ils_opp = airport.get_ils(opp_id.as_str());
+                    let ils_opp = opp_id.and_then(|op| airport.get_ils(&op));
 
                     let text = if ils.is_some() || ils_opp.is_some() {
                         format!(
