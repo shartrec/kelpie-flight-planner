@@ -45,8 +45,7 @@ impl Default for Airports {
 }
 
 mod imp {
-    use std::cell::RefCell;
-    use std::collections::HashMap;
+    use std::sync::LazyLock;
     use gtk::{gio, glib};
     use gtk::glib::Object;
     use adw::prelude::StaticType;
@@ -55,12 +54,24 @@ mod imp {
     use crate::earth::get_earth_model;
     use crate::model::airport_object::AirportObject;
 
-    #[derive(Default)]
     pub struct Airports {
-        cache: RefCell<HashMap<u32, AirportObject>>,
+        cache: LazyLock<Vec<AirportObject>>,
     }
 
     impl Airports {}
+
+    impl Default for Airports {
+        fn default() -> Self {
+            Self {
+                cache: LazyLock::new(||
+                    get_earth_model().airports.read().expect("Can't get Airport lock")
+                        .iter()
+                        .map(|airport| AirportObject::new(airport))
+                        .collect()
+                )
+            }
+        }
+    }
 
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
@@ -86,19 +97,7 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            let mut ref_mut = self.cache.borrow_mut();
-            ref_mut.get(&position).map(|ao| Object::from(ao.clone())).or_else(|| {
-                let binding = get_earth_model().airports
-                    .read()
-                    .expect("Unable to get a lock on the airports");
-                let airport = binding.iter().nth(position as usize);
-
-                airport.map(|airport| {
-                    let ao = AirportObject::new(airport);
-                    ref_mut.insert(position, ao.clone());
-                    Object::from(ao)
-                })
-            })
+            self.cache.get(position as usize).map(|ao| Object::from(ao.clone()))
         }
     }
 }

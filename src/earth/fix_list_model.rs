@@ -45,8 +45,7 @@ impl Default for Fixes {
 }
 
 mod imp {
-    use std::cell::RefCell;
-    use std::collections::HashMap;
+    use std::sync::LazyLock;
     use gtk::{gio, glib};
     use gtk::glib::Object;
     use adw::prelude::StaticType;
@@ -55,12 +54,24 @@ mod imp {
     use crate::earth::get_earth_model;
     use crate::model::fix_object::FixObject;
 
-    #[derive(Default)]
     pub struct Fixes {
-        cache: RefCell<HashMap<u32, FixObject>>,
+        cache: LazyLock<Vec<FixObject>>,
     }
 
     impl Fixes {}
+
+    impl Default for Fixes {
+        fn default() -> Self {
+            Self {
+                cache: LazyLock::new(||
+                    get_earth_model().fixes.read().expect("Can't get Fix lock")
+                        .iter()
+                        .map(|fix| FixObject::new(fix))
+                        .collect()
+                )
+            }
+        }
+    }
 
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
@@ -86,19 +97,7 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            let mut ref_mut = self.cache.borrow_mut();
-            ref_mut.get(&position).map(|ao| Object::from(ao.clone())).or_else(|| {
-                let binding = get_earth_model().fixes
-                    .read()
-                    .expect("Unable to get a lock on the fixs");
-                let fix = binding.iter().nth(position as usize);
-
-                fix.map(|fix| {
-                    let ao = FixObject::new(fix);
-                    ref_mut.insert(position, ao.clone());
-                    Object::from(ao)
-                })
-            })
+            self.cache.get(position as usize).map(|ao| Object::from(ao.clone()))
         }
     }
 }

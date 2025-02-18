@@ -45,8 +45,7 @@ impl Default for Navaids {
 }
 
 mod imp {
-    use std::cell::RefCell;
-    use std::collections::HashMap;
+    use std::sync::LazyLock;
     use gtk::{gio, glib};
     use gtk::glib::Object;
     use adw::prelude::StaticType;
@@ -55,13 +54,25 @@ mod imp {
     use crate::earth::get_earth_model;
     use crate::model::navaid_object::NavaidObject;
 
-    #[derive(Default)]
     pub struct Navaids {
-        cache: RefCell<HashMap<u32, NavaidObject>>,
+        cache: LazyLock<Vec<NavaidObject>>,
     }
 
     impl Navaids {}
 
+    impl Default for crate::earth::navaid_list_model::imp::Navaids {
+        fn default() -> Self {
+            Self {
+                cache: LazyLock::new(||
+                    get_earth_model().navaids.read().expect("Can't get Navaid lock")
+                        .iter()
+                        .map(|navaid| NavaidObject::new(navaid))
+                        .collect()
+                )
+            }
+        }
+    }
+    
     /// Basic declaration of our type for the GObject type system
     #[glib::object_subclass]
     impl ObjectSubclass for Navaids {
@@ -86,19 +97,7 @@ mod imp {
         }
 
         fn item(&self, position: u32) -> Option<Object> {
-            let mut ref_mut = self.cache.borrow_mut();
-            ref_mut.get(&position).map(|ao| Object::from(ao.clone())).or_else(|| {
-                let binding = get_earth_model().navaids
-                    .read()
-                    .expect("Unable to get a lock on the navaids");
-                let navaid = binding.iter().nth(position as usize);
-
-                navaid.map(|navaid| {
-                    let ao = NavaidObject::new(navaid);
-                    ref_mut.insert(position, ao.clone());
-                    Object::from(ao)
-                })
-            })
+            self.cache.get(position as usize).map(|ao| Object::from(ao.clone()))
         }
     }
 }
