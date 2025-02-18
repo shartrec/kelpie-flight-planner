@@ -33,7 +33,7 @@ pub struct Coordinate {
 }
 
 impl Coordinate {
-    const EARTH_RADIUS: f64 = 3441.85;
+    const EARTH_RADIUS: f64 = 3441.85; // Nautical miles
 
     pub fn new(latitude: f64, longitude: f64) -> Self {
         Self {
@@ -48,19 +48,16 @@ impl Coordinate {
         let lon1 = self.longitude.to_radians();
         let lon2 = l.longitude.to_radians();
 
-        let d_lon = lon1 - lon2;
-        let d_lat = lat1 - lat2;
+        let d_lon = lon2 - lon1;
 
-        let a = (d_lat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
-        let d = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+        let y = d_lon.sin() * lat2.cos();
+        let x = lat1.cos() * lat2.sin() - lat1.sin() * lat2.cos() * d_lon.cos();
 
-        let x = (lat2.sin() - lat1.sin() * d.cos()) / (d.sin() * lat1.cos());
-        let mut heading = x.acos();
+        let mut heading = y.atan2(x);
 
-        if (lon2 - lon1).sin() < 0.0 {
-            heading = 2.0 * PI - heading;
+        if heading < 0.0 {
+            heading += 2.0 * PI;
         }
-
         heading
     }
 
@@ -73,8 +70,16 @@ impl Coordinate {
         let lat1 = self.latitude.to_radians();
         let lon1 = self.longitude.to_radians();
         let tc = heading.to_radians();
-        let lat = (lat1.sin() * d.cos() + lat1.cos() * d.sin() * tc.cos()).asin();
-        let d_lon = (tc.sin() * d.sin() * lat1.cos()).atan2(d.cos() - lat1.sin() * lat.sin());
+
+        let sin_lat1 = lat1.sin();
+        let cos_lat1 = lat1.cos();
+        let sin_d = d.sin();
+        let cos_d = d.cos();
+        let sin_tc = tc.sin();
+        let cos_tc = tc.cos();
+
+        let lat = (sin_lat1 * cos_d + cos_lat1 * sin_d * cos_tc).asin();
+        let d_lon = (sin_tc * sin_d * cos_lat1).atan2(cos_d - sin_lat1 * lat.sin());
 
         let lon = (lon1 + d_lon + PI) % (2.0 * PI) - PI;
 
@@ -84,17 +89,14 @@ impl Coordinate {
     pub fn distance_to(&self, l: &Coordinate) -> f64 {
         let lat1 = self.latitude.to_radians();
         let lat2 = l.latitude.to_radians();
-        let lon1 = self.longitude.to_radians();
-        let lon2 = l.longitude.to_radians();
-        let d_lon = lon1 - lon2;
-        let d_lat = lat1 - lat2;
+        let d_lat = lat2 - lat1;
+        let d_lon = (l.longitude - self.longitude).to_radians();
 
         let a = (d_lat / 2.0).sin().powi(2) + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
-        let d = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
+        let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
-        Self::EARTH_RADIUS * d.abs()
+        Self::EARTH_RADIUS * c
     }
-
     pub fn get_latitude(&self) -> &f64 {
         &self.latitude
     }
@@ -146,7 +148,33 @@ mod tests {
         let c2 = Coordinate::new(0.0, 0.0);
         assert_eq!(c1.distance_to(&c2).round(), 8198.0);
     }
+    #[test]
+    fn test_distance_to_edge_cases() {
+        // Same coordinates
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(0.0, 0.0);
+        assert_eq!(c1.distance_to(&c2), 0.0);
 
+        // Equator to North Pole
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(90.0, 0.0);
+        assert_eq!(c1.distance_to(&c2).round(), 5406.0);
+
+        // Equator to South Pole
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(-90.0, 0.0);
+        assert_eq!(c1.distance_to(&c2).round(), 5406.0);
+
+        // Prime Meridian to 90 degrees East
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(0.0, 90.0);
+        assert_eq!(c1.distance_to(&c2).round(), 5406.0);
+
+        // Prime Meridian to 90 degrees West
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(0.0, -90.0);
+        assert_eq!(c1.distance_to(&c2).round(), 5406.0);
+    }
     #[test]
     fn test_bearing_to_deg() {
         let c1 = Coordinate::new(-34.0, 151.0);
@@ -158,6 +186,34 @@ mod tests {
         let c1 = Coordinate::new(34.0, 151.0);
         let c2 = Coordinate::new(34.0, 152.0);
         assert_eq!(c1.bearing_to_deg(&c2).round(), 90.0);
+    }
+
+    #[test]
+    fn test_bearing_to_edge_cases() {
+        // Same coordinates
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(0.0, 0.0);
+        assert_eq!(c1.bearing_to_deg(&c2).round(), 0.0);
+
+        // Equator to North Pole
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(90.0, 0.0);
+        assert_eq!(c1.bearing_to_deg(&c2).round(), 0.0);
+
+        // Equator to South Pole
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(-90.0, 0.0);
+        assert_eq!(c1.bearing_to_deg(&c2).round(), 180.0);
+
+        // Prime Meridian to 90 degrees East
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(0.0, 90.0);
+        assert_eq!(c1.bearing_to_deg(&c2).round(), 90.0);
+
+        // Prime Meridian to 90 degrees West
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = Coordinate::new(0.0, -90.0);
+        assert_eq!(c1.bearing_to_deg(&c2).round(), 270.0);
     }
 
     #[test]
@@ -176,6 +232,37 @@ mod tests {
         let c2 = c1.coordinate_at(100000.0, 120.0);
         assert_between(c2.latitude, 43.0, 44.0);
         assert_between(c2.longitude, 28.0, 29.0);
+    }
+    #[test]
+    fn test_coordinate_at_edge_cases() {
+        // Zero distance
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = c1.coordinate_at(0.0, 0.0);
+        assert_eq!(c1, c2);
+
+        // Distance to North Pole
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = c1.coordinate_at(5406.0, 0.0);
+        assert!(assert_between(c2.latitude, 89.99, 90.01));
+        assert!(assert_between(c2.longitude, -0.01, 0.01));
+
+        // Distance to South Pole
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = c1.coordinate_at(5406.0, 180.0);
+        assert!(assert_between(c2.latitude, -90.01, -89.99));
+        assert!(assert_between(c2.longitude, -0.01, 0.01));
+
+        // Distance along the equator
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = c1.coordinate_at(5406.0, 90.0);
+        assert!(assert_between(c2.latitude, -0.01, 0.01));
+        assert!(assert_between(c2.longitude, 89.99, 90.01));
+
+        // Distance along the prime meridian
+        let c1 = Coordinate::new(0.0, 0.0);
+        let c2 = c1.coordinate_at(5406.0, 0.0);
+        assert!(assert_between(c2.latitude, 89.99, 90.01));
+        assert!(assert_between(c2.longitude, -0.01, 0.01));
     }
 
     fn assert_between(variable: f64, bottom: f64, top: f64) -> bool {
