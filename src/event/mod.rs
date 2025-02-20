@@ -30,6 +30,7 @@ use async_channel::{Receiver, Sender, TrySendError};
 use log::warn;
 
 #[derive(Clone, PartialEq)]
+#[derive(Debug)]
 pub enum Event {
     AirportsLoaded,
     NavaidsLoaded,
@@ -76,6 +77,99 @@ impl EventManager {
         }
         if let Ok(mut listeners) = self.listeners.write() {
             listeners.retain(|l| !l.is_closed())
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use async_channel::TryRecvError;
+
+    #[test]
+    fn test_register_listener() {
+        let manager = EventManager {
+            listeners: RwLock::new(Vec::new()),
+        };
+
+        let receiver = manager.register_listener();
+        assert!(receiver.is_some());
+    }
+
+    #[test]
+    fn test_notify_listeners() {
+        let manager = EventManager {
+            listeners: RwLock::new(Vec::new()),
+        };
+
+        let receiver = manager.register_listener().unwrap();
+        manager.notify_listeners(Event::AirportsLoaded);
+
+        match receiver.try_recv() {
+            Ok(event) => assert_eq!(event, Event::AirportsLoaded),
+            Err(_) => panic!("Expected event not received"),
+        }
+    }
+
+    #[test]
+    fn test_notify_multiple_listeners() {
+        let manager = EventManager {
+            listeners: RwLock::new(Vec::new()),
+        };
+
+        let receiver1 = manager.register_listener().unwrap();
+        let receiver2 = manager.register_listener().unwrap();
+        manager.notify_listeners(Event::NavaidsLoaded);
+
+        match receiver1.try_recv() {
+            Ok(event) => assert_eq!(event, Event::NavaidsLoaded),
+            Err(_) => panic!("Expected event not received by listener 1"),
+        }
+
+        match receiver2.try_recv() {
+            Ok(event) => assert_eq!(event, Event::NavaidsLoaded),
+            Err(_) => panic!("Expected event not received by listener 2"),
+        }
+    }
+
+    #[test]
+    fn test_listener_channel_closed() {
+        let manager = EventManager {
+            listeners: RwLock::new(Vec::new()),
+        };
+
+        let receiver = manager.register_listener().unwrap();
+        drop(receiver); // Close the receiver
+
+        manager.notify_listeners(Event::FixesLoaded);
+
+        // Ensure no listeners are left
+        assert!(manager.listeners.read().unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_listener_channel_full() {
+        let manager = EventManager {
+            listeners: RwLock::new(Vec::new()),
+        };
+
+        let (tx, rx) = async_channel::bounded::<Event>(1);
+        manager.listeners.write().unwrap().push(tx);
+
+        // Fill the channel
+        manager.notify_listeners(Event::PlanChanged);
+        manager.notify_listeners(Event::PlanChanged);
+
+        match rx.try_recv() {
+            Ok(event) => assert_eq!(event, Event::PlanChanged),
+            Err(_) => panic!("Expected event not received"),
+        }
+
+        // The second event should not be received because the channel is full
+        match rx.try_recv() {
+            Ok(_) => panic!("Unexpected event received"),
+            Err(TryRecvError::Empty) => {}
+            Err(_) => panic!("Unexpected error"),
         }
     }
 }
