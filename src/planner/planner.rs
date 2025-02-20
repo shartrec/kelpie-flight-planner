@@ -703,11 +703,15 @@ fn calc_climb_sink_distance(aircraft: &Option<Arc<Aircraft>>, from: &Waypoint, t
 
 #[cfg(test)]
 mod tests {
+    use std::cell::Cell;
     use std::sync::{Arc, RwLock};
-
+    use crate::earth::coordinate::Coordinate;
+    use crate::model::fix::Fix;
+    use crate::model::navaid::{Navaid, NavaidType};
     use crate::model::sector::Sector;
     use crate::model::test_utils::tests::make_airport_at;
-    use crate::preference::USE_GPS;
+    use crate::model::waypoint::Waypoint;
+    use crate::preference::{USE_FIXES, USE_GPS, USE_RADIO_BEACONS};
 
     use super::Planner;
 
@@ -743,5 +747,130 @@ mod tests {
             )
         }
         assert_eq!(plan.len(), 14);
+    }
+
+    #[test]
+    fn make_plan_with_radio_beacons() {
+        // Add navaids to the earth module
+        let navaid1 = Arc::new(Navaid::new("NAVAID1".to_string(), NavaidType::Vor, -33.0, 140.0, 10, 10., 10, "10".to_string(), "BIN".to_string()));
+        let navaid2 = Arc::new(Navaid::new("NAVAID2".to_string(), NavaidType::Vor, -33.5, 130.0, 10, 10., 10, "10".to_string(), "GLB".to_string()));
+        let navaid3 = Arc::new(Navaid::new("NAVAID3".to_string(), NavaidType::Vor, -33.8, 125.0, 10, 10., 10, "10".to_string(), "WAL".to_string()));
+        let navaids = &Arc::new(RwLock::new(vec![navaid1.clone(), navaid2.clone(), navaid3.clone()]));
+
+        let planner = Planner {
+            max_leg_distance: 100.0,
+            min_leg_distance: 25.0,
+            max_deviation: 10.0,
+            vor_only: false,
+            vor_preferred: true,
+            add_gps_waypoints: false,
+            add_waypoint_bias: false,
+            plan_type: USE_RADIO_BEACONS.to_string(),
+            navaids,
+            fixes: &Arc::new(RwLock::new(Vec::new())),
+        };
+
+        let ap1 = make_airport_at("YSSY", -34.0, 151.0);
+        let ap2 = make_airport_at("YPER", -32.1, 120.5);
+
+        let mut sector = Sector::new();
+        sector.set_start(Some(ap1));
+        sector.set_end(Some(ap2));
+        let plan = planner.make_plan(&mut sector);
+
+        assert!(!plan.is_empty());
+    }
+
+    #[test]
+    fn make_plan_with_fixes() {
+
+
+        // Add fixes to the earth module
+        let fix1 = Arc::new(Fix::new("FIX1".to_string(), -33.0, 140.0));
+        let fix2 = Arc::new(Fix::new("FIX2".to_string(), -33.5, 130.0));
+        let fix3 = Arc::new(Fix::new("FIX3".to_string(), -33.8, 125.0));
+        let fixes = &Arc::new(RwLock::new(vec![fix1.clone(), fix2.clone(), fix3.clone()]));
+
+        let planner = Planner {
+            max_leg_distance: 100.0,
+            min_leg_distance: 25.0,
+            max_deviation: 10.0,
+            vor_only: false,
+            vor_preferred: true,
+            add_gps_waypoints: false,
+            add_waypoint_bias: false,
+            plan_type: USE_FIXES.to_string(),
+            navaids: &Arc::new(RwLock::new(Vec::new())),
+            fixes,
+        };
+
+        let ap1 = make_airport_at("YSSY", -34.0, 151.0);
+        let ap2 = make_airport_at("YPER", -32.1, 120.5);
+
+
+        let mut sector = Sector::new();
+        sector.set_start(Some(ap1));
+        sector.set_end(Some(ap2));
+        let plan = planner.make_plan(&mut sector);
+
+        assert!(!plan.is_empty());
+    }
+
+    #[test]
+    fn make_plan_with_no_waypoints() {
+        let planner = Planner {
+            max_leg_distance: 100.0,
+            min_leg_distance: 25.0,
+            max_deviation: 10.0,
+            vor_only: false,
+            vor_preferred: true,
+            add_gps_waypoints: false,
+            add_waypoint_bias: false,
+            plan_type: USE_RADIO_BEACONS.to_string(),
+            navaids: &Arc::new(RwLock::new(Vec::new())),
+            fixes: &Arc::new(RwLock::new(Vec::new())),
+        };
+
+        let ap1 = make_airport_at("YSSY", -34.0, 151.0);
+        let ap2 = make_airport_at("YPER", -32.1, 120.5);
+
+        let mut sector = Sector::new();
+        sector.set_start(Some(ap1));
+        sector.set_end(Some(ap2));
+        let plan = planner.make_plan(&mut sector);
+
+        assert_eq!(plan.len(), 0);
+    }
+
+    #[test]
+    fn make_plan_with_locked_waypoints() {
+        let planner = Planner {
+            max_leg_distance: 100.0,
+            min_leg_distance: 25.0,
+            max_deviation: 10.0,
+            vor_only: false,
+            vor_preferred: true,
+            add_gps_waypoints: false,
+            add_waypoint_bias: false,
+            plan_type: USE_RADIO_BEACONS.to_string(),
+            navaids: &Arc::new(RwLock::new(Vec::new())),
+            fixes: &Arc::new(RwLock::new(Vec::new())),
+        };
+
+        let ap1 = make_airport_at("YSSY", -34.0, 151.0);
+        let ap2 = make_airport_at("YPER", -32.1, 120.5);
+        let wp = Waypoint::Simple {
+            loc: Coordinate::new(-33.0, 135.0),
+            elevation: Cell::new(0),
+            locked: true,
+        };
+
+        let mut sector = Sector::new();
+        sector.set_start(Some(ap1));
+        sector.set_end(Some(ap2));
+        sector.add_waypoint(wp.clone());
+        let plan = planner.make_plan(&mut sector);
+
+        assert!(plan.contains(&wp));
     }
 }
