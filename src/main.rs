@@ -24,6 +24,7 @@
 
 #![windows_subsystem = "windows"]
 
+use std::fs::OpenOptions;
 use std::ptr;
 
 use adw::Application;
@@ -112,18 +113,21 @@ fn init_opengl() {
 fn init_logger() {
     if let Some(home_path) = home::home_dir() {
         let log_path = home_path.join("kelpie-planner.log");
-        match std::fs::File::create(log_path) {
+        match OpenOptions::new().append(true).open(log_path) {
             Ok(file) => {
+                let config = ConfigBuilder::new()
+                    .set_time_offset_to_local()
+                    .unwrap().build();
                 CombinedLogger::init(vec![
                     TermLogger::new(
                         LevelFilter::Warn,
-                        Config::default(),
+                        config.clone(),
                         TerminalMode::Mixed,
                         ColorChoice::Auto,
                     ),
                     WriteLogger::new(
                         LevelFilter::Info,
-                        Config::default(),
+                        config,
                         file,
                     ),
                 ]).unwrap_or_else(|e| {
