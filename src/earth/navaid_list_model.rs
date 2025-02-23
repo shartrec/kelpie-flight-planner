@@ -60,13 +60,13 @@ mod imp {
 
     impl Navaids {}
 
-    impl Default for crate::earth::navaid_list_model::imp::Navaids {
+    impl Default for Navaids {
         fn default() -> Self {
             Self {
                 cache: LazyLock::new(||
                     get_earth_model().navaids.read().expect("Can't get Navaid lock")
                         .iter()
-                        .map(|navaid| NavaidObject::new(navaid))
+                        .map(NavaidObject::new)
                         .collect()
                 )
             }

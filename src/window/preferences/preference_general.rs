@@ -128,7 +128,7 @@ mod imp {
             });
             self.btn_dist_km.connect_toggled(|button| {
                 if button.is_active() {
-                    crate::preference::manager().put(UNITS, UNITS_KM);
+                    manager().put(UNITS, UNITS_KM);
                 }
             });
             self.fg_path.connect_changed(|editable| {

@@ -45,7 +45,7 @@ impl GLSphereBuilder {
         let x = 0.525_731_1;
         let z = 0.850_650_8;
         Self {
-            // Statically define the starting regular isocahedron with "radius" = 1
+            // Statically define the starting regular icosahedron with "radius" = 1
             vdata: [
                 [-x, 0.0, z],
                 [x, 0.0, z],
@@ -89,7 +89,7 @@ impl GLSphereBuilder {
         let mut vertices: Vec<Vertex> = Vec::with_capacity(1000);
         let mut indeces: Vec<u32> = Vec::with_capacity(1000);
 
-        // We really draw a polyhedron starting with a regular isocahedron and
+        // We really draw a polyhedron starting with a regular icosahedron and
         // subdividing its faces iteratively to get the smooth sphere we require
         for i in 0..20 {
             // push the vertex into the vector

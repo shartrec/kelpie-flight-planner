@@ -49,9 +49,9 @@ impl LatLongFormat {
 
     fn dec_to_degree(&self, buff: &mut String, d: f64, bearing: &str) {
         let mut deg = d.floor();
-        let minsec = (d - deg) * 60.0;
-        let mut min = minsec.floor();
-        let mut sec = (minsec - min) * 60.0;
+        let min_sec = (d - deg) * 60.0;
+        let mut min = min_sec.floor();
+        let mut sec = (min_sec - min) * 60.0;
 
         if (60.0 - sec) < 0.005 {
             sec = 0.0;

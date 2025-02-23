@@ -35,9 +35,9 @@ use crate::model::aircraft::Aircraft;
 use crate::preference::APP_INFO;
 
 // This is where all the planes live.
-static HANGAR: LazyLock<Hangar> = LazyLock::new(|| Hangar::new());
+static HANGAR: LazyLock<Hangar> = LazyLock::new(Hangar::new);
 
-static DEFAULT_AICRAFT: &str = "---
+static DEFAULT_ARICRAFT: &str = "---
 - climb-rate: 5000
   climb-speed: 250
   cruise-altitude: 35000
@@ -263,7 +263,7 @@ pub fn load_hangar() -> Vec<Arc<Aircraft>> {
                     .expect("Unable to read file");
             }
             Err(_) => {
-                contents = DEFAULT_AICRAFT.to_string();
+                contents = DEFAULT_ARICRAFT.to_string();
             }
         }
 
@@ -387,10 +387,9 @@ fn put_string(map: &mut Hash, key: &str, v: &str) {
 }
 
 pub fn get_hangar_path() -> Option<PathBuf> {
-    let x = config_dir().map(|mut p| {
-        p.push(&APP_INFO.name);
+    config_dir().map(|mut p| {
+        p.push(APP_INFO.name);
         p.push("aircraft.yaml");
         p
-    });
-    x
+    })
 }

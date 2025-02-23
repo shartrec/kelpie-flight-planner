@@ -52,6 +52,7 @@ pub struct Airport {
 
 impl Airport {
     //noinspection RsExternalLinter
+    //noinspection RsExternalLinter
     pub fn new(
         id: String,
         latitude: f64,
@@ -387,6 +388,7 @@ pub struct Runway {
 }
 
 impl Runway {
+    //noinspection RsExternalLinter
     //noinspection RsExternalLinter
     pub fn new(
         number: String,

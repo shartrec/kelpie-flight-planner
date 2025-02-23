@@ -66,7 +66,7 @@ mod imp {
                 cache: LazyLock::new(||
                     get_earth_model().airports.read().expect("Can't get Airport lock")
                         .iter()
-                        .map(|airport| AirportObject::new(airport))
+                        .map(AirportObject::new)
                         .collect()
                 )
             }

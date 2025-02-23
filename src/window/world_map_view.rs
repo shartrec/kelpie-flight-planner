@@ -156,11 +156,9 @@ mod imp {
         }
 
         pub fn get_center_map(&self) -> Option<Coordinate> {
-            if let Some(renderer) = self.renderer.borrow().as_ref() {
-                Some(renderer.get_map_centre())
-            } else {
-                None
-            }
+            self.renderer.borrow().as_ref(). map(|renderer| {
+                renderer.get_map_centre()
+            })
         }
 
         pub fn set_plan(&self, plan: Rc<RefCell<Plan>>) {

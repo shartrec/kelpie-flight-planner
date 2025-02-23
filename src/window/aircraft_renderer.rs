@@ -64,12 +64,12 @@ impl AircraftRenderer {
 
     fn load_buffers(&self, aircraft_position: &RefCell<Option<AircraftPositionInfo>>, aircraft_vertex_buffer: GLuint) {
         if let Some(api) = aircraft_position.borrow().deref() {
-            let vertices = self.build_aircraft_verticesx(api);
+            let vertices = self.build_aircraft_vertices(api);
             unsafe {
                 gl::BindBuffer(gl::ARRAY_BUFFER, aircraft_vertex_buffer);
                 gl::BufferData(
                     gl::ARRAY_BUFFER, // target
-                    (vertices.len() * std::mem::size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
+                    (vertices.len() * size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
                     vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                     gl::DYNAMIC_DRAW, // usage
                 );
@@ -89,7 +89,7 @@ impl AircraftRenderer {
                     3, // the number of components per generic vertex attribute
                     gl::FLOAT, // data type
                     gl::FALSE, // normalized (int-to-float conversion)
-                    (3 * std::mem::size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
+                    (3 * size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
                     std::ptr::null(), // offset of the first component
                 );
 
@@ -114,7 +114,7 @@ impl AircraftRenderer {
         }
     }
 
-    fn build_aircraft_verticesx(&self, api: &AircraftPositionInfo) -> Vec<Vertex> {
+    fn build_aircraft_vertices(&self, api: &AircraftPositionInfo) -> Vec<Vertex> {
         let projector = SphericalProjector::new(1.000);
 
         let mut vertices: Vec<Vertex> = Vec::new();

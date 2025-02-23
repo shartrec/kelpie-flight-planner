@@ -43,7 +43,7 @@ impl NavaidParserFG {
     ) -> Result<(), Error> {
         let mut buf = String::new();
 
-        // ignore first two lins
+        // ignore first two lines
         for _i in 0..3 {
             buf.clear();
             match reader.read_line(&mut buf) {

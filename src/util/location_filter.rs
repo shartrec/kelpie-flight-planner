@@ -223,8 +223,8 @@ impl DeviationFilter {
             from,
             to,
             max_deviation,
-            heading_from: heading_from,
-            heading_to: heading_to,
+            heading_from,
+            heading_to,
         }
     }
 

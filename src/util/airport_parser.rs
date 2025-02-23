@@ -86,7 +86,7 @@ impl AirportParserFG850 {
                     error!("{}", msg.to_string());
                 }
             }
-            let buf = Self::to_utf8(&mut byte_buf);
+            let buf = Self::bytes_to_utf8(&byte_buf);
 
             if !buf.trim().is_empty() {
                 let mut tokenizer = buf.split_whitespace();
@@ -149,7 +149,7 @@ impl AirportParserFG850 {
                     tokenizer.next(); //smoothness
                     tokenizer.next(); //centre lights
                     tokenizer.next(); //edge lights
-                    tokenizer.next(); //auto gen distremaining signs
+                    tokenizer.next(); //auto gen dist remaining signs
 
                     let _number = tokenizer.next();
                     let r_lat = tokenizer
@@ -197,11 +197,11 @@ impl AirportParserFG850 {
                         longitude = (r_long + r1_long) / 2.0;
                     }
                 } else if r_type == "102" {
-                    // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
+                    // let r_width = token_f64(tokens.next()) * 3.28;
                     // let r_surface = tokens.next().unwrap_or("");
                     let _number = tokenizer.next().unwrap_or("");
-                    let r_lat = crate::util::airport_parser::token_f64(tokenizer.next());
-                    let r_long = crate::util::airport_parser::token_f64(tokenizer.next());
+                    let r_lat = token_f64(tokenizer.next());
+                    let r_long = token_f64(tokenizer.next());
                     let _hdg = token_f64(tokenizer.next()); //Orientation
                     let r_length = token_f64(tokenizer.next()) * 3.28;
                     let _width = token_f64(tokenizer.next()) * 3.28;
@@ -228,13 +228,13 @@ impl AirportParserFG850 {
         Ok(())
     }
 
-    fn to_utf8<'a>(byte_buf: &'a Vec::<u8>) -> Cow<'a, str> {
-        match std::str::from_utf8(&byte_buf) {
+    fn bytes_to_utf8(byte_buf: &[u8]) -> Cow<str> {
+        match std::str::from_utf8(byte_buf) {
             Ok(ccc) => {
                 Cow::Borrowed(ccc)
             }
             Err(e) => {
-                let s = String::from_utf8_lossy(&byte_buf);
+                let s = String::from_utf8_lossy(byte_buf);
                 warn!("{} - {}", e, s);
                 s
             }
@@ -282,7 +282,7 @@ impl AirportParserFG850 {
                     return Err(err_msg);
                 }
             }
-            let buf = Self::to_utf8(&mut byte_buf);
+            let buf = Self::bytes_to_utf8(&byte_buf);
 
             tokenizer = buf.split_whitespace();
             if let Some(r_type) = tokenizer.next() {
@@ -324,7 +324,7 @@ impl AirportParserFG850 {
                     return Err(err_msg);
                 }
             }
-            let buf = Self::to_utf8(&mut byte_buf);
+            let buf = Self::bytes_to_utf8(&byte_buf);
             let mut tokenizer = buf.split_whitespace();
 
             let r_type = tokenizer.next().unwrap_or("");
@@ -394,8 +394,8 @@ impl AirportParserFG850 {
                 // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
                 // let r_surface = tokens.next().unwrap_or("");
                 let r_number = tokenizer.next().unwrap_or("");
-                let r_lat = crate::util::airport_parser::token_f64(tokenizer.next());
-                let r_long = crate::util::airport_parser::token_f64(tokenizer.next());
+                let r_lat = token_f64(tokenizer.next());
+                let r_long = token_f64(tokenizer.next());
                 let r_hdg = token_f64(tokenizer.next()); //Orientation
                 let r_length = token_f64(tokenizer.next()) * 3.28;
                 let r_width = token_f64(tokenizer.next()) * 3.28;

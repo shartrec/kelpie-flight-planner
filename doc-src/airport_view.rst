@@ -11,7 +11,7 @@ Use the search criteria to select  the airports to be shown in the  list.  The c
 -  Airport ID or partial name.
    If an Airport Id matches or the name contains the entered value it will be selected.
 -  Location Near.
-   Enter the position, latitiude and longtitude, you wish and the Airports can be to be selected.
+   Enter the position, latitude and longitude, you wish and the Airports can be to be selected.
 
 If you enter both a Name and a Location, both criteria must be satisfied for an Airport to be selected.
 When you have entered the criteria press the search button or press enter.

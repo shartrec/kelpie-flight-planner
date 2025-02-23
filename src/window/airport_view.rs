@@ -347,7 +347,7 @@ mod imp {
             }));
             self.airport_list.add_controller(gesture);
 
-            // If the user clicks search or pressses enter in any of the search fields do the search
+            // If the user clicks search or presses enter in any of the search fields do the search
             self.airport_search
                 .connect_clicked(clone!(#[weak(rename_to = window)] self, move |_search| {
                     window.search();

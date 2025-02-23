@@ -82,7 +82,7 @@ pub struct Window {
 
 impl Window {
     pub(crate) fn load_plan_from_files(&self, files: &[File]) {
-        todo!("Nead to load file{:?} here", files[0].path());
+        todo!("Need to load file{:?} here", files[0].path());
         // todo
     }
 
@@ -204,7 +204,7 @@ impl Window {
     pub(crate) fn reload(&self) {
         // Spawn a new task to perform the initialization asynchronously
         task::spawn(async move {
-            if let Err(_) = crate::earth::initialise() {
+            if crate::earth::initialise().is_err() {
                 event::manager().notify_listeners(Event::SetupRequired);
             }
         });
@@ -370,7 +370,7 @@ impl ObjectImpl for Window {
 
         // Spawn a new task to perform the initialization asynchronously
         task::spawn(async move {
-            if let Err(_) = crate::earth::initialise() {
+            if crate::earth::initialise().is_err() {
                 event::manager().notify_listeners(Event::SetupRequired);
             }
         });
@@ -404,7 +404,7 @@ impl WidgetImpl for Window {
 // Trait shared by all windows
 impl WindowImpl for Window {
     // Save window state right before the window will be closed
-    fn close_request(&self) -> glib::signal::Propagation {
+    fn close_request(&self) -> Propagation {
         self.save_panel_layout();
         // Save window size
         self.obj()
@@ -430,7 +430,7 @@ impl WindowImpl for Window {
                             if i > 1 {
                                 window.plan_tab_view.close_page(&page);
                             }
-                            let  _ = window.obj().close();
+                            window.obj().close();
                         } else {
                             // cancel pressed . do nothing
                         }

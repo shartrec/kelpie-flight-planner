@@ -66,7 +66,7 @@ mod imp {
                 cache: LazyLock::new(||
                     get_earth_model().fixes.read().expect("Can't get Fix lock")
                         .iter()
-                        .map(|fix| FixObject::new(fix))
+                        .map(FixObject::new)
                         .collect()
                 )
             }

@@ -184,8 +184,7 @@ impl Plan {
                         }
                     } else {
                         return s.borrow()
-                            .get_waypoint(s.borrow().get_waypoint_count() - 1)
-                            .map(|wp| wp.clone());
+                            .get_waypoint(s.borrow().get_waypoint_count() - 1);
                     }
                 }
             }
@@ -203,8 +202,7 @@ impl Plan {
                                 }
                             } else {
                                 return s.borrow()
-                                    .get_waypoint(i - 1)
-                                    .map(|wp| wp.clone());
+                                    .get_waypoint(i - 1);
                             }
                         }
                     }

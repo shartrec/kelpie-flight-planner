@@ -31,7 +31,7 @@ mod imp {
     use adw::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
-    use crate::preference::{ADD_WAYPOINTS, AUTO_PLAN, MAX_DEVIATION, MAX_LEG_LENGTH, MIN_LEG_LENGTH, PLAN_TYPE, USE_FIXES, USE_GPS, USE_RADIO_BEACONS, VOR_ONLY, VOR_PREFERED};
+    use crate::preference::{ADD_WAYPOINTS, AUTO_PLAN, MAX_DEVIATION, MAX_LEG_LENGTH, MIN_LEG_LENGTH, PLAN_TYPE, USE_FIXES, USE_GPS, USE_RADIO_BEACONS, VOR_ONLY, VOR_PREFFERED};
 
     #[derive(CompositeTemplate, Default)]
     #[template(resource = "/com/shartrec/kelpie_planner/preference_planner.ui")]
@@ -75,7 +75,7 @@ mod imp {
                 }
             }
             self.btn_vor_only.set_active(prefs.get::<bool>(VOR_ONLY).unwrap_or(false));
-            self.btn_vor_preferred.set_active(prefs.get::<bool>(VOR_PREFERED).unwrap_or(false));
+            self.btn_vor_preferred.set_active(prefs.get::<bool>(VOR_PREFFERED).unwrap_or(false));
             self.btn_add_gps.set_active(prefs.get::<bool>(ADD_WAYPOINTS).unwrap_or(false));
         }
     }
@@ -134,7 +134,7 @@ mod imp {
                 crate::preference::manager().put(VOR_ONLY, button.is_active());
             });
             self.btn_vor_preferred.connect_toggled(|button| {
-                crate::preference::manager().put(VOR_PREFERED, button.is_active());
+                crate::preference::manager().put(VOR_PREFFERED, button.is_active());
             });
             self.btn_add_gps.connect_toggled(|button| {
                 crate::preference::manager().put(ADD_WAYPOINTS, button.is_active());

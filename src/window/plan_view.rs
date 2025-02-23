@@ -282,9 +282,9 @@ mod imp {
 
             if !selection.is_empty() {
                 let sel_pos = selection.nth(0);
-                let smodel = self.plan_tree.model().unwrap();
-                let ssmodel = smodel.downcast_ref::<SingleSelection>().unwrap();
-                let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
+                let s_model = self.plan_tree.model().unwrap();
+                let ss_model = s_model.downcast_ref::<SingleSelection>().unwrap();
+                let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
                     let mut sector = None;
@@ -371,11 +371,9 @@ mod imp {
             let mut plan = self.plan.borrow_mut();
 
             if let Some(prev_sector) = plan.get_sectors().last() {
-                if let Some(wp) = prev_sector.borrow().get_end() {
-                    if let Waypoint::Airport { airport, .. } = wp {
-                        prev_airport_id = airport.get_id().to_string().clone();
-                        prev = true;
-                    }
+                if let Some(Waypoint::Airport { airport, .. }) = prev_sector.borrow().get_end() {
+                    prev_airport_id = airport.get_id().to_string().clone();
+                    prev = true;
                 }
             }
             plan.add_sector(Sector::new());
@@ -401,9 +399,9 @@ mod imp {
             let selection = self.plan_tree.model().unwrap().selection();
             if !selection.is_empty() {
                 sel_pos = selection.nth(0);
-                let smodel = self.plan_tree.model().unwrap();
-                let ssmodel = smodel.downcast_ref::<SingleSelection>().unwrap();
-                let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
+                let s_model = self.plan_tree.model().unwrap();
+                let ss_model = s_model.downcast_ref::<SingleSelection>().unwrap();
+                let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
                     let tree_path = get_tree_path(sel_pos, &trm);
@@ -457,9 +455,9 @@ mod imp {
             let selection = self.plan_tree.model().unwrap().selection();
             if !selection.is_empty() {
                 sel_pos = selection.nth(0);
-                let smodel = self.plan_tree.model().unwrap();
-                let ssmodel = smodel.downcast_ref::<SingleSelection>().unwrap();
-                let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
+                let s_model = self.plan_tree.model().unwrap();
+                let ss_model = s_model.downcast_ref::<SingleSelection>().unwrap();
+                let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
                     let tree_path = get_tree_path(sel_pos, &trm);
@@ -512,9 +510,9 @@ mod imp {
             let selection = self.plan_tree.model().unwrap().selection();
             if !selection.is_empty() {
                 sel_pos = selection.nth(0);
-                let smodel = self.plan_tree.model().unwrap();
-                let ssmodel = smodel.downcast_ref::<SingleSelection>().unwrap();
-                let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
+                let s_model = self.plan_tree.model().unwrap();
+                let ss_model = s_model.downcast_ref::<SingleSelection>().unwrap();
+                let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
                     let item = row.item().unwrap();
@@ -565,9 +563,9 @@ mod imp {
             let selection = self.plan_tree.model().unwrap().selection();
             if !selection.is_empty() {
                 let sel_pos = selection.nth(0);
-                let smodel = self.plan_tree.model().unwrap();
-                let ssmodel = smodel.downcast_ref::<SingleSelection>().unwrap();
-                let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
+                let s_model = self.plan_tree.model().unwrap();
+                let ss_model = s_model.downcast_ref::<SingleSelection>().unwrap();
+                let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
                     let item = row.item().unwrap();
@@ -576,11 +574,7 @@ mod imp {
                         let cell = sector.imp().sector();
                         let selection = if let Some(wp) = cell.borrow().get_start() {
                             Some(wp.get_loc().clone())
-                        } else if let Some(wp) = cell.borrow().get_end() {
-                            Some(wp.get_loc().clone())
-                        } else {
-                            None
-                        };
+                        } else { cell.borrow().get_end().map(|wp| wp.get_loc().clone()) };
                         selection
                     } else if item.is::<WaypointObject>() {
                         let waypoint = item.downcast_ref::<WaypointObject>().unwrap();
@@ -603,9 +597,9 @@ mod imp {
             let selection = self.plan_tree.model().unwrap().selection();
             if !selection.is_empty() {
                 let sel_pos = selection.nth(0);
-                let smodel = self.plan_tree.model().unwrap();
-                let ssmodel = smodel.downcast_ref::<SingleSelection>().unwrap();
-                let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
+                let s_model = self.plan_tree.model().unwrap();
+                let ss_model = s_model.downcast_ref::<SingleSelection>().unwrap();
+                let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
                     let item = row.item().unwrap();
@@ -718,7 +712,7 @@ mod imp {
                 } else if item.is::<RunwayObject>() {
                     let runway = item.downcast_ref::<RunwayObject>().unwrap();
                     let cell = runway.imp().runway();
-                    label.set_label(&*cell.borrow().as_ref().unwrap().number_pair());
+                    label.set_label(cell.borrow().as_ref().unwrap().number_pair().as_str());
                 }
                 label.set_xalign(0.0);
             })));

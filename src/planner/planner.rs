@@ -60,7 +60,7 @@ impl Planner<'_> {
             min_leg_distance: pref.get::<f64>(MIN_LEG_LENGTH).unwrap_or(25.0),
             max_deviation: pref.get::<f64>(MAX_DEVIATION).unwrap_or(10.0),
             vor_only: pref.get::<bool>(VOR_ONLY).unwrap_or(false),
-            vor_preferred: pref.get::<bool>(VOR_PREFERED).unwrap_or(true),
+            vor_preferred: pref.get::<bool>(VOR_PREFFERED).unwrap_or(true),
             add_gps_waypoints: pref.get::<bool>(ADD_WAYPOINTS).unwrap_or(false),
             add_waypoint_bias: pref.get::<bool>(ADD_WAYPOINT_BIAS).unwrap_or(true),
             plan_type: pref
@@ -124,15 +124,13 @@ impl Planner<'_> {
     }
 
     fn get_arrival_beacon(&self, to: &Waypoint) -> Option<Waypoint> {
-        if let Some(arrival_beacon) = self.get_navaid_nearest(to.get_loc(), ARRIVAL_BEACON_RANGE) {
-            Some(Waypoint::Navaid {
+        self.get_navaid_nearest(to.get_loc(), ARRIVAL_BEACON_RANGE). map(|arrival_beacon| {
+            Waypoint::Navaid {
                 navaid: arrival_beacon.clone(),
                 elevation: Cell::new(0),
                 locked: false,
-            })
-        } else {
-            None
-        }
+            }
+        })
     }
 
     fn add_navaids_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
@@ -241,27 +239,25 @@ impl Planner<'_> {
             .filter(|loc| filter.filter(&***loc));
 
         let mut best_loc: Option<Arc<Navaid>> = None;
-        let mut best_ndb: Option<Arc<Navaid>> = None;
+        let mut best_vor: Option<Arc<Navaid>> = None;
         let mut nearest = 100000.0;
-        let mut nearest_ndb = 100000.0;
+        let mut nearest_vor = 100000.0;
         for navaid in near_aids {
-            if self.vor_preferred && navaid.get_type() != NavaidType::Vor {
-                if midpoint.distance_to(navaid.get_loc()) < nearest_ndb {
-                    best_ndb = Some(navaid.clone());
-                    nearest_ndb = midpoint.distance_to(navaid.get_loc());
+            if self.vor_preferred && navaid.get_type() == NavaidType::Vor {
+                if midpoint.distance_to(navaid.get_loc()) < nearest_vor {
+                    best_vor = Some(navaid.clone());
+                    nearest_vor = midpoint.distance_to(navaid.get_loc());
                 }
-            } else {
-                if midpoint.distance_to(navaid.get_loc()) < nearest {
-                    best_loc = Some(navaid.clone());
-                    nearest = midpoint.distance_to(navaid.get_loc());
-                }
+            }
+            if midpoint.distance_to(navaid.get_loc()) < nearest {
+                best_loc = Some(navaid.clone());
+                nearest = midpoint.distance_to(navaid.get_loc());
             }
         }
 
-        if best_loc.is_none() && best_ndb.is_some() {
-            best_loc = best_ndb;
+        if best_vor.is_some() {
+            best_loc = best_vor;
         }
-
         best_loc
     }
 
@@ -425,31 +421,31 @@ impl Planner<'_> {
             let max_alt = calc_max_altitude(
                 &aircraft,
                 altitude,
-                &start_wp,
-                &end_wp,
+                start_wp,
+                end_wp,
                 waypoints,
             );
 
             add_toc(
                 &aircraft,
-                &start_wp,
-                &end_wp,
+                start_wp,
+                end_wp,
                 waypoints,
                 max_alt,
             );
 
             add_bod(
                 &aircraft,
-                &start_wp,
-                &end_wp,
+                start_wp,
+                end_wp,
                 waypoints,
                 max_alt,
             );
 
             set_elevations(
                 &aircraft,
-                &start_wp,
-                &end_wp,
+                start_wp,
+                end_wp,
                 waypoints,
                 max_alt,
             );
@@ -557,8 +553,7 @@ pub fn add_toc(
     let mut insertion_spot = None;
     let mut toc = None;
 
-    for i in 0..waypoints.len() {
-        let wp = &waypoints[i];
+    for (i, wp) in waypoints.iter().enumerate() {
         let leg_length = prev_wp.get_loc().distance_to(wp.get_loc());
 
         if leg_length >= distance_remaining {
@@ -604,7 +599,7 @@ fn calc_max_altitude(
     max_altitude: i32,
     from: &Waypoint,
     to: &Waypoint,
-    waypoints: &Vec<Waypoint>,
+    waypoints: &[Waypoint],
 ) -> i32 {
     let mut dist = 0.0;
     let mut prev_wp = from;
@@ -620,7 +615,7 @@ fn calc_max_altitude(
 
     let mut alt = max_altitude;
 
-    while calc_climb_sink_distance(&aircraft, to, from, alt) > dist {
+    while calc_climb_sink_distance(aircraft, to, from, alt) > dist {
         alt -= 500;
     }
     alt
@@ -736,7 +731,7 @@ mod tests {
         let mut sector = Sector::new();
         sector.set_start(Some(ap1));
         sector.set_end(Some(ap2));
-        let plan = planner.make_plan(&mut sector);
+        let plan = planner.make_plan(&sector);
 
 
         for wp in &plan {
@@ -776,7 +771,7 @@ mod tests {
         let mut sector = Sector::new();
         sector.set_start(Some(ap1));
         sector.set_end(Some(ap2));
-        let plan = planner.make_plan(&mut sector);
+        let plan = planner.make_plan(&sector);
 
         assert!(!plan.is_empty());
     }
@@ -811,7 +806,7 @@ mod tests {
         let mut sector = Sector::new();
         sector.set_start(Some(ap1));
         sector.set_end(Some(ap2));
-        let plan = planner.make_plan(&mut sector);
+        let plan = planner.make_plan(&sector);
 
         assert!(!plan.is_empty());
     }
@@ -837,7 +832,7 @@ mod tests {
         let mut sector = Sector::new();
         sector.set_start(Some(ap1));
         sector.set_end(Some(ap2));
-        let plan = planner.make_plan(&mut sector);
+        let plan = planner.make_plan(&sector);
 
         assert_eq!(plan.len(), 0);
     }
@@ -869,7 +864,7 @@ mod tests {
         sector.set_start(Some(ap1));
         sector.set_end(Some(ap2));
         sector.add_waypoint(wp.clone());
-        let plan = planner.make_plan(&mut sector);
+        let plan = planner.make_plan(&sector);
 
         assert!(plan.contains(&wp));
     }

@@ -36,6 +36,7 @@ pub struct Aircraft {
 
 impl Aircraft {
     //noinspection RsExternalLinter
+    //noinspection RsExternalLinter
     pub fn new(
         name: String,
         cruise_speed: i32,

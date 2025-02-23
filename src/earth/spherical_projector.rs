@@ -67,7 +67,6 @@ impl SphericalProjector {
         let lat: f32 = self._90rad - (y1 / self.r).acos();
         let lon: f32 = x.atan2(-z);
         if lat.is_nan() || lon.is_nan() {
-            //$NON-NLS-1$
             Err("Not in map".to_string())
         } else {
             Ok([lat.to_degrees(), lon.to_degrees()])
@@ -82,10 +81,10 @@ mod tests {
     #[test]
     fn test_full_circle() {
         let proj = SphericalProjector::new(50000.0);
-        let _3dpoint = proj.project(&-34.0, &151.0);
-        println!("Projected point: {:?}", _3dpoint);
+        let _3d_point = proj.project(&-34.0, &151.0);
+        println!("Projected point: {:?}", _3d_point);
 
-        let _coords = proj.un_project(_3dpoint[0], _3dpoint[1], _3dpoint[2]);
+        let _coords = proj.un_project(_3d_point[0], _3d_point[1], _3d_point[2]);
         println!("Projected point: {:?}", _coords);
 
         let x = _coords.unwrap();

@@ -56,7 +56,7 @@ impl NavaidRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, navaid_vertex_buffer);
             gl::BufferData(
                 gl::ARRAY_BUFFER, // target
-                (vertices.len() * std::mem::size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
+                (vertices.len() * size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
                 vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
@@ -68,7 +68,7 @@ impl NavaidRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_vor_index_buffer);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (indices_vor.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
+                (indices_vor.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
                 indices_vor.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
@@ -77,7 +77,7 @@ impl NavaidRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_ndb_index_buffer);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (indices_ndb.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
+                (indices_ndb.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
                 indices_ndb.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
@@ -105,7 +105,7 @@ impl NavaidRenderer {
                 3, // the number of components per generic vertex attribute
                 gl::FLOAT, // data type
                 gl::FALSE, // normalized (int-to-float conversion)
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
                 std::ptr::null(), // offset of the first component
             );
 

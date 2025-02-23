@@ -96,15 +96,8 @@ mod imp {
 
         fn n_items(&self) -> u32 {
             match self.waypoint().borrow().as_ref() {
-                Some(waypoint) => {
-                    match waypoint {
-                        Waypoint::Airport{airport, ..} => {
-                            airport.get_runway_count() as u32
-                        }
-                        _ => 0
-                    }
-                },
-                None => 0
+                Some(Waypoint::Airport { airport, .. }) => airport.get_runway_count() as u32,
+                _ => 0,
             }
         }
 
@@ -112,25 +105,20 @@ mod imp {
             let pos = position as usize;
 
             match self.waypoint().borrow().as_ref() {
-                Some(waypoint) => {
-                    match waypoint {
-                        Waypoint::Airport{airport, ..} => {
-                            if pos < airport.get_runway_count() {
-                                let runways = airport
-                                    .get_runways()
-                                    .read()
-                                    .expect("Could not get waypoint lock");
-                                runways.get(pos).map(|rwy| {
-                                    Object::from(RunwayObject::new(&rwy, airport.clone()))
-                                })
-                            } else {
-                                None
-                            }
-                        }
-                        _ => None
+                Some(Waypoint::Airport { airport, .. }) => {
+                    if pos < airport.get_runway_count() {
+                        let runways = airport
+                            .get_runways()
+                            .read()
+                            .expect("Could not get waypoint lock");
+                        runways.get(pos).map(|rwy| {
+                            Object::from(RunwayObject::new(rwy, airport.clone()))
+                        })
+                    } else {
+                        None
                     }
                 },
-                None => None
+                _ => None
             }
         }
     }

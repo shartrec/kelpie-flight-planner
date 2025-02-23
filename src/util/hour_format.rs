@@ -32,8 +32,8 @@ impl HourFormat {
     pub fn format(&self, time: &f64) -> String {
         // The degree portion is just the integer portion of the value
         let mut hours = time.floor();
-        let minsec = time.fract() * 60.0;
-        let mut min = minsec.floor();
+        let min_sec = time.fract() * 60.0;
+        let mut min = min_sec.floor();
         let sec = min.fract() * 60.0;
         // Correct for rounding errors
         if sec > 30.0 {

@@ -381,7 +381,7 @@ impl Geomagnetism {
         altitude: Option<f64>,
         calendar: Option<DateTime<Utc>>,
     ) {
-        let current_date = chrono::Utc::now();
+        let current_date = Utc::now();
 
         let date = calendar.unwrap_or(current_date);
 
