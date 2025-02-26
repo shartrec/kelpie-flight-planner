@@ -26,7 +26,7 @@ use std::error::Error;
 
 use serde::Deserialize;
 
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
 use crate::preference::{FGFS_LINK_ENABLED, FGFS_LINK_HOST, FGFS_LINK_PORT};
 
 #[derive(Deserialize)]
@@ -66,12 +66,12 @@ impl FGProperty {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AircraftPositionInfo {
-    position: Coordinate,
+    position: Point,
     heading: f64,
 }
 
 impl AircraftPositionInfo {
-    pub(crate) fn get_position(&self) -> &Coordinate {
+    pub(crate) fn get_position(&self) -> &Point {
         &self.position
     }
 
@@ -92,7 +92,7 @@ pub fn get_aircraft_position() -> Option<AircraftPositionInfo> {
         let latitude = fetch_property(&format!("{}/position/latitude-deg", base_url));
         let heading = fetch_property(&format!("{}/orientation/heading-deg", base_url));
         if longitude.is_ok() && latitude.is_ok() && heading.is_ok() {
-            let position = Coordinate::new(latitude.unwrap_or(0.0), longitude.unwrap_or(0.0));
+            let position = Point::new(longitude.unwrap_or(0.0), latitude.unwrap_or(0.0));
             let heading = heading.unwrap_or(0.0);
             return Some(AircraftPositionInfo { position, heading });
         }

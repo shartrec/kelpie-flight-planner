@@ -30,7 +30,7 @@ use std::sync::{Arc, RwLock};
 use flate2::read::GzDecoder;
 use log::{error, warn};
 
-use crate::earth::coordinate::Coordinate;
+use geo::{Bearing, Distance, Geodesic, Point};
 use crate::model::airport::{Airport, AirportType, LayoutNode, Runway, RunwayType, Taxiway};
 use crate::model::location::Location;
 
@@ -188,9 +188,10 @@ impl AirportParserFG850 {
                     tokenizer.next(); // TDZ flag
                     tokenizer.next(); // REIL flag
 
-                    let c1 = Coordinate::new(r_lat, r_long);
-                    let c2 = Coordinate::new(r1_lat, r1_long);
-                    let r_length = c1.distance_to(&c2) * 6076.0;
+                    let c1 = Point::new(r_long, r_lat);
+                    let c2 = Point::new(r1_long, r1_lat);
+                    // TODO: Fix runway length calculation to feet
+                    let r_length = Geodesic::distance(c1.clone(), c2) * 6076.0;
                     if r_length > max_length {
                         max_length = r_length;
                         latitude = (r_lat + r1_lat) / 2.0;
@@ -364,11 +365,11 @@ impl AirportParserFG850 {
                 let r1_lat = token_f64(tokenizer.next());
                 let r1_long = token_f64(tokenizer.next());
 
-                let c1 = Coordinate::new(r_lat, r_long);
-                let c2 = Coordinate::new(r1_lat, r1_long);
+                let c1 = Point::new(r_long, r_lat);
+                let c2 = Point::new(r1_long, r1_lat);
 
-                let r_length = (c1.distance_to(&c2) * 6076.0) as i32;
-                let r_hdg = c1.bearing_to(&c2).to_degrees();
+                let r_length = (Geodesic::distance(c1.clone(), c2) * 6076.0) as i32;
+                let r_hdg = Geodesic::bearing(c1.clone(), c2);
 
                 let lat = (r_lat + r1_lat) / 2.0;
                 let long = (r_long + r1_long) / 2.0;

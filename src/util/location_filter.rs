@@ -27,7 +27,7 @@ use adw::subclass::prelude::ObjectSubclassIsExt;
 use gtk::CustomFilter;
 use regex_lite::{Regex, RegexBuilder};
 
-use crate::earth::coordinate::Coordinate;
+use geo::{Bearing, Distance, Geodesic, Point};
 use crate::model::airport_object::AirportObject;
 use crate::model::fix_object::FixObject;
 use crate::model::location::Location;
@@ -151,18 +151,18 @@ impl Filter for IdFilter {
 }
 // Range filer for determining if a coordinate is within the specified distance of another
 pub struct RangeFilter {
-    this: Coordinate,
+    this: Point,
     range: f64,
     rough_lat_sep: f64,
     rough_long_sep: f64,
 }
 
 impl RangeFilter {
-    pub fn new(this: Coordinate, range: f64) -> Self {
+    pub fn new(this: Point, range: f64) -> Self {
         // We do a little optimization here rather than calculating
         // all distances accurately; we make a quick rough calculation to exclude many coordinates
         let rough_lat_sep = range / 60.0;
-        let x = this.get_latitude().to_radians().cos();
+        let x = this.y().to_radians().cos();
         let rough_long_sep = if x < 0.01 { 181.0 } else { range / (60.0 * x) };
 
         Self {
@@ -178,22 +178,22 @@ impl Filter for RangeFilter {
     // returns true if the coordinate passes the filter
     fn filter(&self, location: &dyn Location) -> bool {
         let other = location.get_loc();
-        if ((self.this.get_latitude() - other.get_latitude()).abs() < self.rough_lat_sep)
-            & ((self.this.get_longitude() - other.get_longitude()).abs() < self.rough_long_sep)
+        if ((self.this.y() - other.y()).abs() < self.rough_lat_sep)
+            & ((self.this.x() - other.x()).abs() < self.rough_long_sep)
         {
-            self.this.distance_to(other) < self.range
+            Geodesic::distance(self.this, *other) < self.range
         } else {
             false
         }
     }
 }
 pub struct InverseRangeFilter {
-    this: Coordinate,
+    this: Point,
     range: f64,
 }
 
 impl InverseRangeFilter {
-    pub fn new(this: Coordinate, range: f64) -> Self {
+    pub fn new(this: Point, range: f64) -> Self {
         Self {
             this,
             range,
@@ -205,20 +205,20 @@ impl Filter for InverseRangeFilter {
     // returns true if the coordinate passes the filter
     fn filter(&self, location: &dyn Location) -> bool {
         let other = location.get_loc();
-        self.this.distance_to(other) >= self.range
+        Geodesic::distance(self.this, *other) >= self.range
     }
 }
 
 pub struct DeviationFilter {
-    from: Coordinate,
-    to: Coordinate,
+    from: Point,
+    to: Point,
     max_deviation: f64,
     heading_from: f64,
     heading_to: f64,
 }
 
 impl DeviationFilter {
-    pub fn new(from: Coordinate, to: Coordinate, heading_from: f64, heading_to: f64,max_deviation: f64) -> Self {
+    pub fn new(from: Point, to: Point, heading_from: f64, heading_to: f64, max_deviation: f64) -> Self {
         Self {
             from,
             to,
@@ -241,9 +241,9 @@ impl Filter for DeviationFilter {
     // returns true if the coordinate passes the filter
     fn filter(&self, location: &dyn Location) -> bool {
         let deviation_to =
-            self.get_deviation(self.heading_from, self.from.bearing_to_deg(location.get_loc()));
+            self.get_deviation(self.heading_from, Geodesic::bearing(self.from, *location.get_loc()));
         let deviation_from =
-            self.get_deviation(self.heading_to, location.get_loc().bearing_to_deg(&self.to));
+            self.get_deviation(self.heading_to, Geodesic::bearing(*location.get_loc(), self.to));
 
         deviation_to < self.max_deviation && deviation_from < self.max_deviation
     }

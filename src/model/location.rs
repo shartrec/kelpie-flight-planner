@@ -22,16 +22,21 @@
  *
  */
 use std::any::Any;
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
+use crate::util::lat_long_format::LatLongFormat;
 
 pub trait Location: Any {
     fn get_elevation(&self) -> &i32;
     fn get_id(&self) -> &str;
-    fn get_lat(&self) -> &f64;
-    fn get_lat_as_string(&self) -> String;
-    fn get_long(&self) -> &f64;
-    fn get_long_as_string(&self) -> String;
-    fn get_loc(&self) -> &Coordinate;
+    fn get_lat(&self) -> f64;
+    fn get_lat_as_string(&self) -> String {
+        LatLongFormat::lat_format().format(self.get_lat())
+    }
+    fn get_long(&self) -> f64;
+    fn get_long_as_string(&self) -> String {
+        LatLongFormat::long_format().format(self.get_long())
+    }
+    fn get_loc(&self) -> &Point;
     fn get_name(&self) -> &str;
     fn as_any(&self) -> &dyn Any;
 }

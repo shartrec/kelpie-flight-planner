@@ -33,7 +33,7 @@ use glm::*;
 use gtk::GLArea;
 use adw::prelude::WidgetExt;
 
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
 use crate::earth::spherical_projector::SphericalProjector;
 use crate::model::plan::Plan;
 use crate::util::fg_link::AircraftPositionInfo;
@@ -188,8 +188,8 @@ pub struct Renderer {
     aircraft_renderer: RefCell<AircraftRenderer>,
 
     zoom_level: Cell<f32>,
-    map_centre: RefCell<Coordinate>,
-    last_map_centre: RefCell<Coordinate>,
+    map_centre: RefCell<Point>,
+    last_map_centre: RefCell<Point>,
 }
 
 impl Renderer {
@@ -221,8 +221,8 @@ impl Renderer {
             plan_renderer: RefCell::new(None),
             aircraft_renderer: RefCell::new(aircraft_renderer),
             zoom_level: Cell::new(1.0),
-            map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
-            last_map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
+            map_centre: RefCell::new(Point::new(0.0, 0.0)),
+            last_map_centre: RefCell::new(Point::new(0.0, 0.0)),
         }
     }
 
@@ -250,11 +250,11 @@ impl Renderer {
         self.aircraft_renderer.borrow().set_zoom_level(zoom);
     }
 
-    pub fn get_map_centre(&self) -> Coordinate {
+    pub fn get_map_centre(&self) -> Point {
         self.map_centre.borrow().clone()
     }
 
-    pub fn set_map_centre(&self, centre: Coordinate, fast: bool) {
+    pub fn set_map_centre(&self, centre: Point, fast: bool) {
         self.map_centre.replace(centre.clone());
         if fast {
             self.last_map_centre.replace(centre.clone());
@@ -367,8 +367,8 @@ impl Renderer {
 
         trans = translate(&trans, &vec3(0., 0., 0.001));
         trans = scale(&trans, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
-        trans = rotate(&trans, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1., 0., 0.));
-        trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
+        trans = rotate(&trans, -self.last_map_centre.borrow().y().to_radians() as f32, &vec3(1., 0., 0.));
+        trans = rotate(&trans, self.last_map_centre.borrow().x().to_radians() as f32, &vec3(0., 1., 0.));
         trans = translate(&trans, &vec3(0., 0., -0.001));
         trans
     }
@@ -446,12 +446,12 @@ impl Renderer {
         // This updates the last_centre position which is where we actually draw
         // and returns true if we have reached the true centre as requested
 
-        let req_lat = *self.map_centre.borrow().get_latitude();
-        let mut last_lat = *self.last_map_centre.borrow().get_latitude();
+        let req_lat = self.map_centre.borrow().y();
+        let mut last_lat = self.last_map_centre.borrow().y().clone();
         let mut r_lat_inc = (req_lat - last_lat) / 20.0;
 
-        let req_long = *self.map_centre.borrow().get_longitude();
-        let mut last_long = *self.last_map_centre.borrow().get_longitude();
+        let req_long = self.map_centre.borrow().x();
+        let mut last_long = self.last_map_centre.borrow().x().clone();
 
         let mut r_long_inc = req_long - last_long;
         if r_long_inc < -180.0 {
@@ -490,7 +490,7 @@ impl Renderer {
             if last_long > 180.0 {
                 last_long -= 360.0;
             }
-            self.last_map_centre.replace(Coordinate::new(last_lat, last_long));
+            self.last_map_centre.replace(Point::new(last_long, last_lat));
             false
         }
     }

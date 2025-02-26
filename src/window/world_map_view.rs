@@ -37,19 +37,19 @@ mod imp {
     use std::rc::Rc;
     use std::sync::Arc;
     use adw::gdk::ModifierType;
-    use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton, EventControllerScroll, EventControllerScrollFlags};
+    use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton, EventControllerScroll, EventControllerScrollFlags, graphene};
     use gtk::gdk::Rectangle;
     use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext, Propagation};
     use gtk::glib::subclass::InitializingObject;
-    use gtk::graphene::Point;
+    // use gtk::graphene::Point;
     use adw::prelude::*;
     use adw::subclass::prelude::*;
     use log::error;
     use scheduling::SchedulerHandle;
 
     use crate::{earth, event};
-    use crate::earth::coordinate::Coordinate;
+    use geo::{GeodesicDistance, Point};
     use crate::event::Event;
     use crate::model::airport::{Airport, AirportType};
     use crate::model::location::Location;
@@ -146,7 +146,7 @@ mod imp {
             self.scheduler_handle.replace(Some(recurring_handle));
         }
 
-        pub fn center_map(&self, point: Coordinate) {
+        pub fn center_map(&self, point: Point) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
                 renderer.set_map_centre(point, false);
                 center_scrollbar(&self.map_window.hadjustment());
@@ -155,7 +155,7 @@ mod imp {
             }
         }
 
-        pub fn get_center_map(&self) -> Option<Coordinate> {
+        pub fn get_center_map(&self) -> Option<Point> {
             self.renderer.borrow().as_ref(). map(|renderer| {
                 renderer.get_map_centre()
             })
@@ -168,10 +168,10 @@ mod imp {
             }
         }
 
-        fn unproject(&self, x: f64, y: f64) -> Result<Coordinate, String> {
+        fn unproject(&self, x: f64, y: f64) -> Result<Point, String> {
             match self.renderer.borrow().as_ref().unwrap().get_cord_from_win(&self.gl_area, x as f32, y as f32) {
                 Ok(point) => {
-                    Ok(Coordinate::new(point[0] as f64, point[1] as f64))
+                    Ok(Point::new(point[1] as f64, point[0] as f64))
                 }
                 Err(x) => Err(x)
             }
@@ -213,7 +213,7 @@ mod imp {
             self.map_window.vadjustment().set_value(va_value);
         }
 
-        fn find_airport_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
+        fn find_airport_for_point(&self, pos: Point) -> Option<Arc<Airport>> {
             let zoom = self.zoom_level.get();
             let range = 2.0 / zoom;
 
@@ -230,13 +230,13 @@ mod imp {
 
                 let airports = earth::get_earth_model().get_airports().read().unwrap();
                 let airport = airports.iter().filter(|a| {
-                    (f64::abs(pos.get_latitude() - a.get_lat()) < range as f64)
-                        && (f64::abs(pos.get_longitude() - a.get_long()) < range as f64)
+                    (f64::abs(pos.y() - a.get_lat()) < range as f64)
+                        && (f64::abs(pos.x() - a.get_long()) < range as f64)
                         && (a.get_max_runway_length() > rwl || (inc_heli && a.get_type().unwrap() == AirportType::Heliport))
                 })
                     .min_by(|a, b| {
-                        a.get_loc().distance_to(&pos)
-                            .partial_cmp(&b.get_loc().distance_to(&pos))
+                        a.get_loc().geodesic_distance(&pos)
+                            .partial_cmp(&b.get_loc().geodesic_distance(&pos))
                             .unwrap_or(Equal)
                     });
                 if let Some(airport) = airport {
@@ -246,7 +246,7 @@ mod imp {
 
             None
         }
-        fn find_navaid_for_point(&self, pos: Coordinate) -> Option<Arc<Navaid>> {
+        fn find_navaid_for_point(&self, pos: Point) -> Option<Arc<Navaid>> {
             let zoom = self.zoom_level.get();
             let range = 2.0 / zoom;
 
@@ -256,13 +256,13 @@ mod imp {
 
                 let navaids = earth::get_earth_model().get_navaids().read().unwrap();
                 let navaid = navaids.iter().filter(|a| {
-                    (f64::abs(pos.get_latitude() - a.get_lat()) < range as f64)
-                        && (f64::abs(pos.get_longitude() - a.get_long()) < range as f64)
+                    (f64::abs(pos.y() - a.get_lat()) < range as f64)
+                        && (f64::abs(pos.x() - a.get_long()) < range as f64)
                         && (inc_ndb || a.get_type() == NavaidType::Vor)
                 })
                     .min_by(|a, b| {
-                        a.get_loc().distance_to(&pos)
-                            .partial_cmp(&b.get_loc().distance_to(&pos))
+                        a.get_loc().geodesic_distance(&pos)
+                            .partial_cmp(&b.get_loc().geodesic_distance(&pos))
                             .unwrap_or(Equal)
                     });
                 if let Some(navaid) = navaid {
@@ -349,7 +349,7 @@ mod imp {
 
                     if let Some(long) = pref.get::<f64>("map-centre-long") {
                         if let Some(lat) = pref.get::<f64>("map-centre-lat") {
-                            renderer.set_map_centre(Coordinate::new(lat, long), true);
+                            renderer.set_map_centre(Point::new(lat, long), true);
                         }
                     }
 
@@ -362,8 +362,8 @@ mod imp {
 
                 if let Some(renderer) = window.renderer.borrow().as_ref(){
                     let centre = renderer.get_map_centre();
-                    pref.put("map-centre-long", centre.get_longitude());
-                    pref.put("map-centre-lat", centre.get_latitude());
+                    pref.put("map-centre-long", centre.x());
+                    pref.put("map-centre-lat", centre.y());
                 }
 
                 if let Some(context) = area.context() {
@@ -420,7 +420,7 @@ mod imp {
             let gesture = gtk::GestureClick::new();
             gesture.set_button(3);
             gesture.connect_released(clone!(#[weak(rename_to = view)] self, move |gesture, _n, x, y| {
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(x as f32, y as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(x as f32, y as f32)) {
                     let airport = match view.unproject(point.x() as f64, point.y() as f64) {
                         Ok(pos) => {
                             view.find_airport_for_point(pos)
@@ -487,7 +487,7 @@ mod imp {
 
                             let old_centre = view.renderer.borrow().as_ref().unwrap().get_map_centre();
 
-                            let mut new_lat = old_centre.get_latitude() + (old_lat_long.get_latitude() - lat_long.get_latitude());
+                            let mut new_lat = old_centre.y() + (old_lat_long.y() - lat_long.y());
                             if new_lat < -90.0 {
                                 new_lat = -180.0 - new_lat;
                             }
@@ -495,7 +495,7 @@ mod imp {
                                 new_lat = 180.0 - new_lat;
                             }
 
-                            let mut new_long = old_centre.get_longitude() + (old_lat_long.get_longitude() - lat_long.get_longitude());
+                            let mut new_long = old_centre.x() + (old_lat_long.x() - lat_long.x());
                             if new_long < -180.0 {
                                 new_long += 360.0;
                             }
@@ -503,7 +503,7 @@ mod imp {
                                 new_long -= 360.0;
                             }
 
-                            view.renderer.borrow().as_ref().unwrap().set_map_centre(Coordinate::new(new_lat, new_long), true);
+                            view.renderer.borrow().as_ref().unwrap().set_map_centre(Point::new(new_lat, new_long), true);
                             view.gl_area.queue_draw();
                         };
                     view.drag_last.replace(Some([x_start + x, y_start + y]));
@@ -559,7 +559,7 @@ mod imp {
             let action = SimpleAction::new("view_airport", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(airport) = view.find_airport_for_point(loc) {
                             if let Some(airport_map_view) = get_airport_map_view(&view.map_window.get()) {
@@ -576,7 +576,7 @@ mod imp {
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(airport) = view.find_airport_for_point(loc) {
                             if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
@@ -593,7 +593,7 @@ mod imp {
             let action = SimpleAction::new("add_nav_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(navaid) = view.find_navaid_for_point(loc) {
                             if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
@@ -610,7 +610,7 @@ mod imp {
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(airport_view) = get_airport_view(&view.map_window.get()) {
                             show_airport_view(&view.map_window.get());
@@ -624,7 +624,7 @@ mod imp {
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(navaid_view) = get_navaid_view(&view.map_window.get()) {
                             show_navaid_view(&view.map_window.get());
@@ -638,7 +638,7 @@ mod imp {
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
+                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &graphene::Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
                     if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
                         if let Some(fix_view) = get_fix_view(&view.map_window.get()) {
                             show_fix_view(&view.map_window.get());

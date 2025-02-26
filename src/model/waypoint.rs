@@ -25,25 +25,25 @@
 use std::cell::Cell;
 use std::sync::Arc;
 
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
 use crate::model::location::Location;
-
+use crate::util::lat_long_format::LatLongFormat;
 use super::{airport::Airport, fix::Fix, navaid::Navaid};
 
 #[derive(Clone, PartialEq)]
 pub enum Waypoint {
     Simple {
-        loc: Coordinate,
+        loc: Point,
         elevation: Cell<i32>,
         locked: bool,
     },
     Toc {
-        loc: Coordinate,
+        loc: Point,
         elevation: Cell<i32>,
         locked: bool,
     },
     Bod {
-        loc: Coordinate,
+        loc: Point,
         elevation: Cell<i32>,
         locked: bool,
     },
@@ -120,7 +120,7 @@ impl Waypoint {
         }
     }
 
-    pub(crate) fn get_loc(&self) -> &Coordinate {
+    pub(crate) fn get_loc(&self) -> &Point {
         match self {
             Waypoint::Simple { loc, .. } => loc,
             Waypoint::Toc { loc, .. } => loc,
@@ -131,8 +131,8 @@ impl Waypoint {
         }
     }
 
-    pub fn get_lat(&self) -> &f64 {
-        self.get_loc().get_latitude()
+    pub fn get_lat(&self) -> f64 {
+        self.get_loc().y()
     }
 
     pub fn get_freq(&self) -> Option<&f64> {
@@ -142,15 +142,16 @@ impl Waypoint {
         }
     }
     pub(crate) fn get_lat_as_string(&self) -> String {
-        self.get_loc().get_latitude_as_string()
+        LatLongFormat::long_format().format(self.get_lat())
     }
 
-    pub fn get_long(&self) -> &f64 {
-        self.get_loc().get_longitude()
+    pub fn get_long(&self) -> f64 {
+        self.get_loc().x()
     }
 
     pub(crate) fn get_long_as_string(&self) -> String {
-        self.get_loc().get_longitude_as_string()
+        LatLongFormat::long_format().format(self.get_long())
+
     }
 
     #[allow(dead_code)]
@@ -234,16 +235,16 @@ impl Waypoint {
 #[cfg(test)]
 mod tests {
     use std::cell::Cell;
-    use crate::earth::coordinate::Coordinate;
+    use geo::Point;
     use crate::model::test_utils::tests::make_airport;
     use crate::model::waypoint::Waypoint;
 
     #[test]
     fn test_equality() {
         let w1 =
-            Waypoint::Simple{loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false};
+            Waypoint::Simple{loc: Point::new(111.0, 13.0), elevation: Cell::new(10), locked: false};
         let w2 =
-            Waypoint::Simple{loc: Coordinate::new(23.0, 121.0), elevation: Cell::new(20), locked: false};
+            Waypoint::Simple{loc: Point::new(121.0, 23.0), elevation: Cell::new(20), locked: false};
 
         let a = Box::new(w1.clone());
         let b = Box::new(w1.clone());
@@ -270,7 +271,7 @@ mod tests {
     #[test]
     fn test_equality_diff_type() {
         let w1 =
-            Waypoint::Simple { loc: Coordinate::new(13.0, 111.0), elevation: Cell::new(10), locked: false };
+            Waypoint::Simple { loc: Point::new(111.0, 13.0), elevation: Cell::new(10), locked: false };
         let ap = make_airport("YSSY");
         let w2 = Waypoint::Airport {airport: ap, locked: false};
         let a = Box::new(w1.clone());

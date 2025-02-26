@@ -21,7 +21,7 @@
  *      Trevor Campbell
  *
  */
-use crate::earth::coordinate::Coordinate;
+use geo::{GeodesicDistance, Point};
 use crate::model::plan::Plan;
 use crate::preference::UNITS;
 use crate::util::distance_format::DistanceFormat;
@@ -93,7 +93,7 @@ impl Sector {
             let mut close_wp = None;
 
             if let Some(airport) = &self.airport_start {
-                let dist = airport.get_loc().distance_to(waypoint.get_loc());
+                let dist = airport.get_loc().geodesic_distance(waypoint.get_loc());
                 if dist < min_distance {
                     min_distance = dist;
                     close_wp = Some(airport);
@@ -101,7 +101,7 @@ impl Sector {
                 }
             }
             if let Some(airport) = &self.airport_end {
-                let dist = airport.get_loc().distance_to(waypoint.get_loc());
+                let dist = airport.get_loc().geodesic_distance(waypoint.get_loc());
                 if dist < min_distance {
                     min_distance = dist;
                     close_wp = Some(airport);
@@ -111,7 +111,7 @@ impl Sector {
 
             // iterate over waypoints to get closest
             for (i, wp) in self.waypoints.iter().enumerate() {
-                let dist = wp.get_loc().distance_to(waypoint.get_loc());
+                let dist = wp.get_loc().geodesic_distance(waypoint.get_loc());
                 if dist < min_distance {
                     min_distance = dist;
                     close_wp = Some(wp);
@@ -132,7 +132,7 @@ impl Sector {
                 let prior_wp =
                     if close_wp_index == 0 {
                         self.get_start().unwrap_or_else(|| Waypoint::Simple {
-                            loc: Coordinate::new(0.0, 0.0),
+                            loc: Point::new(0.0, 0.0),
                             elevation: Cell::new(0),
                             locked: false,
                         })
@@ -143,7 +143,7 @@ impl Sector {
                 let next_wp =
                     if close_wp_index == (self.get_waypoint_count() - 1) as i32 {
                         self.get_end().unwrap_or_else(|| Waypoint::Simple {
-                            loc: Coordinate::new(0.0, 0.0),
+                            loc: Point::new(0.0, 0.0),
                             elevation: Cell::new(0),
                             locked: false,
                         })
@@ -152,12 +152,12 @@ impl Sector {
                     };
 
                 // now calculate the paths P_C_W_N and P_W_C_N
-                let dist_pcwn = prior_wp.get_loc().distance_to(close_wp.get_loc())
-                    + close_wp.get_loc().distance_to(waypoint.get_loc())
-                    + waypoint.get_loc().distance_to(next_wp.get_loc());
-                let dist_pwcn = prior_wp.get_loc().distance_to(waypoint.get_loc())
-                    + waypoint.get_loc().distance_to(close_wp.get_loc())
-                    + close_wp.get_loc().distance_to(next_wp.get_loc());
+                let dist_pcwn = prior_wp.get_loc().geodesic_distance(close_wp.get_loc())
+                    + close_wp.get_loc().geodesic_distance(waypoint.get_loc())
+                    + waypoint.get_loc().geodesic_distance(next_wp.get_loc());
+                let dist_pwcn = prior_wp.get_loc().geodesic_distance(waypoint.get_loc())
+                    + waypoint.get_loc().geodesic_distance(close_wp.get_loc())
+                    + close_wp.get_loc().geodesic_distance(next_wp.get_loc());
 
                 // Place waypoint so that the path is shortest
                 if dist_pcwn > dist_pwcn {
@@ -271,7 +271,7 @@ impl Sector {
     pub fn get_distance(&self, plan: &Plan) -> f64 {
         self.waypoints
             .iter()
-            .map(move |wp| plan.get_leg_distance_to(wp))
+            .map(move |wp| plan.get_leg_distance(wp))
             .reduce(|acc, t| acc + t)
             .unwrap_or(0.0)
     }
@@ -295,7 +295,7 @@ impl Default for Sector {
 mod tests {
     use std::cell::Cell;
 
-    use crate::earth::coordinate::Coordinate;
+    use geo::Point;
     use crate::model::test_utils::tests::make_airport;
     use crate::model::waypoint::Waypoint;
 
@@ -321,22 +321,22 @@ mod tests {
         s.set_start(Some(make_airport("YSSY")));
         s.set_end(Some(make_airport("YMLB")));
         let w1 = Waypoint::Simple {
-            loc: Coordinate::new(13.0, 111.0),
+            loc: Point::new(111.0, 13.0),
             elevation: Cell::new(10),
             locked: false,
         };
         let w2 = Waypoint::Simple {
-            loc: Coordinate::new(23.0, 121.0),
+            loc: Point::new(121.0, 23.0),
             elevation: Cell::new(20),
             locked: false,
         };
         let w3 = Waypoint::Simple {
-            loc: Coordinate::new(33.0, 131.0),
+            loc: Point::new(131.0, 33.0),
             elevation: Cell::new(30),
             locked: false,
         };
         let w4 = Waypoint::Simple {
-            loc: Coordinate::new(43.0, 141.0),
+            loc: Point::new(141.0, 43.0),
             elevation: Cell::new(40),
             locked: false,
         };

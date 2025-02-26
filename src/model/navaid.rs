@@ -22,7 +22,7 @@
  *
  */
 use std::any::Any;
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
 
 use super::location::Location;
 
@@ -30,7 +30,7 @@ use super::location::Location;
 pub struct Navaid {
     pub(crate) id: String,
     type_: NavaidType,
-    coordinate: Coordinate,
+    coordinate: Point,
     name: String,
     elevation: i32,
     freq: f64,
@@ -54,7 +54,7 @@ impl Navaid {
         Self {
             id,
             type_,
-            coordinate: Coordinate::new(latitude, longitude),
+            coordinate: Point::new(longitude, latitude),
             name,
             elevation,
             freq,
@@ -87,19 +87,13 @@ impl Location for Navaid {
     fn get_id(&self) -> &str {
         self.id.as_str()
     }
-    fn get_lat(&self) -> &f64 {
-        self.coordinate.get_latitude()
+    fn get_lat(&self) -> f64 {
+        self.coordinate.y()
     }
-    fn get_lat_as_string(&self) -> String {
-        self.coordinate.get_latitude_as_string()
+    fn get_long(&self) -> f64 {
+        self.coordinate.x()
     }
-    fn get_long(&self) -> &f64 {
-        self.coordinate.get_longitude()
-    }
-    fn get_long_as_string(&self) -> String {
-        self.coordinate.get_longitude_as_string()
-    }
-    fn get_loc(&self) -> &Coordinate {
+    fn get_loc(&self) -> &Point {
         &self.coordinate
     }
     fn get_name(&self) -> &str {

@@ -41,7 +41,6 @@ use crate::util::airport_parser::AirportParserFG850;
 use crate::util::fix_parser::FixParserFG;
 use crate::util::navaid_parser::NavaidParserFG;
 
-pub mod coordinate;
 pub mod geomagnetism;
 pub(crate) mod shapefile;
 pub(crate) mod spherical_projector;

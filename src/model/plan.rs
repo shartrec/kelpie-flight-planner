@@ -26,7 +26,10 @@ use std::path::PathBuf;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use crate::earth::coordinate::Coordinate;
+use geo::{Geodesic, Point};
+use geo::Distance;
+use geo::Bearing;
+
 use crate::earth::geomagnetism::Geomagnetism;
 use crate::model::waypoint::Waypoint;
 use crate::preference::{UNITS, USE_MAGNETIC_HEADINGS};
@@ -217,7 +220,7 @@ impl Plan {
     //	 @param loc
     //	 @return previous location
 
-    pub fn get_previous_location(&self, wp: &Waypoint) -> Option<Coordinate> {
+    pub fn get_previous_location(&self, wp: &Waypoint) -> Option<Point> {
         self.get_previous_waypoint(wp)
             .map(|wp| wp.get_loc().clone())
     }
@@ -247,9 +250,9 @@ impl Plan {
         let mut heading = 0.0;
 
         if let Some(prev) = self.get_previous_location(wp) {
-            heading = prev.bearing_to_deg(wp.get_loc());
+            heading = Geodesic::bearing(prev, *wp.get_loc());
             if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
-                let geo = Geomagnetism::new(*wp.get_lat(), *wp.get_long(), None, None);
+                let geo = Geomagnetism::new(wp.get_lat(), wp.get_long(), None, None);
                 heading -= geo.get_declination()
             }
             if heading < 0.0 {
@@ -264,9 +267,9 @@ impl Plan {
      * @param loc
      * @return double Distance
      */
-    pub fn get_leg_distance_to(&self, wp: &Waypoint) -> f64 {
+    pub fn get_leg_distance(&self, wp: &Waypoint) -> f64 {
         match self.get_previous_location(wp) {
-            Some(prev) => prev.distance_to(wp.get_loc()),
+            Some(prev) => Geodesic::distance(prev, *wp.get_loc()),
             None => 0.0,
         }
     }
@@ -294,7 +297,7 @@ impl Plan {
         let pref = crate::preference::manager();
         let units = pref.get::<String>(UNITS).unwrap_or("Nm".to_string());
         let distance_format = DistanceFormat::new(&units);
-        let distance = &self.get_leg_distance_to(wp);
+        let distance = &self.get_leg_distance(wp);
         distance_format.format(distance)
     }
     pub fn get_time_to(&self, waypoint: &Waypoint) -> f64 {
@@ -306,7 +309,7 @@ impl Plan {
         let tas = isa as f64 * (1.0 + (alt as f64 / 1000.0) * 0.02);
 
 
-        let leg_distance = self.get_leg_distance_to(waypoint);
+        let leg_distance = self.get_leg_distance(waypoint);
         leg_distance / tas
     }
 

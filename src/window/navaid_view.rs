@@ -38,7 +38,7 @@ mod imp {
     use gtk::glib::{clone, MainContext};
     use log::error;
 
-    use crate::earth::coordinate::Coordinate;
+    use geo::Point;
     use crate::earth::navaid_list_model::Navaids;
     use crate::event;
     use crate::event::Event;
@@ -152,7 +152,7 @@ mod imp {
                             return;
                         }
                     };
-                    let filter = RangeFilter::new(Coordinate::new(lat_as_float, long_as_float), 100.0);
+                    let filter = RangeFilter::new(Point::new(long_as_float, lat_as_float), 100.0);
                     combined_filter.add(Box::new(filter));
                 }
             }
@@ -196,13 +196,13 @@ mod imp {
             }
         }
 
-        pub fn search_near(&self, coordinate: &Coordinate) {
+        pub fn search_near(&self, coordinate: &Point) {
             self.navaid_search_name
                 .set_text("");
             self.navaid_search_lat
-                .set_text(&coordinate.get_latitude_as_string());
+                .set_text(LatLongFormat::lat_format().format(coordinate.y()).as_str());
             self.navaid_search_long
-                .set_text(&coordinate.get_longitude_as_string());
+                .set_text(LatLongFormat::long_format().format(coordinate.x()).as_str());
             self.navaid_search.emit_clicked();
         }
 
@@ -222,14 +222,14 @@ mod imp {
 
         fn get_lat_sorter() -> CustomSorter {
             let f = |a: Arc<Navaid>, b: Arc<Navaid>| {
-                Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
+                Ordering::from(a.get_lat().partial_cmp(&b.get_lat()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_long_sorter() -> CustomSorter {
             let f = |a: Arc<Navaid>, b: Arc<Navaid>| {
-                Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
+                Ordering::from(a.get_long().partial_cmp(&b.get_long()).unwrap())
             };
             Self::get_common_sorter(f)
         }

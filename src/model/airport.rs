@@ -28,18 +28,17 @@ use std::io::BufReader;
 use std::sync::{Arc, RwLock};
 
 use flate2::read;
+use geo::Point;
 use log::{error, warn};
 
 use crate::earth::{FEET_PER_DEGREE, get_earth_model};
-use crate::earth::coordinate::Coordinate;
 use crate::util::airport_parser::AirportParserFG850;
-
 use super::location::Location;
 
 #[derive(Clone)]
 pub struct Airport {
     id: String,
-    coordinate: Coordinate,
+    coordinate: Point,
     elevation: i32,
     control_tower: bool,
     runways: Arc<RwLock<Vec<Runway>>>,
@@ -66,7 +65,7 @@ impl Airport {
     ) -> Self {
         Self {
             id,
-            coordinate: Coordinate::new(latitude, longitude),
+            coordinate: Point::new(longitude, latitude),
             elevation,
             control_tower,
             runways: Arc::new(RwLock::new(Vec::new())),
@@ -190,10 +189,10 @@ impl Airport {
 
     pub fn calc_airport_extent(&self) -> [f64; 4] {
         // Start of by assuming just the airport with no runways or taxiways
-        let mut min_lat = *self.get_lat();
-        let mut max_lat = *self.get_lat();
-        let mut min_long = *self.get_long();
-        let mut max_long = *self.get_long();
+        let mut min_lat = self.get_lat();
+        let mut max_lat = self.get_lat();
+        let mut min_long = self.get_long();
+        let mut max_long = self.get_long();
 
         // for each runway get its extent
         for runway in self.runways.read().expect("Can't get airport lock").iter() {
@@ -308,7 +307,7 @@ impl Airport {
     }
 
     pub fn set_coordinate(&mut self, latitude: f64, longitude: f64,) {
-        self.coordinate = Coordinate::new(latitude, longitude);
+        self.coordinate = Point::new(longitude, latitude);
     }
 }
 
@@ -321,23 +320,15 @@ impl Location for Airport {
         self.id.as_str()
     }
 
-    fn get_lat(&self) -> &f64 {
-        self.coordinate.get_latitude()
+    fn get_lat(&self) -> f64 {
+        self.coordinate.y()
     }
 
-    fn get_lat_as_string(&self) -> String {
-        self.coordinate.get_latitude_as_string().clone()
+    fn get_long(&self) -> f64 {
+        self.coordinate.x()
     }
 
-    fn get_long(&self) -> &f64 {
-        self.coordinate.get_longitude()
-    }
-
-    fn get_long_as_string(&self) -> String {
-        self.coordinate.get_longitude_as_string().clone()
-    }
-
-    fn get_loc(&self) -> &Coordinate {
+    fn get_loc(&self) -> &Point {
         &self.coordinate
     }
 
@@ -360,7 +351,7 @@ impl Default for Airport {
     fn default() -> Self {
         Self {
             id: "".to_string(),
-            coordinate: Coordinate::new(0.0, 0.0),
+            coordinate: Point::new(0.0, 0.0),
             elevation: 0,
             control_tower: false,
             runways: Arc::new(RwLock::new(Vec::new())),

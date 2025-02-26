@@ -24,7 +24,6 @@
 #![forbid(unsafe_code)]
 
 use shapefile::Polygon;
-
 use crate::earth::spherical_projector::SphericalProjector;
 
 #[derive(Copy, Clone)]
@@ -197,7 +196,7 @@ impl GLShorelineBuilder {
                     let ring_start = vertices.len();
                     let ring_len = ring.len();
                     for point in ring.points() {
-                        let position = self.projector.project(&point.y, &point.x);
+                        let position = self.projector.project(point.y, point.x);
                         vertices.push(Vertex { position });
                     }
                     rings.push((ring_start, ring_len));

@@ -41,7 +41,7 @@ impl SphericalProjector {
      * @param lon
      * @return
      */
-    pub fn project(&self, lat: &f64, lon: &f64) -> [f32; 3] {
+    pub fn project(&self, lat: f64, lon: f64) -> [f32; 3] {
         let lat_rad: f32 = lat.to_radians() as f32;
         let lon_rad: f32 = lon.to_radians() as f32;
 

@@ -29,7 +29,7 @@ use std::path::Path;
 use adw::subclass::prelude::ObjectSubclassIsExt;
 use xmltree::Element;
 
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
 use crate::earth::get_earth_model;
 use crate::hangar::hangar::get_hangar;
 use crate::model::plan::Plan;
@@ -105,17 +105,17 @@ pub fn read_plan(file_path: &Path) -> Result<Plan, String> {
                 "TOC" => {
                     let lat = e.attributes.get("latitude").unwrap().parse::<f64>().unwrap_or(0.0);
                     let long = e.attributes.get("longitude").unwrap().parse::<f64>().unwrap_or(0.0);
-                    Some(Waypoint::Toc { loc: Coordinate::new(lat, long), elevation: Cell::new(0), locked: false })
+                    Some(Waypoint::Toc { loc: Point::new(long, lat), elevation: Cell::new(0), locked: false })
                 }
                 "BOD" => {
                     let lat = e.attributes.get("latitude").unwrap().parse::<f64>().unwrap_or(0.0);
                     let long = e.attributes.get("longitude").unwrap().parse::<f64>().unwrap_or(0.0);
-                    Some(Waypoint::Bod { loc: Coordinate::new(lat, long), elevation: Cell::new(0), locked: false })
+                    Some(Waypoint::Bod { loc: Point::new(long, lat), elevation: Cell::new(0), locked: false })
                 }
                 "GPS" => {
                     let lat = e.attributes.get("latitude").unwrap().parse::<f64>().unwrap_or(0.0);
                     let long = e.attributes.get("longitude").unwrap().parse::<f64>().unwrap_or(0.0);
-                    Some(Waypoint::Simple { loc: Coordinate::new(lat, long), elevation: Cell::new(0), locked: false })
+                    Some(Waypoint::Simple { loc: Point::new(long, lat), elevation: Cell::new(0), locked: false })
                 }
                 _ => {
                     None

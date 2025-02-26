@@ -40,7 +40,7 @@ mod imp {
     use std::rc::Rc;
     use std::sync::Arc;
 
-    use crate::earth::coordinate::Coordinate;
+    use geo::Point;
     use crate::event::Event;
     use crate::hangar::hangar::get_hangar;
     use crate::model::airport::Airport;
@@ -559,7 +559,7 @@ mod imp {
             event::manager().notify_listeners(Event::PlanChanged);
         }
 
-        fn get_selected_location(&self) -> Option<Coordinate> {
+        fn get_selected_location(&self) -> Option<Point> {
             let selection = self.plan_tree.model().unwrap().selection();
             if !selection.is_empty() {
                 let sel_pos = selection.nth(0);

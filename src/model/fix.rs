@@ -22,21 +22,21 @@
  *
  */
 use std::any::Any;
-use crate::earth::coordinate::Coordinate;
+use geo::Point;
 
 use super::location::Location;
 
 #[derive(Clone, PartialEq)]
 pub struct Fix {
     id: String,
-    coordinate: Coordinate,
+    coordinate: Point,
 }
 
 impl Fix {
     pub fn new(id: String, latitude: f64, longitude: f64) -> Self {
         Self {
             id,
-            coordinate: Coordinate::new(latitude, longitude),
+            coordinate: Point::new(longitude, latitude),
         }
     }
 }
@@ -50,23 +50,15 @@ impl Location for Fix {
         self.id.as_str()
     }
 
-    fn get_lat(&self) -> &f64 {
-        self.coordinate.get_latitude()
+    fn get_lat(&self) -> f64 {
+        self.coordinate.y()
     }
 
-    fn get_lat_as_string(&self) -> String {
-        self.coordinate.get_latitude_as_string().clone()
+    fn get_long(&self) -> f64 {
+        self.coordinate.x()
     }
 
-    fn get_long(&self) -> &f64 {
-        self.coordinate.get_longitude()
-    }
-
-    fn get_long_as_string(&self) -> String {
-        self.coordinate.get_longitude_as_string().clone()
-    }
-
-    fn get_loc(&self) -> &Coordinate {
+    fn get_loc(&self) -> &Point {
         &self.coordinate
     }
 

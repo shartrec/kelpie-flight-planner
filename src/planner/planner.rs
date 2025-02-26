@@ -25,7 +25,7 @@
 use std::cell::Cell;
 use std::sync::{Arc, RwLock};
 use crate::earth;
-use crate::earth::coordinate::Coordinate;
+use geo::{Bearing, Destination, Distance, Geodesic, Point};
 use crate::model::aircraft::Aircraft;
 use crate::model::fix::Fix;
 use crate::model::location::Location;
@@ -134,14 +134,14 @@ impl Planner<'_> {
     }
 
     fn add_navaids_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
-        let distance = from.get_loc().distance_to(to.get_loc());
+        let distance = Geodesic::distance(*from.get_loc(), *to.get_loc());
 
         if distance < self.max_leg_distance {
             return;
         }
 
-        let heading = from.get_loc().bearing_to(to.get_loc()).to_degrees();
-        let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
+        let heading = Geodesic::bearing(*from.get_loc(), *to.get_loc());
+        let midpoint = Geodesic::destination(*from.get_loc(), heading, distance / 2.0);
 
         if let Some(mid_nav_aid) =
             self.get_navaid_nearest_midpoint(from.get_loc(), to.get_loc(), &midpoint)
@@ -160,14 +160,14 @@ impl Planner<'_> {
     }
 
     fn add_fixes_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
-        let distance = from.get_loc().distance_to(to.get_loc());
+        let distance = Geodesic::distance(*from.get_loc(), *to.get_loc());
 
         if distance < self.max_leg_distance {
             return;
         }
 
-        let heading = from.get_loc().bearing_to(to.get_loc()).to_degrees();
-        let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
+        let heading = Geodesic::bearing(*from.get_loc(), *to.get_loc());
+        let midpoint = Geodesic::destination(*from.get_loc(), heading, distance / 2.0);
 
         if let Some(mid_fix_aid) =
             self.get_fix_nearest_midpoint(from.get_loc(), to.get_loc(), &midpoint)
@@ -187,13 +187,13 @@ impl Planner<'_> {
 
     fn get_navaid_nearest_midpoint(
         &self,
-        from: &Coordinate,
-        to: &Coordinate,
-        midpoint: &Coordinate,
+        from: &Point,
+        to: &Point,
+        midpoint: &Point,
     ) -> Option<Arc<Navaid>> {
-        let leg_distance = from.distance_to(to);
-        let heading_from = from.bearing_to_deg(midpoint);
-        let heading_to = midpoint.bearing_to_deg(to);
+        let leg_distance = Geodesic::distance(*from, *to);
+        let heading_from = Geodesic::bearing(*from, *midpoint);
+        let heading_to = Geodesic::bearing(*midpoint, *to);
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
@@ -217,7 +217,7 @@ impl Planner<'_> {
         self.get_nearest_navaids_with_filter(midpoint, Box::new(filter))
     }
 
-    fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Navaid>> {
+    fn get_navaid_nearest(&self, coord: &Point, max_range: f64) -> Option<Arc<Navaid>> {
 
         let mut filter = AndFilter::new();
         if self.vor_only {
@@ -230,7 +230,7 @@ impl Planner<'_> {
         self.get_nearest_navaids_with_filter(coord, Box::new(filter))
     }
 
-    fn get_nearest_navaids_with_filter(&self, midpoint: &Coordinate, filter: Box<dyn Filter>) -> Option<Arc<Navaid>> {
+    fn get_nearest_navaids_with_filter(&self, midpoint: &Point, filter: Box<dyn Filter>) -> Option<Arc<Navaid>> {
         let binding = self.navaids
             .read()
             .unwrap();
@@ -244,14 +244,14 @@ impl Planner<'_> {
         let mut nearest_vor = 100000.0;
         for navaid in near_aids {
             if self.vor_preferred && navaid.get_type() == NavaidType::Vor {
-                if midpoint.distance_to(navaid.get_loc()) < nearest_vor {
+                if Geodesic::distance(*midpoint, *navaid.get_loc()) < nearest_vor {
                     best_vor = Some(navaid.clone());
-                    nearest_vor = midpoint.distance_to(navaid.get_loc());
+                    nearest_vor =Geodesic::distance(*midpoint, *navaid.get_loc());
                 }
             }
-            if midpoint.distance_to(navaid.get_loc()) < nearest {
+            if Geodesic::distance(*midpoint, *navaid.get_loc()) < nearest {
                 best_loc = Some(navaid.clone());
-                nearest = midpoint.distance_to(navaid.get_loc());
+                nearest = Geodesic::distance(*midpoint, *navaid.get_loc());
             }
         }
 
@@ -263,13 +263,13 @@ impl Planner<'_> {
 
     fn get_fix_nearest_midpoint(
         &self,
-        from: &Coordinate,
-        to: &Coordinate,
-        midpoint: &Coordinate,
+        from: &Point,
+        to: &Point,
+        midpoint: &Point,
     ) -> Option<Arc<Fix>> {
-        let leg_distance = from.distance_to(to);
-        let heading_from = from.bearing_to_deg(midpoint);
-        let heading_to = midpoint.bearing_to_deg(to);
+        let leg_distance = Geodesic::distance(*from, *to);
+        let heading_from = Geodesic::bearing(*from, *midpoint);
+        let heading_to = Geodesic::bearing(*midpoint, *to);
 
         let range = leg_distance / 2.0; // - _min_leg_distance;
 
@@ -288,14 +288,14 @@ impl Planner<'_> {
     }
 
     #[allow(dead_code)]
-    fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Fix>> {
+    fn get_fix_nearest(&self, coord: &Point, max_range: f64) -> Option<Arc<Fix>> {
 
         let filter = RangeFilter::new(coord.clone(), max_range);
 
         self.get_fix_nearest_with_filter(coord, Box::new(filter))
     }
 
-    fn get_fix_nearest_with_filter(&self, coord: &Coordinate, f: Box<dyn Filter>) -> Option<Arc<Fix>> {
+    fn get_fix_nearest_with_filter(&self, coord: &Point, f: Box<dyn Filter>) -> Option<Arc<Fix>> {
         let binding = self.fixes
             .read()
             .unwrap();
@@ -307,9 +307,9 @@ impl Planner<'_> {
         let mut nearest = 100000.0;
 
         for fix in near_aids {
-            if coord.distance_to(fix.get_loc()) < nearest {
+            if Geodesic::distance(*coord, *fix.get_loc()) < nearest {
                 best_loc = Some(fix.clone());
-                nearest = coord.distance_to(fix.get_loc());
+                nearest = Geodesic::distance(*coord, *fix.get_loc());
             }
         }
         best_loc
@@ -317,14 +317,14 @@ impl Planner<'_> {
 
     #[allow(dead_code)]
     fn add_waypoints_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
-        let distance = from.get_loc().distance_to(to.get_loc());
+        let distance = Geodesic::distance(*from.get_loc(), *to.get_loc());
 
         if distance < self.max_leg_distance {
             return;
         }
 
-        let heading = from.get_loc().bearing_to(to.get_loc()).to_degrees();
-        let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
+        let heading = Geodesic::bearing(*from.get_loc(), *to.get_loc());
+        let midpoint = Geodesic::destination(*from.get_loc(), heading, distance / 2.0);
 
         let wp = Waypoint::Simple {
             loc: midpoint,
@@ -353,14 +353,14 @@ impl Planner<'_> {
         let orig_len = plan.len();
         for i in 0..orig_len {
             let wp = plan[i + extra].clone();
-            let leg_length = prev_wp.get_loc().distance_to(wp.get_loc());
+            let leg_length = Geodesic::distance(*prev_wp.get_loc() ,*wp.get_loc());
             if leg_length >= max_leg_interval {
                 extra += self.add_waypoints_to_leg(&prev_wp, &wp, plan, i + extra, leg_length);
             }
             prev_wp = wp;
         }
         // Try for the final leg
-        let leg_length = prev_wp.get_loc().distance_to(to.get_loc());
+        let leg_length = Geodesic::distance(*prev_wp.get_loc(), *to.get_loc());
         if leg_length >= max_leg_interval {
             self.add_waypoints_to_leg(&prev_wp, to, plan, plan.len(), leg_length);
         }
@@ -386,8 +386,8 @@ impl Planner<'_> {
 
         let extra_points = new_leg_count - 1;
         for a_pos in 0..extra_points {
-            let heading = last_wp.get_loc().bearing_to_deg(to.get_loc());
-            let x_loc = last_wp.get_loc().coordinate_at(interval, heading);
+            let heading = Geodesic::bearing(*last_wp.get_loc(), *to.get_loc());
+            let x_loc = Geodesic::destination(*last_wp.get_loc(), heading, interval);
             let wp = Waypoint::Simple {
                 loc: x_loc,
                 elevation: Cell::new(0),
@@ -482,13 +482,12 @@ pub fn add_bod(
 
     for i in (0..waypoints.len()).rev() {
         let wp = &waypoints[i];
-        let leg_length = wp.get_loc().distance_to(next_wp.get_loc());
+        let leg_length = Geodesic::distance(*wp.get_loc(), *next_wp.get_loc());
 
         if leg_length >= distance_remaining {
-            let heading = wp.get_loc().bearing_to_deg(next_wp.get_loc());
-            let bod_loc = wp
-                .get_loc()
-                .coordinate_at(leg_length - distance_remaining, heading);
+            let heading = Geodesic::bearing(*wp.get_loc(), *next_wp.get_loc());
+            let bod_loc =
+                Geodesic::destination(*wp.get_loc(), heading, leg_length - distance_remaining);
             bod = Some(Waypoint::Bod {
                 loc: bod_loc,
                 elevation: Cell::new(max_alt),
@@ -504,13 +503,11 @@ pub fn add_bod(
     }
 
     if !done {
-        let leg_length = from.get_loc().distance_to(&next_wp.get_loc().clone());
+        let leg_length = Geodesic::distance(*from.get_loc(), next_wp.get_loc().clone());
 
         if leg_length >= distance_remaining {
-            let heading = from.get_loc().bearing_to_deg(next_wp.get_loc());
-            let bod_loc = from
-                .get_loc()
-                .coordinate_at(leg_length - distance_remaining, heading);
+            let heading = Geodesic::bearing(*from.get_loc(), *next_wp.get_loc());
+            let bod_loc = Geodesic::destination(*from.get_loc(), heading, leg_length - distance_remaining);
             bod = Some(Waypoint::Bod {
                 loc: bod_loc,
                 elevation: Cell::new(max_alt),
@@ -554,11 +551,11 @@ pub fn add_toc(
     let mut toc = None;
 
     for (i, wp) in waypoints.iter().enumerate() {
-        let leg_length = prev_wp.get_loc().distance_to(wp.get_loc());
+        let leg_length = Geodesic::distance(*prev_wp.get_loc(), *wp.get_loc());
 
         if leg_length >= distance_remaining {
-            let heading = prev_wp.get_loc().bearing_to_deg(wp.get_loc());
-            let toc_loc = prev_wp.get_loc().coordinate_at(distance_remaining, heading);
+            let heading = Geodesic::bearing(*prev_wp.get_loc(), *wp.get_loc());
+            let toc_loc = Geodesic::destination(*prev_wp.get_loc(), heading, distance_remaining);
             toc = Some(Waypoint::Toc {
                 loc: toc_loc,
                 elevation: Cell::new(max_alt),
@@ -574,11 +571,11 @@ pub fn add_toc(
     }
 
     if !done {
-        let leg_length = prev_wp.get_loc().distance_to(to.get_loc());
+        let leg_length = Geodesic::distance(*prev_wp.get_loc(), *to.get_loc());
 
         if leg_length >= distance_remaining {
-            let heading = prev_wp.get_loc().bearing_to_deg(to.get_loc());
-            let toc_loc = prev_wp.get_loc().coordinate_at(distance_remaining, heading);
+            let heading = Geodesic::bearing(*prev_wp.get_loc(), *to.get_loc());
+            let toc_loc = Geodesic::destination(*prev_wp.get_loc(), heading, distance_remaining);
             let wp = Waypoint::Toc {
                 loc: toc_loc,
                 elevation: Cell::new(max_alt),
@@ -605,12 +602,12 @@ fn calc_max_altitude(
     let mut prev_wp = from;
 
     waypoints.iter().for_each(|wp| {
-        let leg_length = prev_wp.get_loc().distance_to(wp.get_loc());
+        let leg_length = Geodesic::distance(*prev_wp.get_loc(), *wp.get_loc());
         dist += leg_length;
         prev_wp = wp;
     });
 
-    let leg_length = prev_wp.get_loc().distance_to(to.get_loc());
+    let leg_length = Geodesic::distance(*prev_wp.get_loc(), *to.get_loc());
     dist += leg_length;
 
     let mut alt = max_altitude;
@@ -654,7 +651,7 @@ pub fn set_elevations(
             }
             _ => {
                 if ascent {
-                    let distance = prev_wp.get_loc().distance_to(wp.get_loc());
+                    let distance = Geodesic::distance(*prev_wp.get_loc(), *wp.get_loc());
                     let leg_time = distance / climb_speed;
                     alt += (leg_time * climb_rate * 60.0) as i32;
 
@@ -664,7 +661,7 @@ pub fn set_elevations(
                     }
                     wp.set_elevation(&alt);
                 } else if descent {
-                    let distance = prev_wp.get_loc().distance_to(wp.get_loc());
+                    let distance = Geodesic::distance(*prev_wp.get_loc(), *wp.get_loc());
                     let leg_time = distance / sink_speed;
                     alt -= (leg_time * sink_rate * 60.0) as i32;
                     wp.set_elevation(&alt);
@@ -700,7 +697,7 @@ fn calc_climb_sink_distance(aircraft: &Option<Arc<Aircraft>>, from: &Waypoint, t
 mod tests {
     use std::cell::Cell;
     use std::sync::{Arc, RwLock};
-    use crate::earth::coordinate::Coordinate;
+    use geo::Point;
     use crate::model::fix::Fix;
     use crate::model::navaid::{Navaid, NavaidType};
     use crate::model::sector::Sector;
@@ -855,7 +852,7 @@ mod tests {
         let ap1 = make_airport_at("YSSY", -34.0, 151.0);
         let ap2 = make_airport_at("YPER", -32.1, 120.5);
         let wp = Waypoint::Simple {
-            loc: Coordinate::new(-33.0, 135.0),
+            loc: Point::new(135.0, -33.0),
             elevation: Cell::new(0),
             locked: true,
         };
