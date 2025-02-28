@@ -140,8 +140,7 @@ impl Planner<'_> {
             return;
         }
 
-        let heading = from.get_loc().bearing_to(to.get_loc()).to_degrees();
-        let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
+        let midpoint = Coordinate::midpoint(from.get_loc(), to.get_loc());
 
         if let Some(mid_nav_aid) =
             self.get_navaid_nearest_midpoint(from.get_loc(), to.get_loc(), &midpoint)
@@ -166,8 +165,7 @@ impl Planner<'_> {
             return;
         }
 
-        let heading = from.get_loc().bearing_to(to.get_loc()).to_degrees();
-        let midpoint = from.get_loc().coordinate_at(distance / 2.0, heading);
+        let midpoint = Coordinate::midpoint(from.get_loc(), to.get_loc());
 
         if let Some(mid_fix_aid) =
             self.get_fix_nearest_midpoint(from.get_loc(), to.get_loc(), &midpoint)

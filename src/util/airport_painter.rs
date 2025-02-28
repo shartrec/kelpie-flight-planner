@@ -131,7 +131,7 @@ impl AirportPainter {
 
         // Calculate the runway rectangle offset from airport origin
         // Corner offset component contributed by the runway length
-        let feet_east_l = runway.length() as f64 / 2.0 * heading_radians.sin();
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        let feet_east_l = runway.length() as f64 / 2.0 * heading_radians.sin();
         let feet_north_l = runway.length() as f64 / 2.0 * heading_radians.cos();
 
         // Corner offset component contributed by the runway width

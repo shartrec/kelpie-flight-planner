@@ -41,7 +41,7 @@ impl SphericalProjector {
      * @param lon
      * @return
      */
-    pub fn project(&self, lat: &f64, lon: &f64) -> [f32; 3] {
+    pub fn project(&self, lat: f64, lon: f64) -> [f32; 3] {
         let lat_rad: f32 = lat.to_radians() as f32;
         let lon_rad: f32 = lon.to_radians() as f32;
 
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     fn test_full_circle() {
         let proj = SphericalProjector::new(50000.0);
-        let _3d_point = proj.project(&-34.0, &151.0);
+        let _3d_point = proj.project(-34.0, 151.0);
         println!("Projected point: {:?}", _3d_point);
 
         let _coords = proj.un_project(_3d_point[0], _3d_point[1], _3d_point[2]);

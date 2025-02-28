@@ -446,12 +446,12 @@ impl Renderer {
         // This updates the last_centre position which is where we actually draw
         // and returns true if we have reached the true centre as requested
 
-        let req_lat = *self.map_centre.borrow().get_latitude();
-        let mut last_lat = *self.last_map_centre.borrow().get_latitude();
+        let req_lat = self.map_centre.borrow().get_latitude();
+        let mut last_lat = self.last_map_centre.borrow().get_latitude();
         let mut r_lat_inc = (req_lat - last_lat) / 20.0;
 
-        let req_long = *self.map_centre.borrow().get_longitude();
-        let mut last_long = *self.last_map_centre.borrow().get_longitude();
+        let req_long = self.map_centre.borrow().get_longitude();
+        let mut last_long = self.last_map_centre.borrow().get_longitude();
 
         let mut r_long_inc = req_long - last_long;
         if r_long_inc < -180.0 {

@@ -209,14 +209,14 @@ mod imp {
 
         fn get_lat_sorter() -> CustomSorter {
             let f = |a: Arc<Fix>, b: Arc<Fix>| {
-                Ordering::from(a.get_lat().partial_cmp(b.get_lat()).unwrap())
+                Ordering::from(a.get_lat().partial_cmp(&b.get_lat()).unwrap())
             };
             Self::get_common_sorter(f)
         }
 
         fn get_long_sorter() -> CustomSorter {
             let f = |a: Arc<Fix>, b: Arc<Fix>| {
-                Ordering::from(a.get_long().partial_cmp(b.get_long()).unwrap())
+                Ordering::from(a.get_long().partial_cmp(&b.get_long()).unwrap())
             };
             Self::get_common_sorter(f)
         }

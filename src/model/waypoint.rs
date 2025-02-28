@@ -131,7 +131,7 @@ impl Waypoint {
         }
     }
 
-    pub fn get_lat(&self) -> &f64 {
+    pub fn get_lat(&self) -> f64 {
         self.get_loc().get_latitude()
     }
 
@@ -145,7 +145,7 @@ impl Waypoint {
         self.get_loc().get_latitude_as_string()
     }
 
-    pub fn get_long(&self) -> &f64 {
+    pub fn get_long(&self) -> f64 {
         self.get_loc().get_longitude()
     }
 

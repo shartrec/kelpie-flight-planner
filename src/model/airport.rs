@@ -190,10 +190,10 @@ impl Airport {
 
     pub fn calc_airport_extent(&self) -> [f64; 4] {
         // Start of by assuming just the airport with no runways or taxiways
-        let mut min_lat = *self.get_lat();
-        let mut max_lat = *self.get_lat();
-        let mut min_long = *self.get_long();
-        let mut max_long = *self.get_long();
+        let mut min_lat = self.get_lat();
+        let mut max_lat = self.get_lat();
+        let mut min_long = self.get_long();
+        let mut max_long = self.get_long();
 
         // for each runway get its extent
         for runway in self.runways.read().expect("Can't get airport lock").iter() {
@@ -321,7 +321,7 @@ impl Location for Airport {
         self.id.as_str()
     }
 
-    fn get_lat(&self) -> &f64 {
+    fn get_lat(&self) -> f64 {
         self.coordinate.get_latitude()
     }
 
@@ -329,7 +329,7 @@ impl Location for Airport {
         self.coordinate.get_latitude_as_string().clone()
     }
 
-    fn get_long(&self) -> &f64 {
+    fn get_long(&self) -> f64 {
         self.coordinate.get_longitude()
     }
 

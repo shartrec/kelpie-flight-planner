@@ -50,7 +50,7 @@ impl Location for Fix {
         self.id.as_str()
     }
 
-    fn get_lat(&self) -> &f64 {
+    fn get_lat(&self) -> f64 {
         self.coordinate.get_latitude()
     }
 
@@ -58,7 +58,7 @@ impl Location for Fix {
         self.coordinate.get_latitude_as_string().clone()
     }
 
-    fn get_long(&self) -> &f64 {
+    fn get_long(&self) -> f64 {
         self.coordinate.get_longitude()
     }
 

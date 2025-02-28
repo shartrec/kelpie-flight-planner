@@ -249,7 +249,7 @@ impl Plan {
         if let Some(prev) = self.get_previous_location(wp) {
             heading = prev.bearing_to_deg(wp.get_loc());
             if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
-                let geo = Geomagnetism::new(*wp.get_lat(), *wp.get_long(), None, None);
+                let geo = Geomagnetism::new(wp.get_lat(), wp.get_long(), None, None);
                 heading -= geo.get_declination()
             }
             if heading < 0.0 {
