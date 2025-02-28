@@ -113,7 +113,7 @@ fn init_opengl() {
 fn init_logger() {
     if let Some(home_path) = home::home_dir() {
         let log_path = home_path.join("kelpie-planner.log");
-        match OpenOptions::new().append(true).open(log_path) {
+        match OpenOptions::new().append(true).create(true).open(log_path) {
             Ok(file) => {
                 let config = ConfigBuilder::new()
                     .set_time_offset_to_local()
