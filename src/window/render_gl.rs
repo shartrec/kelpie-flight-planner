@@ -303,14 +303,14 @@ impl Renderer {
             gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
         }
 
-        let color = [0.90, 1.0, 1.0f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.sphere_renderer.draw(area);
+        // let color = [0.90, 1.0, 1.0f32];
+        // unsafe {
+        //     let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+        //     gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        // }
+        // self.sphere_renderer.draw(area);
 
-        let color = [0.0, 0.4, 0.0f32];
+        let color = [0.96, 0.87, 0.70f32];
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);

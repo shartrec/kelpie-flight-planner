@@ -30,15 +30,17 @@ use crate::window::map_utils::Vertex;
 
 pub struct ShorelineRenderer {
     shoreline_vertex_buffer: GLuint,
-    shoreline_rings: Vec<(usize, usize)>,
+    shoreline_index_buffer: GLuint,
+    shoreline_triangles: usize,
 }
 
 impl ShorelineRenderer {
     pub fn new() -> Self {
         let mut shoreline_builder = map_utils::GLShorelineBuilder::new();
-        let (vertices, rings) = shoreline_builder.draw_shoreline();
+        let (vertices, indices) = shoreline_builder.draw_shoreline();
 
         let mut shoreline_vertex_buffer: GLuint = 0;
+        let mut shoreline_index_buffer: GLuint = 0;
 
         unsafe {
             gl::GenBuffers(1, &mut shoreline_vertex_buffer);
@@ -50,19 +52,30 @@ impl ShorelineRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
+            gl::GenBuffers(1, &mut shoreline_index_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, shoreline_index_buffer);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (indices.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
+                indices.as_ptr() as *const gl::types::GLvoid, // pointer to data
+                gl::STATIC_DRAW, // usage
+            );
+
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
 
         ShorelineRenderer {
             shoreline_vertex_buffer,
-            shoreline_rings: rings,
+            shoreline_index_buffer,
+            shoreline_triangles: indices.len(),
         }
     }
 
     pub fn draw(&self, _area: &GLArea) {
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, self.shoreline_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
-
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.shoreline_index_buffer);
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(
                 0, // index of the generic vertex attribute ("layout (location = 0)")
@@ -73,17 +86,22 @@ impl ShorelineRenderer {
                 std::ptr::null(), // offset of the first component
             );
 
-            for ring in &self.shoreline_rings {
-                gl::DrawArrays(gl::LINE_STRIP, ring.0 as GLint, ring.1 as GLint);
-            }
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0); //Bind GL_ARRAY_BUFFER to our handle
+            gl::DrawElements(
+                gl::TRIANGLES, // mode
+                self.shoreline_triangles as gl::types::GLsizei,
+                gl::UNSIGNED_INT,
+                std::ptr::null(),
+            );
+            gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
 
     pub fn drop_buffers(&self) {
         unsafe {
             gl::DeleteBuffers(1, &self.shoreline_vertex_buffer.clone());
+            gl::DeleteBuffers(1, &self.shoreline_index_buffer.clone());
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
         }
     }
 }

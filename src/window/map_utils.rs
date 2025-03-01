@@ -24,6 +24,8 @@
 #![forbid(unsafe_code)]
 
 use shapefile::Polygon;
+use geo::{LineString, Scale, TriangulateEarcut};
+use geo_types::Polygon as GeoPolygon;
 
 use crate::earth::spherical_projector::SphericalProjector;
 
@@ -96,14 +98,14 @@ impl GLSphereBuilder {
             let v1 = self.vdata[self.tindices[i][0]];
             let v2 = self.vdata[self.tindices[i][1]];
             let v3 = self.vdata[self.tindices[i][2]];
-            vertices.push(Vertex { position: self.scale(&v1, &radius) });
+            vertices.push(Vertex { position: scale(&v1, &radius) });
             let i1 = vertices.len() - 1;
-            vertices.push(Vertex { position: self.scale(&v2, &radius) });
+            vertices.push(Vertex { position: scale(&v2, &radius) });
             let i2 = vertices.len() - 1;
-            vertices.push(Vertex { position: self.scale(&v3, &radius) });
+            vertices.push(Vertex { position: scale(&v3, &radius) });
             let i3 = vertices.len() - 1;
 
-            self.subdivide(
+            subdivide(
                 &mut vertices,
                 &mut indeces,
                 i1,
@@ -117,60 +119,6 @@ impl GLSphereBuilder {
         (vertices, indeces)
     }
 
-    //noinspection RsExternalLinter
-    fn subdivide(&mut self, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32) {
-        let mut v12: [f32; 3] = [0.0; 3];
-        let mut v23: [f32; 3] = [0.0; 3];
-        let mut v31: [f32; 3] = [0.0; 3];
-
-        if depth == 0 {
-            self.draw_triangle(indices, i1, i2, i3);
-            return;
-        }
-        let v1 = &vertices.get(i1).unwrap().position;
-        let v2 = &vertices.get(i2).unwrap().position;
-        let v3 = &vertices.get(i3).unwrap().position;
-
-        for i in 0..3 {
-            v12[i] = v1[i] + v2[i];
-            v23[i] = v2[i] + v3[i];
-            v31[i] = v3[i] + v1[i];
-        }
-        self.normalize(&mut v12);
-        self.normalize(&mut v23);
-        self.normalize(&mut v31);
-
-        vertices.push(Vertex { position: self.scale(&v12, radius) });
-        let i12 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v23, radius) });
-        let i23 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v31, radius) });
-        let i31 = vertices.len() - 1;
-
-        self.subdivide(vertices, indices, i1, i12, i31, depth - 1, radius);
-        self.subdivide(vertices, indices, i2, i23, i12, depth - 1, radius);
-        self.subdivide(vertices, indices, i3, i31, i23, depth - 1, radius);
-        self.subdivide(vertices, indices, i12, i23, i31, depth - 1, radius);
-    }
-
-    fn normalize(&self, v: &mut [f32; 3]) {
-        let d = f32::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-        if d != 0.0 {
-            v[0] /= d;
-            v[1] /= d;
-            v[2] /= d;
-        }
-    }
-
-    fn draw_triangle(&mut self, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize) {
-        indices.push(i1 as u32);
-        indices.push(i2 as u32);
-        indices.push(i3 as u32);
-    }
-
-    fn scale(&self, v: &[f32; 3], radius: &f32) -> [f32; 3] {
-        [v[0] * radius, v[1] * radius, v[2] * radius]
-    }
 }
 
 pub(super) struct GLShorelineBuilder {
@@ -186,24 +134,135 @@ impl GLShorelineBuilder {
         }
     }
 
-    pub fn draw_shoreline(&mut self) -> (Vec<Vertex>, Vec<(usize, usize)>) {
+    pub fn draw_shoreline(&mut self) ->  (Vec<Vertex>, Vec<u32>) {
         let mut vertices: Vec<Vertex> = Vec::with_capacity(1000);
-        let mut rings: Vec<(usize, usize)> = Vec::with_capacity(1000);
+        let mut indeces: Vec<u32> = Vec::with_capacity(1000);
 
-        // We need to build a single structure for each ring and later a vertex buffer for for each
+        let radius = 1.;
+
         if let Some(polygons) = &self.shoreline {
             for poly in polygons {
                 for ring in poly.rings() {
-                    let ring_start = vertices.len();
-                    let ring_len = ring.len();
-                    for point in ring.points() {
-                        let position = self.projector.project(point.y, point.x);
-                        vertices.push(Vertex { position });
+                    let geo_ring: Vec<_> = ring.points().iter().map(|p| (p.x, p.y)).collect();
+                    let l = LineString::from(geo_ring);
+                    let p = geo::Polygon::new(l, Vec::new());
+                    let triangles = TriangulateEarcut::earcut_triangles(&p);
+
+                    for triangle in triangles {
+                        let t =  triangle.to_array();
+                        let v1 = self.projector.project(t[0].y, t[0].x);
+                        vertices.push(Vertex { position: v1 });
+                        let i1 = vertices.len() - 1;
+                        let v2 = self.projector.project(t[1].y, t[1].x);
+                        vertices.push(Vertex { position: v2 });
+                        let i2 = vertices.len() - 1;
+                        let v3 = self.projector.project(t[2].y, t[2].x);
+                        vertices.push(Vertex { position: v3 });
+                        let i3 = vertices.len() - 1;
+
+
+                        let size = triangle_size(&v1, &v2, &v3);
+                        let depth = determine_depth(size);
+
+                        subdivide(
+                            &mut vertices,
+                            &mut indeces,
+                            i1,
+                            i2,
+                            i3,
+                            0,
+                            &radius,
+                        );
                     }
-                    rings.push((ring_start, ring_len));
                 }
             }
         }
-        (vertices, rings)
+
+        (vertices, indeces)
+    }
+}
+
+//noinspection RsExternalLinter
+fn subdivide(vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32) {
+    let mut v12: [f32; 3] = [0.0; 3];
+    let mut v23: [f32; 3] = [0.0; 3];
+    let mut v31: [f32; 3] = [0.0; 3];
+
+    let v1 = &vertices.get(i1).unwrap().position;
+    let v2 = &vertices.get(i2).unwrap().position;
+    let v3 = &vertices.get(i3).unwrap().position;
+
+    if depth == 0 {
+        draw_triangle(indices, i1, i2, i3);
+        return;
+    }
+
+    for i in 0..3 {
+        v12[i] = v1[i] + v2[i];
+        v23[i] = v2[i] + v3[i];
+        v31[i] = v3[i] + v1[i];
+    }
+    normalize(&mut v12);
+    normalize(&mut v23);
+    normalize(&mut v31);
+
+    vertices.push(Vertex { position: scale(&v12, radius) });
+    let i12 = vertices.len() - 1;
+    vertices.push(Vertex { position: scale(&v23, radius) });
+    let i23 = vertices.len() - 1;
+    vertices.push(Vertex { position: scale(&v31, radius) });
+    let i31 = vertices.len() - 1;
+
+    subdivide(vertices, indices, i1, i12, i31, depth - 1, radius);
+    subdivide(vertices, indices, i2, i23, i12, depth - 1, radius);
+    subdivide(vertices, indices, i3, i31, i23, depth - 1, radius);
+    subdivide(vertices, indices, i12, i23, i31, depth - 1, radius);
+}
+
+fn normalize(v: &mut [f32; 3]) {
+    let d = f32::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if d != 0.0 {
+        v[0] /= d;
+        v[1] /= d;
+        v[2] /= d;
+    }
+}
+
+fn draw_triangle(indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize) {
+    indices.push(i1 as u32);
+    indices.push(i2 as u32);
+    indices.push(i3 as u32);
+}
+
+fn scale(v: &[f32; 3], radius: &f32) -> [f32; 3] {
+    [v[0] * radius, v[1] * radius, v[2] * radius]
+}
+
+
+fn triangle_size(v1: &[f32; 3], v2: &[f32; 3], v3: &[f32; 3]) -> f32 {
+    let a = distance(v1, v2);
+    let b = distance(v2, v3);
+    let c = distance(v3, v1);
+    let s = (a + b + c) / 2.0;
+    (s * (s - a) * (s - b) * (s - c)).sqrt()
+}
+
+fn distance(v1: &[f32; 3], v2: &[f32; 3]) -> f32 {
+    ((v1[0] - v2[0]).powi(2) + (v1[1] - v2[1]).powi(2) + (v1[2] - v2[2]).powi(2)).sqrt()
+}
+
+fn determine_depth(size: f32) -> i32 {
+    if size > 0.2 {
+        10
+    } else if size > 0.1 {
+        6
+    } else if size > 0.05 {
+        5
+    } else if size > 0.01 {
+        4
+    } else if size > 0.001 {
+        3
+    } else {
+        0
     }
 }
