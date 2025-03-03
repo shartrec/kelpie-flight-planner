@@ -33,6 +33,7 @@ time = "0.3.36"
 async-std = "1.13.0"
 geo = { version = "0.29.3"}
 geo-types = "0.4"
+earcutr = "0.4.3"
 
 [profile.release]
 opt-level = 3

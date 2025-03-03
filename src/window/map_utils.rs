@@ -24,8 +24,7 @@
 #![forbid(unsafe_code)]
 
 use shapefile::Polygon;
-use geo::{LineString, Scale, TriangulateEarcut};
-use geo_types::Polygon as GeoPolygon;
+use earcutr::earcut;
 
 use crate::earth::spherical_projector::SphericalProjector;
 
@@ -143,36 +142,33 @@ impl GLShorelineBuilder {
         if let Some(polygons) = &self.shoreline {
             for poly in polygons {
                 for ring in poly.rings() {
-                    let geo_ring: Vec<_> = ring.points().iter().map(|p| (p.x, p.y)).collect();
-                    let l = LineString::from(geo_ring);
-                    let p = geo::Polygon::new(l, Vec::new());
-                    let triangles = TriangulateEarcut::earcut_triangles(&p);
+                    let base = vertices.len();
+                    for points in ring.points() {
+                        let v = self.projector.project(points.y, points.x);
+                        vertices.push(Vertex { position: v });
+                    }
+                    // Make a vector of our points
+                    let geo_ring: Vec<_> = ring.points().iter().flat_map(|p| vec![p.x, p.y]).collect();
 
-                    for triangle in triangles {
-                        let t =  triangle.to_array();
-                        let v1 = self.projector.project(t[0].y, t[0].x);
-                        vertices.push(Vertex { position: v1 });
-                        let i1 = vertices.len() - 1;
-                        let v2 = self.projector.project(t[1].y, t[1].x);
-                        vertices.push(Vertex { position: v2 });
-                        let i2 = vertices.len() - 1;
-                        let v3 = self.projector.project(t[2].y, t[2].x);
-                        vertices.push(Vertex { position: v3 });
-                        let i3 = vertices.len() - 1;
+                    if let Ok(triangles) = earcut(&geo_ring, &[], 2) {
+                        for t in triangles.chunks(3) {
+                            let i1 = base + t[0];
+                            let i2 = base + t[1];
+                            let i3 = base + t[2];
 
+                            let size = triangle_size(&vertices[i1].position, &vertices[i2].position, &vertices[i3].position);
+                            let depth = determine_depth(size);
 
-                        let size = triangle_size(&v1, &v2, &v3);
-                        let depth = determine_depth(size);
-
-                        subdivide(
-                            &mut vertices,
-                            &mut indeces,
-                            i1,
-                            i2,
-                            i3,
-                            0,
-                            &radius,
-                        );
+                            subdivide(
+                                &mut vertices,
+                                &mut indeces,
+                                i1,
+                                i2,
+                                i3,
+                                depth,
+                                &radius,
+                            );
+                        }
                     }
                 }
             }
@@ -243,8 +239,8 @@ fn triangle_size(v1: &[f32; 3], v2: &[f32; 3], v3: &[f32; 3]) -> f32 {
     let a = distance(v1, v2);
     let b = distance(v2, v3);
     let c = distance(v3, v1);
-    let s = (a + b + c) / 2.0;
-    (s * (s - a) * (s - b) * (s - c)).sqrt()
+
+    a.max(b).max(c)
 }
 
 fn distance(v1: &[f32; 3], v2: &[f32; 3]) -> f32 {
@@ -252,16 +248,16 @@ fn distance(v1: &[f32; 3], v2: &[f32; 3]) -> f32 {
 }
 
 fn determine_depth(size: f32) -> i32 {
-    if size > 0.2 {
-        10
-    } else if size > 0.1 {
+    if size > 0.4 {
         6
-    } else if size > 0.05 {
+    } else if size > 0.2 {
         5
-    } else if size > 0.01 {
+    } else if size > 0.1 {
         4
-    } else if size > 0.001 {
+    } else if size > 0.05 {
         3
+    } else if size > 0.025 {
+        2
     } else {
         0
     }
