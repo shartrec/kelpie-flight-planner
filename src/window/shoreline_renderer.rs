@@ -36,7 +36,7 @@ pub struct ShorelineRenderer {
 
 impl ShorelineRenderer {
     pub fn new() -> Self {
-        let mut shoreline_builder = map_utils::GLShorelineBuilder::new();
+        let mut shoreline_builder = map_utils::GLShorelineBuilder::new(0.995);
         let (vertices, indices) = shoreline_builder.draw_shoreline();
 
         let mut shoreline_vertex_buffer: GLuint = 0;
