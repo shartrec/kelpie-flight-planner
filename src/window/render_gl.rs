@@ -181,7 +181,8 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
 pub struct Renderer {
     shader_program: Program,
     sphere_renderer: SphereRenderer,
-    shore_line_renderer: ShorelineRenderer,
+    world_renderer: ShorelineRenderer,
+    antarctic_renderer: ShorelineRenderer,
     airport_renderer: RefCell<AirportRenderer>,
     navaid_renderer: RefCell<NavaidRenderer>,
     plan_renderer: RefCell<Option<PlanRenderer>>,
@@ -207,7 +208,8 @@ impl Renderer {
         ).unwrap();
 
         let sphere_renderer = SphereRenderer::new();
-        let shore_line_renderer = ShorelineRenderer::new();
+        let world_renderer = ShorelineRenderer::new("GSHHS_l_L1.shp");
+        let antarctic_renderer = ShorelineRenderer::new("GSHHS_l_L6.shp");
         let airport_renderer = AirportRenderer::new();
         let navaid_renderer = NavaidRenderer::new();
         let aircraft_renderer = AircraftRenderer::new();
@@ -215,7 +217,8 @@ impl Renderer {
         Renderer {
             shader_program,
             sphere_renderer,
-            shore_line_renderer,
+            world_renderer,
+            antarctic_renderer,
             airport_renderer: RefCell::new(airport_renderer),
             navaid_renderer: RefCell::new(navaid_renderer),
             plan_renderer: RefCell::new(None),
@@ -273,7 +276,7 @@ impl Renderer {
             gl::DepthFunc(gl::LESS);
             gl::DepthMask(gl::TRUE);
 
-            gl::ClearColor(0.26, 0.19, 0.31, 1.);
+            gl::ClearColor(0.15, 0.095, 0.155, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
@@ -315,7 +318,14 @@ impl Renderer {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
         }
-        self.shore_line_renderer.draw(area);
+        self.world_renderer.draw(area);
+
+        let color = [0.95, 0.95, 0.95f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.antarctic_renderer.draw(area);
 
         if with_airports {
             let color = [0.64, 0.0, 0.0f32];
@@ -378,7 +388,8 @@ impl Renderer {
             gl::DeleteProgram(self.shader_program.id);
         }
         self.sphere_renderer.drop_buffers();
-        self.shore_line_renderer.drop_buffers();
+        self.world_renderer.drop_buffers();
+        self.antarctic_renderer.drop_buffers();
         self.airport_renderer.borrow().drop_buffers();
         self.navaid_renderer.borrow().drop_buffers();
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {

@@ -182,9 +182,9 @@ pub(super) struct GLShorelineBuilder {
 
 impl GLShorelineBuilder {
 
-    pub fn new(radius: f32) -> Self {
+    pub fn new(shape_data: &str, radius: f32) -> Self {
         Self {
-            shoreline: crate::earth::shapefile::read_shapes(),
+            shoreline: crate::earth::shapefile::read_shapes(shape_data),
             projector: SphericalProjector::new(radius),
             radius
         }
