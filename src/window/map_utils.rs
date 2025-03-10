@@ -110,7 +110,7 @@ impl GLSphereBuilder {
                 i1,
                 i2,
                 i3,
-                6,
+                5,
                 &radius,
             );
         }
@@ -214,16 +214,12 @@ impl GLShorelineBuilder {
                             let i2 = base + t[1];
                             let i3 = base + t[2];
 
-                            let size = self.triangle_size(&ring.points()[t[0]], &ring.points()[t[1]], &ring.points()[t[2]]);
-                            let depth = self.determine_depth(size);
-
                             self.subdivide(
                                 &mut vertices,
                                 &mut indeces,
                                 (i1, &ring.points()[t[0]]),
                                 (i2, &ring.points()[t[1]]),
                                 (i3, &ring.points()[t[2]]),
-                                depth,
                                 &self.radius,
                             );
                         }
@@ -237,7 +233,7 @@ impl GLShorelineBuilder {
     //noinspection RsExternalLinter
     fn subdivide(&self, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>,
                  p1: (usize, &Point), p2: (usize, &Point), p3: (usize, &Point),
-                 depth: i32, radius: &f32) {
+                 radius: &f32) {
         let v1 = p1.1;
         let v2 = p2.1;
         let v3 = p3.1;
@@ -246,29 +242,37 @@ impl GLShorelineBuilder {
         let i2 = p2.0;
         let i3 = p3.0;
 
-        if depth == 0 {
+        // Really only want to divide sides of triangle longer than 5.0
+        let d12 = self.distance(v1, v2);
+        let d23 = self.distance(v2, v3);
+        let d31 = self.distance(v3, v1);
+
+        if d12.max(d23).max(d31) < 5.0 {
             self.draw_triangle(indices, i1, i2, i3);
             return;
         }
-        let v12: Point = Point::new((v1.x + v2.x) / 2.0, (v1.y + v2.y) / 2.0);
-        let v23: Point = Point::new((v2.x + v3.x) / 2.0, (v2.y + v3.y) / 2.0);
-        let v31: Point = Point::new((v3.x + v1.x) / 2.0, (v3.y + v1.y) / 2.0);
 
-        let v = self.projector.project(v12.y, v12.x);
-        vertices.push(Vertex { position: self.scale(&v, radius) });
-        let i12 = vertices.len() - 1;
-        let v = self.projector.project(v23.y, v23.x);
-        vertices.push(Vertex { position: self.scale(&v, radius) });
-        let i23 = vertices.len() - 1;
-        let v = self.projector.project(v31.y, v31.x);
-        vertices.push(Vertex { position: self.scale(&v, radius) });
-        let i31 = vertices.len() - 1;
+        let (apex, left, right, mid) =
+        // only divide the triangle in 2 along the longest side
+        if (d12 > d23) && (d12 > d31) {
+            let mid_p = Point::new((v1.x + v2.x) / 2.0, (v1.y + v2.y) / 2.0);
+            (p3, p2, p1, mid_p)
+        } else if (d23 > d12) && (d23 > d31) {
+            let mid_p = Point::new((v2.x + v3.x) / 2.0, (v2.y + v3.y) / 2.0);
+            (p1, p2, p3, mid_p)
+        } else {
+            let mid_p = Point::new((v3.x + v1.x) / 2.0, (v3.y + v1.y) / 2.0);
+            (p2, p1, p3, mid_p)
+        };
 
-        self.subdivide(vertices, indices, p1, (i12, &v12), (i31, &v31), depth - 1, radius);
-        self.subdivide(vertices, indices, p2, (i23, &v23), (i12, &v12), depth - 1, radius);
-        self.subdivide(vertices, indices, p3, (i31, &v31), (i23, &v23), depth - 1, radius);
-        self.subdivide(vertices, indices, (i12, &v12), (i23, &v23), (i31, &v31), depth - 1, radius);
+        let v = self.projector.project(mid.y, mid.x);
+        vertices.push(Vertex { position: self.scale(&v, radius) });
+        let mid_i = vertices.len() - 1;
+
+        self.subdivide(vertices, indices, apex, left, (mid_i, &mid), radius);
+        self.subdivide(vertices, indices, apex, right, (mid_i, &mid), radius);
     }
+
     fn draw_triangle(&self, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize) {
         indices.push(i1 as u32);
         indices.push(i2 as u32);
@@ -279,30 +283,7 @@ impl GLShorelineBuilder {
         [v[0] * radius, v[1] * radius, v[2] * radius]
     }
 
-
-    fn triangle_size(&self, v1: &Point, v2: &Point, v3: &Point) -> f64 {
-        let a = self.distance(v1, v2);
-        let b = self.distance(v2, v3);
-        let c = self.distance(v3, v1);
-
-        a.max(b).max(c)
-    }
-
     fn distance(&self, v1: &Point, v2: &Point) -> f64 {
-        ((v1.x - v2.y).powi(2) + (v1.x - v2.y).powi(2)).sqrt()
-    }
-
-    fn determine_depth(&self, size: f64) -> i32 {
-        if size > 81.0 {
-            4
-        } else if size > 27.0 {
-            3
-        } else if size > 9.0 {
-            2
-        } else if size > 3.0 {
-            1
-        } else {
-            0
-        }
+        ((v1.x - v2.x).powi(2) + (v1.y - v2.y).powi(2)).sqrt()
     }
 }

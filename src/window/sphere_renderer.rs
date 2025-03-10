@@ -37,6 +37,9 @@ impl SphereRenderer {
     pub fn new() -> Self {
         let mut sphere_builder = map_utils::GLSphereBuilder::new();
         let (vertices, indices) = sphere_builder.draw_sphere(0.990);
+
+        println!("Sphere vertices: {}", vertices.len());
+
         let mut sphere_vertex_buffer: GLuint = 0;
         let mut sphere_index_buffer: GLuint = 0;
         unsafe {
