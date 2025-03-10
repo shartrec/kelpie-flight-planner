@@ -110,7 +110,7 @@ impl GLSphereBuilder {
                 i1,
                 i2,
                 i3,
-                5,
+                4,
                 &radius,
             );
         }
@@ -242,7 +242,7 @@ impl GLShorelineBuilder {
         let i2 = p2.0;
         let i3 = p3.0;
 
-        // Really only want to divide sides of triangle longer than 5.0
+        // Really only want to divide sides of triangle longer than 5.0 pseudo degrees
         let d12 = self.distance(v1, v2);
         let d23 = self.distance(v2, v3);
         let d31 = self.distance(v3, v1);
@@ -252,18 +252,18 @@ impl GLShorelineBuilder {
             return;
         }
 
-        let (apex, left, right, mid) =
         // only divide the triangle in 2 along the longest side
-        if (d12 > d23) && (d12 > d31) {
-            let mid_p = Point::new((v1.x + v2.x) / 2.0, (v1.y + v2.y) / 2.0);
-            (p3, p2, p1, mid_p)
-        } else if (d23 > d12) && (d23 > d31) {
-            let mid_p = Point::new((v2.x + v3.x) / 2.0, (v2.y + v3.y) / 2.0);
-            (p1, p2, p3, mid_p)
-        } else {
-            let mid_p = Point::new((v3.x + v1.x) / 2.0, (v3.y + v1.y) / 2.0);
-            (p2, p1, p3, mid_p)
-        };
+        let (apex, left, right, mid) =
+            if (d12 > d23) && (d12 > d31) {
+                let mid_p = Point::new((v1.x + v2.x) / 2.0, (v1.y + v2.y) / 2.0);
+                (p3, p2, p1, mid_p)
+            } else if (d23 > d12) && (d23 > d31) {
+                let mid_p = Point::new((v2.x + v3.x) / 2.0, (v2.y + v3.y) / 2.0);
+                (p1, p2, p3, mid_p)
+            } else {
+                let mid_p = Point::new((v3.x + v1.x) / 2.0, (v3.y + v1.y) / 2.0);
+                (p2, p1, p3, mid_p)
+            };
 
         let v = self.projector.project(mid.y, mid.x);
         vertices.push(Vertex { position: self.scale(&v, radius) });

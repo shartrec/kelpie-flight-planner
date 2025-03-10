@@ -36,7 +36,7 @@ pub struct SphereRenderer {
 impl SphereRenderer {
     pub fn new() -> Self {
         let mut sphere_builder = map_utils::GLSphereBuilder::new();
-        let (vertices, indices) = sphere_builder.draw_sphere(0.990);
+        let (vertices, indices) = sphere_builder.draw_sphere(0.995);
 
         println!("Sphere vertices: {}", vertices.len());
 
