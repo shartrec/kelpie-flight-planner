@@ -375,11 +375,11 @@ impl Renderer {
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0);
 
-        trans = translate(&trans, &vec3(0., 0., 0.001));
+        trans = translate(&trans, &vec3(0., 0., 1.0));
         trans = scale(&trans, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
         trans = rotate(&trans, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1., 0., 0.));
         trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
-        trans = translate(&trans, &vec3(0., 0., -0.001));
+        // trans = translate(&trans, &vec3(0., 0., -0.001));
         trans
     }
 
@@ -424,7 +424,7 @@ impl Renderer {
         }
         let z = (earth_r_squared - r_squared).sqrt();
         // This is the Z-depth of the clicked point.
-        let normal_z = 1. - (depth - z) / earth_radius;
+        let normal_z = - (depth - z) / earth_radius;
 
         // Now we need to transform this into model coordinates.
         // get_matrix_and_unwind();
