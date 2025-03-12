@@ -25,30 +25,28 @@
 #![forbid(unsafe_code)]
 
 use async_channel::Sender;
-use gtk::{self, Adjustment, CompositeTemplate, glib};
-use adw::prelude::AdjustmentExt;
+use gtk::{self, glib, CompositeTemplate};
 
-use crate::util::fg_link::{AircraftPositionInfo, get_aircraft_position};
+use crate::util::fg_link::{get_aircraft_position, AircraftPositionInfo};
 
 mod imp {
+    use adw::gdk::ModifierType;
+    use adw::prelude::*;
+    use adw::subclass::prelude::*;
+    use gtk::gdk::Rectangle;
+    use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
+    use gtk::glib::subclass::InitializingObject;
+    use gtk::glib::{clone, MainContext, Propagation};
+    use gtk::graphene::Point;
+    use gtk::{glib, Button, EventControllerScroll, EventControllerScrollFlags, GLArea, PopoverMenu, ScrolledWindow, ToggleButton};
+    use log::error;
+    use scheduling::SchedulerHandle;
     use std::cell::{Cell, RefCell};
     use std::cmp::Ordering::Equal;
     use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
-    use adw::gdk::ModifierType;
-    use gtk::{Button, GLArea, glib, PopoverMenu, ScrolledWindow, ToggleButton, EventControllerScroll, EventControllerScrollFlags};
-    use gtk::gdk::Rectangle;
-    use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, Propagation};
-    use gtk::glib::subclass::InitializingObject;
-    use gtk::graphene::Point;
-    use adw::prelude::*;
-    use adw::subclass::prelude::*;
-    use log::error;
-    use scheduling::SchedulerHandle;
 
-    use crate::{earth, event};
     use crate::earth::coordinate::Coordinate;
     use crate::event::Event;
     use crate::model::airport::{Airport, AirportType};
@@ -59,6 +57,7 @@ mod imp {
     use crate::util::fg_link::AircraftPositionInfo;
     use crate::window::render_gl::Renderer;
     use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
+    use crate::{earth, event};
 
     use super::*;
 
