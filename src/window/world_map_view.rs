@@ -149,8 +149,6 @@ mod imp {
         pub fn center_map(&self, point: Coordinate) {
             if let Some(renderer) = self.renderer.borrow().as_ref() {
                 renderer.set_map_centre(point, false);
-                center_scrollbar(&self.map_window.hadjustment());
-                center_scrollbar(&self.map_window.vadjustment());
                 self.gl_area.queue_draw();
             }
         }
@@ -169,7 +167,8 @@ mod imp {
         }
 
         fn unproject(&self, x: f64, y: f64) -> Result<Coordinate, String> {
-            match self.renderer.borrow().as_ref().unwrap().get_cord_from_win(&self.gl_area, x as f32, y as f32) {
+            match self.renderer.borrow().as_ref().unwrap()
+                .get_cord_from_win(&self.gl_area, x as f32, y as f32, self.zoom_level.get()) {
                 Ok(point) => {
                     Ok(Coordinate::new(point[0] as f64, point[1] as f64))
                 }
@@ -184,33 +183,7 @@ mod imp {
 
             self.zoom_level.replace(zoom);
             self.renderer.borrow().as_ref().unwrap().set_zoom_level(zoom);
-
-            // Save the old scrollbar height & Width
-            let old_ha_upper = self.map_window.hadjustment().upper();
-            let old_va_upper = self.map_window.vadjustment().upper();
-            let old_ha_value = self.map_window.hadjustment().value();
-            let old_va_value = self.map_window.vadjustment().value();
-
-            let h = self.gl_area.height();
-            let w = self.gl_area.width();
-            if zoom > 1.01 {
-                self.gl_area.set_width_request((w as f32 * z_factor) as i32);
-                self.gl_area.set_height_request((h as f32 * z_factor) as i32);
-            } else {
-                self.gl_area.set_width_request(-1);
-                self.gl_area.set_height_request(-1);
-            }
             self.gl_area.queue_draw();
-
-            // adjust scroll position
-            self.map_window.hadjustment().set_upper(old_ha_upper * z_factor as f64);
-            self.map_window.vadjustment().set_upper(old_va_upper * z_factor as f64);
-            let ha_upper = self.map_window.hadjustment().upper();
-            let va_upper = self.map_window.vadjustment().upper();
-            let ha_value = (old_ha_value + (ha_upper - old_ha_upper) / 2.0).max(0.0);
-            let va_value = (old_va_value + (va_upper - old_va_upper) / 2.0).max(0.0);
-            self.map_window.hadjustment().set_value(ha_value);
-            self.map_window.vadjustment().set_value(va_value);
         }
 
         fn find_airport_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
@@ -408,8 +381,6 @@ mod imp {
                     gesture.set_state(gtk::EventSequenceState::Claimed);
                     if let Ok(point) = view.unproject(x, y) {
                         view.renderer.borrow().as_ref().unwrap().set_map_centre(point, false);
-                        center_scrollbar(&view.map_window.hadjustment());
-                        center_scrollbar(&view.map_window.vadjustment());
                         view.gl_area.queue_draw();
                     }
                 }

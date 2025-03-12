@@ -291,7 +291,7 @@ impl Renderer {
         let zoom = self.zoom_level.get();
 
         let true_centre = self.increment_to_centre();
-        let trans = self.build_matrix(aspect_ratio);
+        let trans = self.build_matrix(aspect_ratio, zoom);
 
         self.shader_program.gl_use();
 
@@ -369,14 +369,14 @@ impl Renderer {
         }
     }
 
-    fn build_matrix(&self, aspect_ratio: [f32; 2]) -> TMat4<f32> {
+    fn build_matrix(&self, aspect_ratio: [f32; 2], zoom: f32) -> TMat4<f32> {
         let mut trans = mat4(1.0, 0.0, 0.0, 0.0,
                              0.0, 1.0, 0.0, 0.0,
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0);
 
-        trans = translate(&trans, &vec3(0., 0., 1.0));
-        trans = scale(&trans, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
+        trans = translate(&trans, &vec3(0., 0., zoom));
+        trans = scale(&trans, &vec3(aspect_ratio[0] * zoom, aspect_ratio[1] * zoom, zoom));
         trans = rotate(&trans, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1., 0., 0.));
         trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
         // trans = translate(&trans, &vec3(0., 0., -0.001));
@@ -397,34 +397,31 @@ impl Renderer {
         }
         self.aircraft_renderer.borrow().drop_buffers();
     }
-    pub fn get_cord_from_win(&self, area: &GLArea, x: f32, y: f32) -> Result<[f32; 2], String> {
+    pub fn get_cord_from_win(&self, area: &GLArea, x: f32, y: f32, zoom: f32) -> Result<[f32; 2], String> {
         // We need to calculate the Z depth where the point meets the earth
         // Get the earth radius
         let height = area.height() as f32;
         let width = area.width() as f32;
         let side = width.min(height);
-        let earth_radius = side / 2.0;
+        let earth_radius = side * zoom / 2.0;
 
-        let x_offset = (width - side) / 2.;
-        let y_offset = (height - side) / 2.;
-
-
-        let v_scroll = 0.0;
-        let h_scroll = 0.0;
+        // Calculate offsets
+        let x_offset = (width / 2.0).max(earth_radius) - earth_radius;
+        let y_offset = (height / 2.0).max(earth_radius) - earth_radius;
 
         // Get the true projected x, y coordinates
-        let x1 = earth_radius as i32 - ((x - x_offset) + h_scroll) as i32;
-        let y1 = earth_radius as i32 - ((y - y_offset) + v_scroll) as i32;
-        let depth = earth_radius;
+        let x1 = (side / 2.0) - (x - x_offset);
+        let y1 = (side / 2.0) - (y - y_offset);
 
-        let r_squared = (x1 * x1 + y1 * y1) as f32;
-        let earth_r_squared = earth_radius * earth_radius;
-        if r_squared > earth_r_squared {
+        let r_squared = x1 * x1 + y1 * y1;
+        let earth_r_squared = earth_radius.powi(2);
+        // Ensure within earth radius
+        if r_squared.sqrt() > earth_r_squared {
             return Err("not in map".to_string());
         }
         let z = (earth_r_squared - r_squared).sqrt();
         // This is the Z-depth of the clicked point.
-        let normal_z = - (depth - z) / earth_radius;
+        let normal_z = ((earth_radius - z) / earth_radius) * zoom;
 
         // Now we need to transform this into model coordinates.
         // get_matrix_and_unwind();
@@ -433,14 +430,14 @@ impl Renderer {
         } else {
             [1.0, width / height]
         };
-        let mat = self.build_matrix(aspect_ratio);
+        let mat = self.build_matrix(aspect_ratio, zoom);
 
         match mat.try_inverse() {
             Some(transform) => {
                 let pt = TVec4::new(
                     2. * x / width - 1.,
                     -(2. * y / height - 1.),
-                    -normal_z,
+                    normal_z,
                     1.,
                 );
                 let result = transform * pt;
