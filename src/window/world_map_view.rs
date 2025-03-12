@@ -653,13 +653,6 @@ impl Default for WorldMapView {
     }
 }
 
-fn center_scrollbar(adjustment: &Adjustment) {
-    let page_size = adjustment.page_size();
-    let upper = adjustment.upper();
-    let value = (upper - page_size) / 2.0;
-    adjustment.set_value(value);
-}
-
 fn get_aircraft_position_task(tx: Sender<Option<AircraftPositionInfo>>) {
     // Your task implementation goes here
     let ap = get_aircraft_position();
