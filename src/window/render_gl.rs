@@ -421,7 +421,7 @@ impl Renderer {
         }
         let z = (earth_r_squared - r_squared).sqrt();
         // This is the Z-depth of the clicked point.
-        let normal_z = ((earth_radius - z) / earth_radius) * zoom;
+        let normal_z = (earth_radius - z) / earth_radius;
 
         // Now we need to transform this into model coordinates.
         // get_matrix_and_unwind();
