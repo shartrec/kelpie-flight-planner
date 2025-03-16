@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn test_construct() {
-        let v = read_shapes();
+        let v = read_shapes("GSHHS_l_L1.shp");
         assert!(&v.is_some());
         let vec = v.unwrap();
         assert!(!vec.is_empty());
