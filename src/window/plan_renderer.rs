@@ -150,28 +150,22 @@ impl PlanRenderer {
         let plan = plan.borrow();
         for s in plan.get_sectors() {
             if let Some(airport) = s.borrow().get_start() {
-                let position = projector.project(airport.get_lat(), airport.get_long());
-                vertices.push(Vertex { position });
+                let start_pt = projector.project(airport.get_lat(), airport.get_long());
+                vertices.push(Vertex { position: start_pt });
                 indices_airports.push(vertices.len() as u32 - 1);
-                let mut last_p = position;
+                let mut last_p = start_pt;
 
                 for wp in s.borrow().get_waypoints() {
-                    let position = projector.project(wp.get_lat(), wp.get_long());
-                    let arc = Self::draw_arc(last_p, position);
-                    for v in arc {
-                        vertices.push(v);
-                    }
-                    vertices.push(Vertex { position });
-                    last_p = position;
+                    let wp_pt = projector.project(wp.get_lat(), wp.get_long());
+                    vertices.append(&mut  Self::draw_arc(last_p, wp_pt));
+                    vertices.push(Vertex { position: wp_pt });
+                    last_p = wp_pt;
                 }
 
                 if let Some(airport) = s.borrow().get_end() {
-                    let position = projector.project(airport.get_lat(), airport.get_long());
-                    let arc = Self::draw_arc(last_p, position);
-                    for v in arc {
-                        vertices.push(v);
-                    }
-                    vertices.push(Vertex { position });
+                    let end_pt = projector.project(airport.get_lat(), airport.get_long());
+                    vertices.append(&mut  Self::draw_arc(last_p, end_pt));
+                    vertices.push(Vertex { position: end_pt });
                     indices_airports.push(vertices.len() as u32 - 1);
                 }
             }
@@ -183,12 +177,12 @@ impl PlanRenderer {
     fn draw_arc(from: [f32; 3], to: [f32; 3]) -> Vec<Vertex> {
         // Draw the lines
 
-        let x1 = to[0];
-        let y1 = to[1];
-        let z1 = to[2];
-        let x2 = from[0];
-        let y2 = from[1];
-        let z2 = from[2];
+        let x1 = from[0];
+        let y1 = from[1];
+        let z1 = from[2];
+        let x2 = to[0];
+        let y2 = to[1];
+        let z2 = to[2];
         // Angle between the 2 points
         let psi = (x1 * x2 + y1 * y2 + z1 * z2).acos();
 
