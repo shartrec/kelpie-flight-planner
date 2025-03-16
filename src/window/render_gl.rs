@@ -271,10 +271,15 @@ impl Renderer {
     pub fn draw(&self, area: &GLArea, with_airports: bool, with_navaids: bool) {
         unsafe {
             gl::Enable(gl::POINT_SIZE);
-            gl::Enable(gl::DEPTH_TEST);
+            // Enable line smoothing - Not actually supported under GTK
             gl::Enable(gl::LINE_SMOOTH);
+            // Disable depth testing
+            // * We don't need this as we push the far side of Earth outside the clipping ares
+            // * We don't want it as without we can draw everything in the same surface as
+            //   long as we do it in the correct order.
+            gl::Disable(gl::DEPTH_TEST);
             gl::DepthFunc(gl::LESS);
-            gl::DepthMask(gl::TRUE);
+            gl::DepthMask(gl::FALSE);
 
             gl::ClearColor(0.15, 0.095, 0.155, 1.);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
