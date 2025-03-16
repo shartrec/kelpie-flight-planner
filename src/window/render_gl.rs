@@ -370,17 +370,21 @@ impl Renderer {
     }
 
     fn build_matrix(&self, aspect_ratio: [f32; 2], zoom: f32) -> TMat4<f32> {
-        let mut trans = mat4(1.0, 0.0, 0.0, 0.0,
+        // Create the model matrix (handling scaling, rotation, and translation)
+        let mut model = mat4(1.0, 0.0, 0.0, 0.0,
                              0.0, 1.0, 0.0, 0.0,
                              0.0, 0.0, 1.0, 0.0,
                              0.0, 0.0, 0.0, 1.0);
 
-        trans = translate(&trans, &vec3(0., 0., zoom));
-        trans = scale(&trans, &vec3(aspect_ratio[0] * zoom, aspect_ratio[1] * zoom, zoom));
-        trans = rotate(&trans, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1., 0., 0.));
-        trans = rotate(&trans, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0., 1., 0.));
-        // trans = translate(&trans, &vec3(0., 0., -0.001));
-        trans
+        // The translation is not strictly necessary, but as all the points with z > 0.0
+        // are on the far side of the earth, this pushes the model back and the points can
+        // be ignored by the renderer.
+        model = translate(&model, &vec3(0., 0., 1.0));
+        model = scale(&model, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
+        model = scale(&model, &vec3(zoom, zoom, 1.0));
+        model = rotate(&model, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
+        model = rotate(&model, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
+        model
     }
 
     pub fn drop_buffers(&self) {
@@ -405,13 +409,9 @@ impl Renderer {
         let side = width.min(height);
         let earth_radius = side * zoom / 2.0;
 
-        // Calculate offsets
-        let x_offset = (width / 2.0).max(earth_radius) - earth_radius;
-        let y_offset = (height / 2.0).max(earth_radius) - earth_radius;
-
         // Get the true projected x, y coordinates
-        let x1 = (side / 2.0) - (x - x_offset);
-        let y1 = (side / 2.0) - (y - y_offset);
+        let x1 = (width / 2.0) - x;
+        let y1 = (height / 2.0) - y;
 
         let r_squared = x1 * x1 + y1 * y1;
         let earth_r_squared = earth_radius.powi(2);
@@ -419,9 +419,11 @@ impl Renderer {
         if r_squared.sqrt() > earth_r_squared {
             return Err("not in map".to_string());
         }
-        let z = (earth_r_squared - r_squared).sqrt();
+        let z = earth_radius - (earth_r_squared - r_squared).sqrt();
         // This is the Z-depth of the clicked point.
-        let normal_z = (earth_radius - z) / earth_radius;
+        let normal_x = -x1 / (width / 2.0);  // using width brings in the aspect ratio
+        let normal_y = y1 / (height / 2.0); // using height brings in the aspect ratio
+        let normal_z = z / earth_radius;
 
         // Now we need to transform this into model coordinates.
         // get_matrix_and_unwind();
@@ -435,8 +437,8 @@ impl Renderer {
         match mat.try_inverse() {
             Some(transform) => {
                 let pt = TVec4::new(
-                    2. * x / width - 1.,
-                    -(2. * y / height - 1.),
+                    normal_x,
+                    normal_y,
                     normal_z,
                     1.,
                 );
