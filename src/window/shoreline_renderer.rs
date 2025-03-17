@@ -24,7 +24,7 @@
 
 use gl::types::{GLint, GLuint};
 use gtk::GLArea;
-
+use log::info;
 use crate::window::map_utils;
 use crate::window::map_utils::Vertex;
 
@@ -39,7 +39,7 @@ impl ShorelineRenderer {
         let mut shoreline_builder = map_utils::GLShorelineBuilder::new(shape_data, 1.0);
         let (vertices, indices) = shoreline_builder.draw_shoreline();
 
-        println!("Shoreline vertices: {}", vertices.len());
+        info!("Shoreline vertices: {}", vertices.len());
 
         let mut shoreline_vertex_buffer: GLuint = 0;
         let mut shoreline_index_buffer: GLuint = 0;

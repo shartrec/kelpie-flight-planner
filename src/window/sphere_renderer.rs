@@ -23,7 +23,7 @@
  */
 use gl::types::GLuint;
 use gtk::GLArea;
-
+use log::info;
 use crate::window::map_utils;
 use crate::window::map_utils::Vertex;
 
@@ -38,7 +38,7 @@ impl SphereRenderer {
         let mut sphere_builder = map_utils::GLSphereBuilder::new();
         let (vertices, indices) = sphere_builder.draw_sphere(1.0);
 
-        println!("Sphere vertices: {}", vertices.len());
+        info!("Sphere vertices: {}", vertices.len());
 
         let mut sphere_vertex_buffer: GLuint = 0;
         let mut sphere_index_buffer: GLuint = 0;
