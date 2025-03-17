@@ -118,6 +118,10 @@ fn init_logger() {
                 let config = ConfigBuilder::new()
                     .set_time_offset_to_local()
                     .unwrap().build();
+                let config2 = ConfigBuilder::new()
+                    .set_location_level(LevelFilter::Error)
+                    .set_time_offset_to_local()
+                    .unwrap().build();
                 CombinedLogger::init(vec![
                     TermLogger::new(
                         LevelFilter::Warn,
@@ -127,7 +131,7 @@ fn init_logger() {
                     ),
                     WriteLogger::new(
                         LevelFilter::Info,
-                        config,
+                        config2,
                         file,
                     ),
                 ]).unwrap_or_else(|e| {
