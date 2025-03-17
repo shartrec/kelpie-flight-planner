@@ -54,7 +54,7 @@ mod imp {
     use crate::model::waypoint_object::WaypointObject;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
-    use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path};
+    use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path, expand_tree};
     use crate::{earth, event};
     use super::*;
 
@@ -154,7 +154,7 @@ mod imp {
             let plan = self.get_plan();
             let plan_object = PlanObject::new(&plan.clone());
 
-            let model = TreeListModel::new(plan_object, false, true, |object| {
+            let model = TreeListModel::new(plan_object, false, false, |object| {
                 if object.is::<SectorObject>() {
                     let s = object.downcast_ref::<SectorObject>().expect("Sector Object");
                     let so = s.clone();
@@ -234,9 +234,12 @@ mod imp {
                 stack.page(self.obj().as_ref()).set_name(&plan.borrow().get_name());
             };
 
+            expand_tree(&selection_model.model().and_downcast::<TreeListModel>().unwrap(), 0);
+
             if let Some(sel) = selection {
                 self.plan_tree.scroll_to(sel, None, ListScrollFlags::SELECT, None);
             }
+
         }
 
         fn make_plan(&self) {

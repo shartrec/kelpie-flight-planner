@@ -341,3 +341,19 @@ pub(crate) fn get_tree_path(row: u32, trm: &TreeListModel) -> Vec<u32> {
     }
     path
 }
+
+// Expand the tree represented by TreeListModel to specified depth.
+// Root depth is 0
+pub(crate) fn expand_tree(trm: &TreeListModel, depth: u32) {
+    for i in 0.. {
+        if let Some(r) = trm.row(i) {
+            if r.depth() <= depth {
+                r.set_expanded(true);
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+
