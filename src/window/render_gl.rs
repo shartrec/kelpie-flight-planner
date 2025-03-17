@@ -332,15 +332,6 @@ impl Renderer {
         }
         self.antarctic_renderer.draw(area);
 
-        if with_airports {
-            let color = [0.64, 0.0, 0.0f32];
-            unsafe {
-                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-            }
-            self.airport_renderer.borrow().draw(area, zoom > 3.0, zoom > 6.0, self.shader_program.id());
-        }
-
         if with_navaids {
             let color = [0.2, 0.2, 1.0f32];
             unsafe {
@@ -348,6 +339,15 @@ impl Renderer {
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
             }
             self.navaid_renderer.borrow().draw(area, zoom > 3.0, self.shader_program.id());
+        }
+
+        if with_airports {
+            let color = [0.64, 0.0, 0.0f32];
+            unsafe {
+                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            }
+            self.airport_renderer.borrow().draw(area, zoom > 3.0, zoom > 6.0, self.shader_program.id());
         }
 
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {

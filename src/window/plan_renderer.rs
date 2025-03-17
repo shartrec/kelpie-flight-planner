@@ -116,7 +116,7 @@ impl PlanRenderer {
             );
 
             if self.waypoints.get() > 0 {
-                gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, (self.waypoints.get() - 1) as GLint);
+                gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, self.waypoints.get() as GLint);
             }
 
             let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);

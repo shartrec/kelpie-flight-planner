@@ -529,13 +529,11 @@ mod imp {
             let action = SimpleAction::new("view_airport", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
-                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(airport) = view.find_airport_for_point(loc) {
-                            if let Some(airport_map_view) = get_airport_map_view(&view.map_window.get()) {
-                                show_airport_map_view(&view.map_window.get());
-                                airport_map_view.imp().set_airport(airport);
-                            }
+                if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
+                    if let Some(airport) = view.find_airport_for_point(loc) {
+                        if let Some(airport_map_view) = get_airport_map_view(&view.map_window.get()) {
+                            show_airport_map_view(&view.map_window.get());
+                            airport_map_view.imp().set_airport(airport);
                         }
                     }
                 }
@@ -546,13 +544,11 @@ mod imp {
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
-                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(airport) = view.find_airport_for_point(loc) {
-                            if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
-                                // get the plan
-                                plan_view.imp().add_airport_to_plan(airport);
-                            }
+                if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
+                    if let Some(airport) = view.find_airport_for_point(loc) {
+                        if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
+                            // get the plan
+                            plan_view.imp().add_airport_to_plan(airport);
                         }
                     }
                 }
@@ -563,13 +559,11 @@ mod imp {
             let action = SimpleAction::new("add_nav_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
-                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(navaid) = view.find_navaid_for_point(loc) {
-                            if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
-                                // get the plan
-                                plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {navaid: navaid.clone(), elevation: Cell::new(0), locked: true,});
-                            }
+                if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
+                    if let Some(navaid) = view.find_navaid_for_point(loc) {
+                        if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
+                            // get the plan
+                            plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {navaid: navaid.clone(), elevation: Cell::new(0), locked: true,});
                         }
                     }
                 }
@@ -580,12 +574,10 @@ mod imp {
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
-                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(airport_view) = get_airport_view(&view.map_window.get()) {
-                            show_airport_view(&view.map_window.get());
-                            airport_view.imp().search_near(&loc);
-                        }
+                if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
+                    if let Some(airport_view) = get_airport_view(&view.map_window.get()) {
+                        show_airport_view(&view.map_window.get());
+                        airport_view.imp().search_near(&loc);
                     }
                 }
             }));
@@ -594,12 +586,10 @@ mod imp {
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
-                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(navaid_view) = get_navaid_view(&view.map_window.get()) {
-                            show_navaid_view(&view.map_window.get());
-                            navaid_view.imp().search_near(&loc);
-                        }
+                if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
+                    if let Some(navaid_view) = get_navaid_view(&view.map_window.get()) {
+                        show_navaid_view(&view.map_window.get());
+                        navaid_view.imp().search_near(&loc);
                     }
                 }
             }));
@@ -608,12 +598,10 @@ mod imp {
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
-                if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(win_pos.1.x() as f32, win_pos.1.y() as f32)) {
-                    if let Ok(loc) = view.unproject(point.x() as f64, point.y() as f64) {
-                        if let Some(fix_view) = get_fix_view(&view.map_window.get()) {
-                            show_fix_view(&view.map_window.get());
-                            fix_view.imp().search_near(&loc);
-                        }
+                if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
+                    if let Some(fix_view) = get_fix_view(&view.map_window.get()) {
+                        show_fix_view(&view.map_window.get());
+                        fix_view.imp().search_near(&loc);
                     }
                 }
             }));
