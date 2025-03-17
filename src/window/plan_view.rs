@@ -204,14 +204,12 @@ mod imp {
                         } else if item.is::<WaypointObject>() {
                             let parent = row.parent().unwrap();
                             let parent_item = parent.item().unwrap();
-                            let parent_position = parent.position();
                             let sector = parent_item.downcast_ref::<SectorObject>().unwrap();
                             let cell = sector.imp().sector();
                             let sector = cell.borrow_mut();
 
                             // Only if a waypoint.  index > 0 and < waypoint count
-                            let mut wp_index = (sel_pos - parent_position) as usize;
-                            wp_index -= 1;
+                            let mut wp_index = tree_path[1] as usize;
                             if sector.get_start().is_some() {
                                 if wp_index == 0 {
                                     return;
@@ -328,20 +326,18 @@ mod imp {
                 let trm = ssmodel.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
+                    let tree_path = get_tree_path(sel_pos, &trm);
                     let item = row.item().unwrap();
                     if item.is::<SectorObject>() {
                         let sector = item.downcast_ref::<SectorObject>().unwrap();
                         let cell = sector.imp().sector();
                         cell.borrow_mut().add_waypoint_optimised(waypoint);
                     } else if item.is::<WaypointObject>() {
-
                         let parent = row.parent().unwrap();
                         let parent_item = parent.item().unwrap();
-                        let parent_position = parent.position();
                         let sector = parent_item.downcast_ref::<SectorObject>().unwrap();
                         let cell = sector.imp().sector();
-                        let mut wp_pos = sel_pos - parent_position;
-                        wp_pos -= 1;
+                        let mut wp_pos = tree_path[1] as usize;
                         // decrement position if we have a start
                         if wp_pos > 0 && cell.borrow().get_start().is_some() {
                             wp_pos -= 1;
@@ -415,14 +411,12 @@ mod imp {
                     } else if item.is::<WaypointObject>() {
                         let parent = row.parent().unwrap();
                         let parent_item = parent.item().unwrap();
-                        let parent_position = parent.position();
                         let sector = parent_item.downcast_ref::<SectorObject>().unwrap();
                         let cell = sector.imp().sector();
                         let mut sector = cell.borrow_mut();
 
                         // Only if a waypoint.  index > 0 and < waypoint count
-                        let mut wp_index = (sel_pos - parent_position) as usize;
-                        wp_index -= 1;
+                        let mut wp_index = tree_path[1] as usize;
                         if sector.get_start().is_some() {
                             if wp_index == 0 {
                                 return;
@@ -471,14 +465,12 @@ mod imp {
                     } else if item.is::<WaypointObject>() {
                         let parent = row.parent().unwrap();
                         let parent_item = parent.item().unwrap();
-                        let parent_position = parent.position();
                         let sector = parent_item.downcast_ref::<SectorObject>().unwrap();
                         let cell = sector.imp().sector();
                         let mut sector = cell.borrow_mut();
 
                         // Only if a waypoint.  index > 0 and < waypoint count
-                        let mut wp_index = (sel_pos - parent_position) as usize;
-                        wp_index -= 1;
+                        let mut wp_index = tree_path[1] as usize;
                         if sector.get_start().is_some() {
                             if wp_index == 0 {
                                 return;
@@ -515,9 +507,10 @@ mod imp {
                 let trm = ss_model.model().and_downcast::<TreeListModel>().unwrap();
                 if let Some(row) = trm.row(sel_pos) {
 
+                    let tree_path = get_tree_path(sel_pos, &trm);
                     let item = row.item().unwrap();
                     if item.is::<SectorObject>() {
-                        let sector_index = row.position();
+                        let sector_index = tree_path[0];
                         if sector_index < plan.get_sectors().len() as u32 {
                             plan.remove_sector_at(sector_index as usize);
                             new_selection = None;
@@ -525,14 +518,12 @@ mod imp {
                     } else if item.is::<WaypointObject>() {
                         let parent = row.parent().unwrap();
                         let parent_item = parent.item().unwrap();
-                        let parent_position = parent.position();
                         let sector = parent_item.downcast_ref::<SectorObject>().unwrap();
                         let cell = sector.imp().sector();
                         let mut sector = cell.borrow_mut();
 
                         // Only if a waypoint.  index > 0 and < waypoint count
-                        let mut wp_index = (sel_pos - parent_position) as usize;
-                        wp_index -= 1;
+                        let mut wp_index = tree_path[1] as usize;
                         if sector.get_start().is_some() {
                             if wp_index == 0 {
                                 sector.set_start(None);
