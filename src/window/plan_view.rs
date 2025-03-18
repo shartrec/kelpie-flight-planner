@@ -803,7 +803,9 @@ mod imp {
                 // get the item from the tree list row
                 let item = row.item().unwrap();
                 if item.is::<SectorObject>() {
-                    label.set_label("");
+                    let sector = item.downcast_ref::<SectorObject>().unwrap();
+                    let cell = sector.imp().sector();
+                    label.set_label(cell.borrow().get_distance_as_string(&view.plan.borrow()).as_str());
                 } else if item.is::<WaypointObject>() {
                     let waypoint = item.downcast_ref::<WaypointObject>().unwrap();
                     let cell = waypoint.imp().waypoint();
@@ -816,7 +818,9 @@ mod imp {
                 // get the item from the tree list row
                 let item = row.item().unwrap();
                 if item.is::<SectorObject>() {
-                    label.set_label("");
+                    let sector = item.downcast_ref::<SectorObject>().unwrap();
+                    let cell = sector.imp().sector();
+                    label.set_label(cell.borrow().get_duration_as_string(&view.plan.borrow()).as_str());
                 } else if item.is::<WaypointObject>() {
                     let waypoint = item.downcast_ref::<WaypointObject>().unwrap();
                     let cell = waypoint.imp().waypoint();
