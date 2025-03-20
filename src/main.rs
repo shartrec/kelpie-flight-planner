@@ -120,6 +120,7 @@ fn init_logger() {
                     .unwrap().build();
                 let config2 = ConfigBuilder::new()
                     .set_location_level(LevelFilter::Error)
+                    .set_time_format_rfc3339()
                     .set_time_offset_to_local()
                     .unwrap().build();
                 CombinedLogger::init(vec![
