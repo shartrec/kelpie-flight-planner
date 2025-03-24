@@ -55,6 +55,59 @@ const APP_ID: &str = "com.shartrec.KelpiePlanner";
 
 struct LoggerGuard;
 
+impl LoggerGuard {
+    pub fn new() -> Self {
+        Self::init_logger();
+        LoggerGuard
+    }
+    fn init_logger() {
+        if let Some(home_path) = home::home_dir() {
+            let log_path = home_path.join("kelpie-planner.log");
+            let file_appender = BasicRollingFileAppender::new(
+                log_path, RollingConditionBasic::new().daily(), 2);
+            match file_appender {
+                Ok(file) => {
+                    let config = ConfigBuilder::new()
+                        .set_time_offset_to_local()
+                        .unwrap().build();
+                    let config2 = ConfigBuilder::new()
+                        .set_location_level(LevelFilter::Error)
+                        .set_time_format_rfc3339()
+                        .set_time_offset_to_local()
+                        .unwrap().build();
+                    CombinedLogger::init(vec![
+                        TermLogger::new(
+                            LevelFilter::Warn,
+                            config.clone(),
+                            TerminalMode::Mixed,
+                            ColorChoice::Auto,
+                        ),
+                        WriteLogger::new(
+                            LevelFilter::Info,
+                            config2,
+                            file,
+                        ),
+                    ]).unwrap_or_else(|e| {
+                        println!("Unable to initiate logger: {}.", e)
+                    });
+                    return;
+                }
+                Err(e) => {
+                    println!("Unable to initiate logger: {}", e);
+                }
+            }
+        }
+        TermLogger::init(
+            LevelFilter::Warn,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ).unwrap_or_else(|e| {
+            println!("Unable to initiate logger: {}.", e)
+        });
+    }
+}
+
 impl Drop for LoggerGuard {
     fn drop(&mut self) {
         log::logger().flush();
@@ -63,7 +116,10 @@ impl Drop for LoggerGuard {
 
 fn main() -> glib::ExitCode {
 
-    init_logger();
+    // Create the LoggerGuard instance, this will initialize the logger
+    // and flush it when the instance goes out of scope
+    let _logger_guard = LoggerGuard::new();
+
     // Create the LoggerGuard instance
     let _logger_guard = LoggerGuard;
 
@@ -121,52 +177,7 @@ fn init_opengl() {
 }
 
 
-fn init_logger() {
-    if let Some(home_path) = home::home_dir() {
-        let log_path = home_path.join("kelpie-planner.log");
-        let file_appender = BasicRollingFileAppender::new(
-            log_path, RollingConditionBasic::new().daily(), 2);
-        match file_appender {
-            Ok(file) => {
-                let config = ConfigBuilder::new()
-                    .set_time_offset_to_local()
-                    .unwrap().build();
-                let config2 = ConfigBuilder::new()
-                    .set_location_level(LevelFilter::Error)
-                    .set_time_format_rfc3339()
-                    .set_time_offset_to_local()
-                    .unwrap().build();
-                CombinedLogger::init(vec![
-                    TermLogger::new(
-                        LevelFilter::Warn,
-                        config.clone(),
-                        TerminalMode::Mixed,
-                        ColorChoice::Auto,
-                    ),
-                    WriteLogger::new(
-                        LevelFilter::Info,
-                        config2,
-                        file,
-                    ),
-                ]).unwrap_or_else(|e| {
-                    println!("Unable to initiate logger: {}.", e)
-                });
-                return;
-            }
-            Err(e) => {
-                println!("Unable to initiate logger: {}", e);
-            }
-        }
-    }
-    TermLogger::init(
-        LevelFilter::Warn,
-        Config::default(),
-        TerminalMode::Mixed,
-        ColorChoice::Auto,
-    ).unwrap_or_else(|e| {
-        println!("Unable to initiate logger: {}.", e)
-    });
-}
+
 
 fn load_css() {
     // Load the CSS file and add it to the provider
