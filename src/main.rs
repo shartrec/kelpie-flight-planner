@@ -24,7 +24,6 @@
 
 #![windows_subsystem = "windows"]
 
-use std::fs::OpenOptions;
 use std::ptr;
 
 use adw::Application;
@@ -35,6 +34,7 @@ use gtk::glib::clone;
 use adw::prelude::*;
 use adw::subclass::prelude::ObjectSubclassIsExt;
 use log::error;
+use rolling_file::{BasicRollingFileAppender, RollingConditionBasic};
 use simplelog::*;
 
 use window::{preferences::PreferenceDialog, Window};
@@ -53,8 +53,19 @@ mod window;
 
 const APP_ID: &str = "com.shartrec.KelpiePlanner";
 
+struct LoggerGuard;
+
+impl Drop for LoggerGuard {
+    fn drop(&mut self) {
+        log::logger().flush();
+    }
+}
+
 fn main() -> glib::ExitCode {
+
     init_logger();
+    // Create the LoggerGuard instance
+    let _logger_guard = LoggerGuard;
 
     init_opengl();
 
@@ -113,7 +124,9 @@ fn init_opengl() {
 fn init_logger() {
     if let Some(home_path) = home::home_dir() {
         let log_path = home_path.join("kelpie-planner.log");
-        match OpenOptions::new().append(true).create(true).open(log_path) {
+        let file_appender = BasicRollingFileAppender::new(
+            log_path, RollingConditionBasic::new().daily(), 2);
+        match file_appender {
             Ok(file) => {
                 let config = ConfigBuilder::new()
                     .set_time_offset_to_local()
@@ -140,7 +153,9 @@ fn init_logger() {
                 });
                 return;
             }
-            Err(e) => println!("Unable to initiate logger: {}", e)
+            Err(e) => {
+                println!("Unable to initiate logger: {}", e);
+            }
         }
     }
     TermLogger::init(
