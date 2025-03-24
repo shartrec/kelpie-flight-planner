@@ -120,9 +120,6 @@ fn main() -> glib::ExitCode {
     // and flush it when the instance goes out of scope
     let _logger_guard = LoggerGuard::new();
 
-    // Create the LoggerGuard instance
-    let _logger_guard = LoggerGuard;
-
     init_opengl();
 
     // Register and include resources
