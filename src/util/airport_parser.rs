@@ -260,7 +260,7 @@ impl AirportParserFG850 {
             // We want to quickly read upto the airport we want
             for _ in 0..o - 2 {
                 byte_buf.clear();
-                match reader.read_until(b'\n', &mut byte_buf) {
+                match reader.skip_until(b'\n') {
                     Ok(0) => return Ok(()), // EOF
                     Ok(_bytes) => (),
                     Err(_) => {

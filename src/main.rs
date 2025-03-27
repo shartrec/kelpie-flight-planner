@@ -78,7 +78,7 @@ impl LoggerGuard {
                     CombinedLogger::init(vec![
                         TermLogger::new(
                             LevelFilter::Warn,
-                            config.clone(),
+                            config,
                             TerminalMode::Mixed,
                             ColorChoice::Auto,
                         ),
