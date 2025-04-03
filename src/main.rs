@@ -24,6 +24,7 @@
 
 #![windows_subsystem = "windows"]
 
+use std::error::Error;
 use std::ptr;
 
 use adw::Application;
@@ -63,8 +64,11 @@ impl LoggerGuard {
     fn init_logger() {
         if let Some(home_path) = home::home_dir() {
             let log_path = home_path.join("kelpie-planner.log");
+            let condition = RollingConditionBasic::new()
+                .daily()
+                .max_size(1024 * 1024);
             let file_appender = BasicRollingFileAppender::new(
-                log_path, RollingConditionBasic::new().daily(), 2);
+                log_path, condition, 2);
             match file_appender {
                 Ok(file) => {
                     let config = ConfigBuilder::new()
@@ -88,12 +92,12 @@ impl LoggerGuard {
                             file,
                         ),
                     ]).unwrap_or_else(|e| {
-                        println!("Unable to initiate logger: {}.", e)
+                        Self::print_error(&e);
                     });
                     return;
                 }
                 Err(e) => {
-                    println!("Unable to initiate logger: {}", e);
+                    Self::print_error(&e);
                 }
             }
         }
@@ -103,8 +107,12 @@ impl LoggerGuard {
             TerminalMode::Mixed,
             ColorChoice::Auto,
         ).unwrap_or_else(|e| {
-            println!("Unable to initiate logger: {}.", e)
+            Self::print_error(&e);
         });
+    }
+
+    fn print_error(e: &dyn Error) {
+        println!("Unable to initiate logger: {}", e);
     }
 }
 
