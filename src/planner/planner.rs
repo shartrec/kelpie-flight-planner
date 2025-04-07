@@ -241,22 +241,18 @@ impl Planner<'_> {
         let mut nearest = 100000.0;
         let mut nearest_vor = 100000.0;
         for navaid in near_aids {
+            let distance = midpoint.distance_to(navaid.get_loc());
             if self.vor_preferred && navaid.get_type() == NavaidType::Vor {
-                if midpoint.distance_to(navaid.get_loc()) < nearest_vor {
+                if distance < nearest_vor {
                     best_vor = Some(navaid.clone());
-                    nearest_vor = midpoint.distance_to(navaid.get_loc());
+                    nearest_vor = distance;
                 }
-            }
-            if midpoint.distance_to(navaid.get_loc()) < nearest {
+            } else if best_vor.is_none() && distance < nearest {
                 best_loc = Some(navaid.clone());
-                nearest = midpoint.distance_to(navaid.get_loc());
+                nearest = distance;
             }
         }
-
-        if best_vor.is_some() {
-            best_loc = best_vor;
-        }
-        best_loc
+        best_vor.or(best_loc)
     }
 
     fn get_fix_nearest_midpoint(
@@ -305,9 +301,10 @@ impl Planner<'_> {
         let mut nearest = 100000.0;
 
         for fix in near_aids {
-            if coord.distance_to(fix.get_loc()) < nearest {
+            let distance = coord.distance_to(fix.get_loc());
+            if distance < nearest {
                 best_loc = Some(fix.clone());
-                nearest = coord.distance_to(fix.get_loc());
+                nearest = distance;
             }
         }
         best_loc
