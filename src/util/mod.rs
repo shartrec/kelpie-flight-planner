@@ -25,6 +25,10 @@
 
 use gtk::FileFilter;
 use gtk::gio::ListStore;
+use rolling_file::{BasicRollingFileAppender, RollingConditionBasic};
+use simplelog::{ColorChoice, CombinedLogger, Config, ConfigBuilder, TermLogger, TerminalMode, WriteLogger};
+use log::LevelFilter;
+use std::error::Error;
 
 pub(crate) mod airport_painter;
 pub(crate) mod airport_parser;
@@ -50,4 +54,72 @@ pub fn get_plan_file_filter(ext: &str) -> ListStore {
     filter.add_pattern("*");
     store.append(&filter);
     store
+}
+
+pub struct LoggerGuard;
+
+impl LoggerGuard {
+    pub fn new() -> Self {
+        Self::init_logger();
+        LoggerGuard
+    }
+    fn init_logger() {
+        if let Some(home_path) = home::home_dir() {
+            let log_path = home_path.join("kelpie-planner.log");
+            let condition = RollingConditionBasic::new()
+                .daily()
+                .max_size(1024 * 1024);
+            let file_appender =
+                BasicRollingFileAppender::new(log_path, condition, 2);
+            match file_appender {
+                Ok(file) => {
+                    let config = ConfigBuilder::new()
+                        .set_time_offset_to_local()
+                        .unwrap().build();
+                    let config2 = ConfigBuilder::new()
+                        .set_location_level(LevelFilter::Error)
+                        .set_time_format_rfc3339()
+                        .set_time_offset_to_local()
+                        .unwrap().build();
+                    CombinedLogger::init(vec![
+                        TermLogger::new(
+                            LevelFilter::Warn,
+                            config,
+                            TerminalMode::Mixed,
+                            ColorChoice::Auto,
+                        ),
+                        WriteLogger::new(
+                            LevelFilter::Info,
+                            config2,
+                            file,
+                        ),
+                    ]).unwrap_or_else(|e| {
+                        Self::print_error(&e);
+                    });
+                    return;
+                }
+                Err(e) => {
+                    Self::print_error(&e);
+                }
+            }
+        }
+        TermLogger::init(
+            LevelFilter::Warn,
+            Config::default(),
+            TerminalMode::Mixed,
+            ColorChoice::Auto,
+        ).unwrap_or_else(|e| {
+            Self::print_error(&e);
+        });
+    }
+
+    fn print_error(e: &dyn Error) {
+        println!("Unable to initiate logger: {}", e);
+    }
+}
+
+impl Drop for LoggerGuard {
+    fn drop(&mut self) {
+        log::logger().flush();
+    }
 }

@@ -24,20 +24,17 @@
 
 #![windows_subsystem = "windows"]
 
-use std::error::Error;
 use std::ptr;
 
 use adw::Application;
-use gtk::{CssProvider, gio, glib, UriLauncher};
+use gtk::{gio, glib, CssProvider, UriLauncher};
 use adw::gdk::Display;
 use gtk::gio::{Cancellable, File, SimpleAction};
 use gtk::glib::clone;
 use adw::prelude::*;
 use adw::subclass::prelude::ObjectSubclassIsExt;
 use log::error;
-use rolling_file::{BasicRollingFileAppender, RollingConditionBasic};
-use simplelog::*;
-
+use util::LoggerGuard;
 use window::{preferences::PreferenceDialog, Window};
 
 use crate::util::info;
@@ -53,74 +50,6 @@ mod util;
 mod window;
 
 const APP_ID: &str = "com.shartrec.KelpiePlanner";
-
-struct LoggerGuard;
-
-impl LoggerGuard {
-    pub fn new() -> Self {
-        Self::init_logger();
-        LoggerGuard
-    }
-    fn init_logger() {
-        if let Some(home_path) = home::home_dir() {
-            let log_path = home_path.join("kelpie-planner.log");
-            let condition = RollingConditionBasic::new()
-                .daily()
-                .max_size(1024 * 1024);
-            let file_appender = BasicRollingFileAppender::new(
-                log_path, condition, 2);
-            match file_appender {
-                Ok(file) => {
-                    let config = ConfigBuilder::new()
-                        .set_time_offset_to_local()
-                        .unwrap().build();
-                    let config2 = ConfigBuilder::new()
-                        .set_location_level(LevelFilter::Error)
-                        .set_time_format_rfc3339()
-                        .set_time_offset_to_local()
-                        .unwrap().build();
-                    CombinedLogger::init(vec![
-                        TermLogger::new(
-                            LevelFilter::Warn,
-                            config,
-                            TerminalMode::Mixed,
-                            ColorChoice::Auto,
-                        ),
-                        WriteLogger::new(
-                            LevelFilter::Info,
-                            config2,
-                            file,
-                        ),
-                    ]).unwrap_or_else(|e| {
-                        Self::print_error(&e);
-                    });
-                    return;
-                }
-                Err(e) => {
-                    Self::print_error(&e);
-                }
-            }
-        }
-        TermLogger::init(
-            LevelFilter::Warn,
-            Config::default(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        ).unwrap_or_else(|e| {
-            Self::print_error(&e);
-        });
-    }
-
-    fn print_error(e: &dyn Error) {
-        println!("Unable to initiate logger: {}", e);
-    }
-}
-
-impl Drop for LoggerGuard {
-    fn drop(&mut self) {
-        log::logger().flush();
-    }
-}
 
 fn main() -> glib::ExitCode {
 
