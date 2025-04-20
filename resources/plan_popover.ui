@@ -6,17 +6,17 @@
   <menu id="plan-menu">
     <section>
       <item>
-        <attribute name="label">Remove</attribute>
+        <attribute name="label" translatable="yes">Remove</attribute>
         <attribute name="action">plan.remove</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="label">View airport</attribute>
+        <attribute name="label" translatable="yes">View airport</attribute>
         <attribute name="action">plan.view</attribute>
       </item>
       <item>
-        <attribute name="label">Show on map</attribute>
+        <attribute name="label" translatable="yes">Show on map</attribute>
         <attribute name="action">plan.show_on_map</attribute>
       </item>
     </section>

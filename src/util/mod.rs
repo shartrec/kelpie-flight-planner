@@ -56,12 +56,12 @@ pub fn get_plan_file_filter(ext: &str) -> ListStore {
     store
 }
 
-pub struct LoggerGuard;
+pub struct Logger;
 
-impl LoggerGuard {
+impl Logger {
     pub fn new() -> Self {
         Self::init_logger();
-        LoggerGuard
+        Logger
     }
     fn init_logger() {
         if let Some(home_path) = home::home_dir() {
@@ -118,7 +118,7 @@ impl LoggerGuard {
     }
 }
 
-impl Drop for LoggerGuard {
+impl Drop for Logger {
     fn drop(&mut self) {
         log::logger().flush();
     }

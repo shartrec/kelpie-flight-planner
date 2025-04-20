@@ -174,8 +174,7 @@
     </child>
     <child>
       <object class="GtkCheckButton" id="btn_use_mag_hdg">
-        <property name="label" translatable="yes">Use magnetic headings (rather than true headings)
-        </property>
+        <property name="label" translatable="yes">Use magnetic headings (rather than true headings)</property>
         <property name="valign">start</property>
       </object>
     </child>

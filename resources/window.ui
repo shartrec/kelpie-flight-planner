@@ -3,7 +3,7 @@
   Copyright (c) 2003-2023. Trevor Campbell and others.
   -->
 
-<interface>
+<interface domain="kelpie_rust_planner">
   <requires lib="gtk+" version="4.0"/>
   <menu id="main-menu">
     <submenu>
@@ -64,7 +64,7 @@
     </submenu>
   </menu>
   <template class="KelpiePlannerWindow" parent="AdwApplicationWindow">
-    <property name="title">Kelpie Flight Planner for FlightGear</property>
+    <property name="title" translatable="yes">Kelpie Flight Planner for FlightGear</property>
     <property name="default-height">500</property>
     <property name="default-width">800</property>
     <property name="content">

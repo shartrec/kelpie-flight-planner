@@ -34,8 +34,9 @@ use gtk::glib::clone;
 use adw::prelude::*;
 use adw::subclass::prelude::ObjectSubclassIsExt;
 use log::error;
-use util::LoggerGuard;
+use util::Logger;
 use window::{preferences::PreferenceDialog, Window};
+use gettextrs::TextDomain;
 
 use crate::util::info;
 use crate::window::util::show_help_about;
@@ -55,7 +56,12 @@ fn main() -> glib::ExitCode {
 
     // Create the LoggerGuard instance, this will initialize the logger
     // and flush it when the instance goes out of scope
-    let _logger_guard = LoggerGuard::new();
+    let _logger = Logger::new();
+
+    TextDomain::new("kelpie_rust_planner")
+        .push("/home/trevor/KelpieRustPlanner")
+        .init()
+        .expect("Localization init failed");
 
     init_opengl();
 

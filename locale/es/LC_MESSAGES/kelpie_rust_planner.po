@@ -1,0 +1,344 @@
+# This file is part of Kelpie Flight Planner.
+# Copyright (c) 2003-2023. Trevor Campbell and others.
+# Kelpie Flight Planner is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Kelpie Flight Planner 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-20 11:10+1000\n"
+"PO-Revision-Date: 2025-04-20 11:10+1000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Spanish <es@li.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: airport_popover.ui:9 fix_popover.ui:9 navaid_popover.ui:9
+msgid "Add to plan"
+msgstr "Agregar al plan"
+
+#: airport_popover.ui:13
+msgid "View airport"
+msgstr "Ver aeropuerto"
+
+#: airport_popover.ui:17 fix_popover.ui:13 navaid_popover.ui:13
+#: plan_popover.ui:25
+msgid "Find airports near"
+msgstr "Buscar aeropuertos cerca de"
+
+#: airport_popover.ui:21 fix_popover.ui:17 navaid_popover.ui:17
+#: plan_popover.ui:29
+msgid "Find navaids near"
+msgstr "Buscar ayudas a la navegación cerca de"
+
+#: airport_popover.ui:25 fix_popover.ui:21 navaid_popover.ui:21
+#: plan_popover.ui:33
+msgid "Find fixes near"
+msgstr "Buscar puntos de navegación cerca de"
+
+#: airport_view.ui:30 fix_view.ui:27 navaid_view.ui:27
+msgid "ID"
+msgstr "ID"
+
+#: airport_view.ui:35 navaid_view.ui:32 plan_view.ui:102
+#: preference_aircraft_dialog.ui:26
+msgid "Name"
+msgstr "Nombre"
+
+#: airport_view.ui:41 fix_view.ui:32 navaid_view.ui:38
+msgid "Latitude"
+msgstr "Latitud"
+
+#: airport_view.ui:46 fix_view.ui:37 navaid_view.ui:43
+msgid "Longitude"
+msgstr "Longitud"
+
+#: airport_view.ui:51
+msgid "Elevation"
+msgstr "Elevación"
+
+#: airport_view.ui:70 navaid_view.ui:67
+msgid "Id or Name"
+msgstr "ID o Nombre"
+
+#: airport_view.ui:88 fix_view.ui:78 navaid_view.ui:85
+msgid "or near Lat"
+msgstr "o cerca de Lat"
+
+#: airport_view.ui:99 fix_view.ui:89 navaid_view.ui:96 plan_view.ui:117
+msgid "Long"
+msgstr "Long"
+
+#: fix_view.ui:56
+msgid "Id"
+msgstr "ID"
+
+#: navaid_view.ui:48
+msgid "Frequency"
+msgstr "Frecuencia"
+
+#: plan_view.ui:77
+msgid "Set max altitude"
+msgstr "Establecer altitud máxima"
+
+#: plan_view.ui:107
+msgid "Alt"
+msgstr "Alt"
+
+#: plan_view.ui:112
+msgid "Lat"
+msgstr "Lat"
+
+#: plan_view.ui:122
+msgid "Freq"
+msgstr "Freq"
+
+#: plan_view.ui:127
+msgid "Hdg(mag)"
+msgstr "Rumbo(mag)"
+
+#: plan_view.ui:132
+msgid "Dist"
+msgstr "Dist"
+
+#: plan_view.ui:137
+msgid "Time"
+msgstr "Tiempo"
+
+#: plan_view.ui:142
+msgid "Speed - IAS"
+msgstr "Velocidad - IAS"
+
+#: preference.ui:26
+msgid "General"
+msgstr "General"
+
+#: preference.ui:35
+msgid "Planner"
+msgstr "Planificador"
+
+#: preference.ui:44
+msgid "Aircraft"
+msgstr "Aeronave"
+
+#: preference.ui:53
+msgid "FlightGear Link"
+msgstr "Enlace con FlightGear"
+
+#: preference_aircraft_dialog.ui:46
+msgid "Cruise speed"
+msgstr "Velocidad de crucero"
+
+#: preference_aircraft_dialog.ui:66
+msgid "Cruise altitude"
+msgstr "Altitud de crucero"
+
+#: preference_aircraft_dialog.ui:86
+msgid "Climb speed"
+msgstr "Velocidad de ascenso"
+
+#: preference_aircraft_dialog.ui:106
+msgid "Climb rate"
+msgstr "Tasa de ascenso"
+
+#: preference_aircraft_dialog.ui:126
+msgid "Simk speed"
+msgstr "Velocidad de descenso"
+
+#: preference_aircraft_dialog.ui:146
+msgid "Simk rate"
+msgstr "Tasa de descenso"
+
+#: preference_fglink.ui:17
+msgid "Defines a link to FlightGear web server"
+msgstr "Define un enlace al servidor web de FlightGear"
+
+#: preference_fglink.ui:25
+msgid "Enabled"
+msgstr "Habilitado"
+
+#: preference_fglink.ui:38
+msgid "FlightGear HTTP server host name"
+msgstr "Nombre del host del servidor HTTP de FlightGear"
+
+#: preference_fglink.ui:57
+msgid "FlightGear HTTP server port"
+msgstr "Puerto del servidor HTTP de FlightGear"
+
+#: preference_general.ui:26
+msgid "Airport and Navaid database locations"
+msgstr "Ubicaciones de las bases de datos de aeropuertos y ayudas a la navegación"
+
+#: preference_general.ui:40
+msgid "Flightgear Directory"
+msgstr "Directorio de FlightGear"
+
+#: preference_general.ui:60 preference_general.ui:99 preference_general.ui:128
+#: preference_general.ui:157
+msgid "Browse..."
+msgstr "Examinar..."
+
+#: preference_general.ui:69
+msgid "Use Default paths"
+msgstr "Usar rutas predeterminadas"
+
+#: preference_general.ui:79
+msgid "Airport database"
+msgstr "Base de datos de aeropuertos"
+
+#: preference_general.ui:108
+msgid "Navaid database"
+msgstr "Base de datos de ayudas a la navegación"
+
+#: preference_general.ui:137
+msgid "Fix database"
+msgstr "Base de datos de puntos de navegación"
+
+#: preference_general.ui:168
+msgid "Headings"
+msgstr "Rumbos"
+
+#: preference_general.ui:177
+msgid "Use magnetic headings (rather than true headings)"
+msgstr "Usar rumbos magnéticos (en lugar de rumbos verdaderos)"
+
+#: preference_general.ui:183
+msgid "Distance Units"
+msgstr "Unidades de distancia"
+
+#: preference_general.ui:192
+msgid "Nautical Miles"
+msgstr "Millas náuticas"
+
+#: preference_general.ui:197
+msgid "Statute Miles"
+msgstr "Millas terrestres"
+
+#: preference_general.ui:203
+msgid "Kilometers"
+msgstr "Kilómetros"
+
+#: preference_planner.ui:25
+msgid "Flight plan"
+msgstr "Plan de vuelo"
+
+#: preference_planner.ui:39
+msgid "Update plan on change"
+msgstr "Actualizar plan al cambiar"
+
+#: preference_planner.ui:49
+msgid "Preferred maximum leg length"
+msgstr "Longitud máxima de tramo preferida"
+
+#: preference_planner.ui:68
+msgid "Minimum leg length"
+msgstr "Longitud mínima de tramo"
+
+#: preference_planner.ui:87
+msgid "Maximum flight path deviation"
+msgstr "Desviación máxima de la ruta de vuelo"
+
+#: preference_planner.ui:108
+msgid "Build plan using"
+msgstr "Construir plan usando"
+
+#: preference_planner.ui:117
+msgid "Radio beacons"
+msgstr "Radiobalizas"
+
+#: preference_planner.ui:122 window.ui:153
+msgid "Fixes"
+msgstr "Puntos de navegación"
+
+#: preference_planner.ui:128
+msgid "GPS"
+msgstr "GPS"
+
+#: preference_planner.ui:134
+msgid "Include only VORs"
+msgstr "Incluir solo VORs"
+
+#: preference_planner.ui:139
+msgid "Prefer VORs over NDBs"
+msgstr "Preferir VORs sobre NDBs"
+
+#: preference_planner.ui:144
+msgid "Add GPS waypoints on long legs"
+msgstr "Añadir puntos GPS en tramos largos"
+
+#: window.ui:10
+msgid "Plan"
+msgstr "Plan"
+
+#: window.ui:13
+msgid "New"
+msgstr "Nuevo"
+
+#: window.ui:17
+msgid "Open"
+msgstr "Abrir"
+
+#: window.ui:21
+msgid "Save"
+msgstr "Guardar"
+
+#: window.ui:25
+msgid "Export for Route Manager"
+msgstr "Exportar para el Gestor de Rutas"
+
+#: window.ui:29
+msgid "Quit"
+msgstr "Salir"
+
+#: window.ui:35
+msgid "Edit"
+msgstr "Editar"
+
+#: window.ui:38
+msgid "Preferences"
+msgstr "Preferencias"
+
+#: window.ui:44
+msgid "Tools"
+msgstr "Herramientas"
+
+#: window.ui:47
+msgid "Reload Airport and Nav Aids"
+msgstr "Recargar Aeropuertos y Ayudas a la Navegación"
+
+#: window.ui:53
+msgid "Help"
+msgstr "Ayuda"
+
+#: window.ui:56
+msgid "About"
+msgstr "Acerca de"
+
+#: window.ui:60
+msgid "Contents"
+msgstr "Contenido"
+
+#: window.ui:67
+msgid "Kelpie Flight Planner for FlightGear"
+msgstr "Kelpie Planificador de Vuelo para FlightGear"
+
+#: window.ui:135
+msgid "Airports"
+msgstr "Aeropuertos"
+
+#: window.ui:144
+msgid "Navaids"
+msgstr "Ayudas a la navegación"
+
+#: window.ui:178
+msgid "Map"
+msgstr "Mapa"
+
+#: window.ui:187
+msgid "Airport Map"
+msgstr "Mapa del Aeropuerto"

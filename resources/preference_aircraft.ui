@@ -33,24 +33,24 @@
         <property name="vexpand">true</property>
         <child>
           <object class="GtkButton" id="aircraft_add">
-            <property name="label">Add</property>
+            <property name="label" translatable="yes">Add</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="aircraft_edit">
-            <property name="label">Edit</property>
+            <property name="label" translatable="yes">Edit</property>
             <property name="sensitive">false</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="aircraft_delete">
-            <property name="label">Remove</property>
+            <property name="label" translatable="yes">Remove</property>
             <property name="sensitive">false</property>
           </object>
         </child>
         <child>
           <object class="GtkButton" id="aircraft_default">
-            <property name="label">Set default</property>
+            <property name="label" translatable="yes">Set default</property>
             <property name="sensitive">false</property>
           </object>
         </child>

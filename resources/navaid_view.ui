@@ -105,7 +105,7 @@
             </child>
             <child>
               <object class="GtkButton" id="navaid_search">
-                <property name="label">Search</property>
+                <property name="label" translatable="yes">Search</property>
                 <property name="sensitive">false</property>
               </object>
             </child>

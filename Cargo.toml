@@ -12,6 +12,7 @@ gtk = { version = "^0.9", package = "gtk4", features = ["v4_14"] }
 adw = { version = "0.7.2", package = "libadwaita", features = ["v1_5"] }
 log = "^0.4"
 rolling-file = "0.2.0"
+gettext-rs = "0.7"
 preferences = "^1.1.0"
 regex-lite = "0.1.5"
 shapefile = { version = "0.6.0", features = ["geo-types"] }

@@ -23,7 +23,7 @@
         </style>
         <child>
           <object class="GtkToggleButton" id="btn_show_airports">
-            <property name="tooltip_text">Show Airports</property>
+            <property name="tooltip_text" translatable="yes">Show Airports</property>
             <property name="active">true</property>
             <child>
               <object class="GtkImage">
@@ -37,7 +37,7 @@
         </child>
         <child>
           <object class="GtkToggleButton" id="btn_show_navaids">
-            <property name="tooltip_text">Show Navaids</property>
+            <property name="tooltip_text" translatable="yes">Show Navaids</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
@@ -50,7 +50,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_zoom_in">
-            <property name="tooltip_text">Zoom in</property>
+            <property name="tooltip_text" translatable="yes">Zoom in</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
@@ -63,7 +63,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_zoom_out">
-            <property name="tooltip_text">Zoom out</property>
+            <property name="tooltip_text" translatable="yes">Zoom out</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
