@@ -30,6 +30,7 @@ use gtk::gdk::Texture;
 use gtk::glib::Object;
 use adw::prelude::{AdwDialogExt, AlertDialogExt, Cast, CastNone, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
 use adw::subclass::prelude::ObjectSubclassIsExt;
+use gettextrs::gettext;
 use crate::util;
 use crate::window::airport_map_view::AirportMapView;
 use crate::window::airport_view::AirportView;
@@ -65,7 +66,8 @@ pub fn show_error_dialog(root: &Option<Root>, message: &str) {
         .clone()
         .downcast::<gtk::Window>()
     {
-        let dialog = AlertDialog::new(None, Some(message));
+        let message = gettext(message);
+        let dialog = AlertDialog::new(None, Some(&*message));
         dialog.add_response("OK", "Ok");
         dialog.present(Some(&w));
     };

@@ -4,7 +4,7 @@
 
 <interface>
   <template class="PreferenceDialog" parent="GtkWindow">
-    <property name="title">Kelpie Flight Planner Settings</property>
+    <property name="title" translatable="yes">Kelpie Flight Planner Settings</property>
     <property name="default-height">300</property>
     <property name="default-width">650</property>
     <child>

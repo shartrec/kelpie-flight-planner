@@ -29,7 +29,7 @@ mod imp {
     use std::cell::RefCell;
     use std::sync::Arc;
     use std::thread;
-
+    use gettextrs::gettext;
     use glib::subclass::InitializingObject;
     use gtk::{cairo::Context, DrawingArea, Label};
     use gtk::glib::{clone, MainContext};
@@ -93,7 +93,7 @@ mod imp {
 
         fn draw_runway_list(&self, airport: &Airport) {
             let mut buf = String::new();
-            buf.push_str("Runways");
+            buf.push_str(&*gettext("Runways"));
             let runways = airport
                 .get_runways()
                 .read()

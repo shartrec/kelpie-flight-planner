@@ -27,17 +27,17 @@ msgstr "Zum Plan hinzufügen"
 msgid "View airport"
 msgstr "Flughafen anzeigen"
 
-#: airport_popover.ui:17 fix_popover.ui:13 navaid_popover.ui:13
+#: airport_popover.ui:17 fix_popover.ui:13 navaid_popover.ui:13 window/world_map_view.rs:272
 #: plan_popover.ui:25
 msgid "Find airports near"
 msgstr "Flughäfen in der Nähe finden"
 
-#: airport_popover.ui:21 fix_popover.ui:17 navaid_popover.ui:17
+#: airport_popover.ui:21 fix_popover.ui:17 navaid_popover.ui:17 window/world_map_view.rs:274
 #: plan_popover.ui:29
 msgid "Find navaids near"
 msgstr "Navigationshilfen in der Nähe finden"
 
-#: airport_popover.ui:25 fix_popover.ui:21 navaid_popover.ui:21
+#: airport_popover.ui:25 fix_popover.ui:21 navaid_popover.ui:21 window/world_map_view.rs:276
 #: plan_popover.ui:33
 msgid "Find fixes near"
 msgstr "Fixpunkte in der Nähe finden"
@@ -53,7 +53,7 @@ msgstr "Name"
 
 #: airport_view.ui:41 fix_view.ui:32 navaid_view.ui:38
 msgid "Latitude"
-msgstr "Breitengrad"
+msgstr "Breite"
 
 #: airport_view.ui:46 fix_view.ui:37 navaid_view.ui:43
 msgid "Longitude"
@@ -73,7 +73,11 @@ msgstr "oder nahe Breitengrad"
 
 #: airport_view.ui:99 fix_view.ui:89 navaid_view.ui:96 plan_view.ui:117
 msgid "Long"
-msgstr "Längengrad"
+msgstr "Läng"
+
+#: airport_view.ui:111 fix_view.ui:101 navaid_view.ui:108
+msgid "Search"
+msgstr "Suchen"
 
 #: fix_view.ui:56
 msgid "Id"
@@ -82,6 +86,14 @@ msgstr "ID"
 #: navaid_view.ui:48
 msgid "Frequency"
 msgstr "Frequenz"
+
+#: plan_popover.ui:9 preference_aircraft.ui:47
+msgid "Remove"
+msgstr "Entfernen"
+
+#: plan_popover.ui:19
+msgid "Show on map"
+msgstr "Auf der Karte zeigen"
 
 #: plan_view.ui:77
 msgid "Set max altitude"
@@ -115,6 +127,10 @@ msgstr "Zeit"
 msgid "Speed - IAS"
 msgstr "Geschwindigkeit - IAS"
 
+#: preference.ui:7
+msgid "Kelpie Flight Planner Settings"
+msgstr "Kelpie-Flugplaner-Einstellungen"
+
 #: preference.ui:26
 msgid "General"
 msgstr "Allgemein"
@@ -129,7 +145,16 @@ msgstr "Flugzeug"
 
 #: preference.ui:53
 msgid "FlightGear Link"
-msgstr "FlightGear-Verbindung"
+msgstr "Verbindung zum FlightGear"
+
+#: preference_aircraft.ui:36
+msgid "Add"
+msgstr "Hinzufügen"
+
+
+#: preference_aircraft.ui:53
+msgid "Set default"
+msgstr "Standard festlegen"
 
 #: preference_aircraft_dialog.ui:46
 msgid "Cruise speed"
@@ -296,7 +321,7 @@ msgstr "Für Routenmanager exportieren"
 msgid "Quit"
 msgstr "Beenden"
 
-#: window.ui:35
+#: preference_aircraft.ui:41 window.ui:35
 msgid "Edit"
 msgstr "Bearbeiten"
 
@@ -343,3 +368,43 @@ msgstr "Karte"
 #: window.ui:187
 msgid "Airport Map"
 msgstr "Flughafenkarte"
+
+#: src/window/airport_map_view.rs:96
+msgid "Runways"
+msgstr "Start- und Landebahnen"
+
+#: src/window/imp.rs:270
+msgid "Yes"
+msgstr "Ja"
+
+#: src/window/imp.rs:271
+msgid "No"
+msgstr "Nein"
+
+#: src/window/imp.rs:272
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: src/window/imp.rs:275
+msgid "Save changes to plan {} before closing"
+msgstr "Änderungen am Plan {} vor dem Schließen speichern"
+
+#: src/window/imp.rs:328
+msgid "Ok"
+msgstr "OK"
+
+#: src/window/imp.rs:331
+msgid "Please set paths to flightgear Airport and Navaid files"
+msgstr "Bitte Pfade zu den FlightGear-Flughafen- und Navigationsdateien festlegen"
+
+#: src/window/imp.rs:360 src/window/imp.rs:429
+msgid "Save Plan"
+msgstr "Plan speichern"
+
+#: src/window/world_map_view.rs:250
+msgid "View {} layout"
+msgstr "Layout von {} anzeigen"
+
+#: src/window/world_map_view.rs:253 src/window/world_map_view.rs:261
+msgid "Add {} to plan"
+msgstr "{} zum Plan hinzufügen"

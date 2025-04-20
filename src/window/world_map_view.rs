@@ -46,7 +46,7 @@ mod imp {
     use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
-
+    use gettextrs::gettext;
     use crate::earth::coordinate::Coordinate;
     use crate::event::Event;
     use crate::model::airport::{Airport, AirportType};
@@ -247,16 +247,19 @@ mod imp {
 
         fn make_airport_popup(&self, model: &Menu, airport: Option<Arc<Airport>>) {
             if let Some(airport) = airport {
-                let item = MenuItem::new(Some(format!("View {} layout", airport.get_name()).as_str()), Some("world_map.view_airport"));
+                let label = gettext("View {} layout").replace("{}", airport.get_name());
+                let item = MenuItem::new(Some(&*label), Some("world_map.view_airport"));
                 model.append_item(&item);
-                let item = MenuItem::new(Some(format!("Add {} to plan", airport.get_name()).as_str()), Some("world_map.add_to_plan"));
+                let label = gettext("Add {} to plan").replace("{}", airport.get_name());
+                let item = MenuItem::new(Some(&*label), Some("world_map.add_to_plan"));
                 model.append_item(&item);
             }
         }
 
         fn make_navaid_popup(&self, model: &Menu, navaid: Option<Arc<Navaid>>) {
             if let Some(navaid) = navaid {
-                let item = MenuItem::new(Some(format!("Add {} to plan", navaid.get_name()).as_str()), Some("world_map.add_nav_to_plan"));
+                let label = gettext("Add {} to plan").replace("{}", navaid.get_name());
+                let item = MenuItem::new(Some(&*label), Some("world_map.add_nav_to_plan"));
                 model.append_item(&item);
             }
         }
@@ -266,11 +269,11 @@ mod imp {
             self.make_airport_popup(&model, airport);
             self.make_navaid_popup(&model, navaid);
 
-            let item = MenuItem::new(Some("Find airports near"), Some("world_map.find_airports_near"));
+            let item = MenuItem::new(Some(&*gettext("Find airports near")), Some("world_map.find_airports_near"));
             model.append_item(&item);
-            let item = MenuItem::new(Some("Find navaids near"), Some("world_map.find_navaids_near"));
+            let item = MenuItem::new(Some(&*gettext("Find navaids near")), Some("world_map.find_navaids_near"));
             model.append_item(&item);
-            let item = MenuItem::new(Some("Find fixes near"), Some("world_map.find_fixes_near"));
+            let item = MenuItem::new(Some(&*gettext("Find fixes near")), Some("world_map.find_fixes_near"));
             model.append_item(&item);
 
             let popover = PopoverMenu::builder()

@@ -33,10 +33,10 @@ use gtk::gio::{Cancellable, File, SimpleAction};
 use gtk::glib::clone;
 use adw::prelude::*;
 use adw::subclass::prelude::ObjectSubclassIsExt;
-use log::error;
+use log::{error, warn};
 use util::Logger;
 use window::{preferences::PreferenceDialog, Window};
-use gettextrs::TextDomain;
+use gettextrs::{TextDomain, TextDomainError};
 
 use crate::util::info;
 use crate::window::util::show_help_about;
@@ -58,10 +58,27 @@ fn main() -> glib::ExitCode {
     // and flush it when the instance goes out of scope
     let _logger = Logger::new();
 
-    TextDomain::new("kelpie_rust_planner")
+    match TextDomain::new("kelpie_rust_planner")
         .push("/home/trevor/KelpieRustPlanner")
-        .init()
-        .expect("Localization init failed");
+        .init() {
+        Ok(_)     => {}
+        Err(err)  => {
+            match err {
+                TextDomainError::InvalidLocale(locale) => {
+                    warn!("Failed to find translation for {}, using default", locale);
+                }
+                TextDomainError::TranslationNotFound(locale) => {
+                    warn!("Failed to find translation for {}, using default", locale);
+                }
+                _ => {}
+            }
+            TextDomain::new("kelpie_rust_planner")
+                .push("/home/trevor/KelpieRustPlanner")
+                .locale("")
+                .init()
+                .expect("Failed to initialize text domain");
+        }
+    }
 
     init_opengl();
 

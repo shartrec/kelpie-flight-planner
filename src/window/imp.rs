@@ -33,7 +33,7 @@ use gtk::gio::{Cancellable, File};
 use gtk::glib::{clone, MainContext};
 use adw::prelude::*;
 use adw::subclass::prelude::*;
-
+use gettextrs::gettext;
 use crate::event;
 use crate::event::Event;
 use crate::util::{get_plan_file_filter, plan_writer_route_manager, plan_writer_xml};
@@ -267,10 +267,16 @@ impl Window {
     {
         let win = self.get_window_handle();
 
-        let buttons = vec!["Yes".to_string(), "No".to_string(), "Cancel".to_string()];
+        let yes = gettext("Yes");
+        let no = gettext("No");
+        let cancel = gettext("Cancel");
+
+        let buttons = vec![yes, no, cancel];
+        let message_template = gettext("Save changes to plan {} before closing");
+        let message = message_template.replace("{}", name);
         let alert = AlertDialog::builder()
             .modal(true)
-            .message(format!("Save changes to plan {} before closing", name))
+            .message(message)
             .buttons(buttons)
             .default_button(0)
             .cancel_button(2)
@@ -319,10 +325,10 @@ impl ObjectImpl for Window {
                     while let Ok(ev) = rx.recv().await {
                         match ev {
                             Event::SetupRequired => {
-                                let buttons = vec!["Ok".to_string()];
+                                let buttons = vec![gettext("Ok")];
                                 let alert = AlertDialog::builder()
                                     .modal(true)
-                                    .message("Please set paths to flightgear Airport and Navaid files".to_string())
+                                    .message(gettext("Please set paths to flightgear Airport and Navaid files"))
                                     .buttons(buttons)
                                     .build();
 
@@ -351,7 +357,7 @@ impl ObjectImpl for Window {
                     window.query_save_dirty(&name, clone!(#[weak] window, #[weak] view, #[weak] page, move |button| {
 
                         if button == 0 {
-                            window.save_page_plan("Save Plan", SaveType::Native, &page, false);
+                            window.save_page_plan(&*gettext("Save Plan"), SaveType::Native, &page, false);
                             view.close_page_finish(&page, true);
                         } else if button == 1 {
                             view.close_page_finish(&page, true);
@@ -420,7 +426,7 @@ impl WindowImpl for Window {
                     propagation = Propagation::Stop;
                     self.query_save_dirty(&name, clone!(#[weak(rename_to = window)] self, move |button| {
                         if button == 0 {
-                            window.save_page_plan("Save Plan", SaveType::Native, &page, true);
+                            window.save_page_plan(&*gettext("Save Plan"), SaveType::Native, &page, true);
                             window.set_not_dirty(&page);
                             if i > 1 {
                                 window.plan_tab_view.close_page(&page);
