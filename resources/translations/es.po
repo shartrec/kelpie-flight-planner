@@ -10,13 +10,14 @@ msgstr ""
 "Project-Id-Version: Kelpie Flight Planner 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-21 16:37+1000\n"
-"PO-Revision-Date: 2025-04-20 11:10+1000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"PO-Revision-Date: 2025-04-21 16:51+1000\n"
+"Last-Translator: \n"
 "Language-Team: Spanish <es@li.org>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.6\n"
 
 #: resources/airport_popover.ui:9 resources/fix_popover.ui:9
 #: resources/navaid_popover.ui:9
@@ -299,7 +300,6 @@ msgid "Add GPS waypoints on long legs"
 msgstr "Añadir puntos GPS en tramos largos"
 
 #: resources/preference.ui:7
-#, fuzzy
 msgid "Kelpie Flight Planner Settings"
 msgstr "Kelpie Planificador de Vuelo para FlightGear"
 
@@ -388,22 +388,20 @@ msgid "Airport Map"
 msgstr "Mapa del Aeropuerto"
 
 #: resources/world_map_view.ui:26
-#, fuzzy
 msgid "Show Airports"
 msgstr "Aeropuertos"
 
 #: resources/world_map_view.ui:40
-#, fuzzy
 msgid "Show Navaids"
 msgstr "Ayudas a la navegación"
 
 #: resources/world_map_view.ui:53
 msgid "Zoom in"
-msgstr ""
+msgstr "Ampliar"
 
 #: resources/world_map_view.ui:66
 msgid "Zoom out"
-msgstr ""
+msgstr "Reducir"
 
 #: src/window/airport_map_view.rs:96
 msgid "Runways"

@@ -8,16 +8,17 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-04-21 16:37+1000\n"
-"PO-Revision-Date: 2025-04-20 11:10+1000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2025-04-21 16:55+1000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: pt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.6\n"
 
 #: resources/airport_popover.ui:9 resources/fix_popover.ui:9
 #: resources/navaid_popover.ui:9
@@ -398,11 +399,11 @@ msgstr "Ajudas à navegação"
 
 #: resources/world_map_view.ui:53
 msgid "Zoom in"
-msgstr ""
+msgstr "Ampliar"
 
 #: resources/world_map_view.ui:66
 msgid "Zoom out"
-msgstr ""
+msgstr "Reduzir"
 
 #: src/window/airport_map_view.rs:96
 msgid "Runways"
