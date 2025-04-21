@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 16:37+1000\n"
-"PO-Revision-Date: 2025-04-21 16:53+1000\n"
+"POT-Creation-Date: 2025-04-21 17:14+1000\n"
+"PO-Revision-Date: 2025-04-21 17:27+1000\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE <fr@li.org>\n"
 "Language: fr\n"
@@ -105,6 +105,23 @@ msgstr "Retirer"
 #: resources/plan_popover.ui:19
 msgid "Show on map"
 msgstr "Afficher sur la carte"
+
+#: resources/plan_view.ui:19
+#, fuzzy
+msgid "Generate plan"
+msgstr "Général"
+
+#: resources/plan_view.ui:32
+msgid "Add Sector"
+msgstr "Ajouter un secteur"
+
+#: resources/plan_view.ui:45
+msgid "Move up"
+msgstr "Vers le haut"
+
+#: resources/plan_view.ui:59
+msgid "Move down"
+msgstr "Vers le bas"
 
 #: resources/plan_view.ui:77
 msgid "Set max altitude"

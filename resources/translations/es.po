@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Kelpie Flight Planner 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 16:37+1000\n"
-"PO-Revision-Date: 2025-04-21 16:51+1000\n"
+"POT-Creation-Date: 2025-04-21 17:14+1000\n"
+"PO-Revision-Date: 2025-04-21 17:28+1000\n"
 "Last-Translator: \n"
 "Language-Team: Spanish <es@li.org>\n"
 "Language: es\n"
@@ -104,6 +104,23 @@ msgstr "Eliminar"
 #: resources/plan_popover.ui:19
 msgid "Show on map"
 msgstr "Mostrar en el mapa"
+
+#: resources/plan_view.ui:19
+#, fuzzy
+msgid "Generate plan"
+msgstr "General"
+
+#: resources/plan_view.ui:32
+msgid "Add Sector"
+msgstr "Añadir sector"
+
+#: resources/plan_view.ui:45
+msgid "Move up"
+msgstr "Subir"
+
+#: resources/plan_view.ui:59
+msgid "Move down"
+msgstr "Bajar"
 
 #: resources/plan_view.ui:77
 msgid "Set max altitude"

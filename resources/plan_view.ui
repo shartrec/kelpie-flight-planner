@@ -16,7 +16,7 @@
         <property name="spacing">5</property>
         <child>
           <object class="GtkButton" id="btn_make_plan">
-            <property name="tooltip_text">Generate plan</property>
+            <property name="tooltip_text" translatable="yes">Generate plan</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
@@ -29,7 +29,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_new_sector">
-            <property name="tooltip_text">Add Sector</property>
+            <property name="tooltip_text" translatable="yes">Add Sector</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
@@ -42,7 +42,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_move_up">
-            <property name="tooltip_text">Move up</property>
+            <property name="tooltip_text" translatable="yes">Move up</property>
             <property name="sensitive">false</property>
             <child>
               <object class="GtkImage">
@@ -56,7 +56,7 @@
         </child>
         <child>
           <object class="GtkButton" id="btn_move_down">
-            <property name="tooltip_text">Move down</property>
+            <property name="tooltip_text" translatable="yes">Move down</property>
             <property name="sensitive">false</property>
             <child>
               <object class="GtkImage">

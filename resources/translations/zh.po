@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 16:37+1000\n"
-"PO-Revision-Date: 2025-04-21 16:58+1000\n"
+"POT-Creation-Date: 2025-04-21 17:14+1000\n"
+"PO-Revision-Date: 2025-04-21 17:26+1000\n"
 "Last-Translator: \n"
 "Language-Team: Chinese (Simplified) <zh_CN@li.org>\n"
 "Language: zh_CN\n"
@@ -105,6 +105,23 @@ msgstr "移除"
 #: resources/plan_popover.ui:19
 msgid "Show on map"
 msgstr "在地图上显示"
+
+#: resources/plan_view.ui:19
+#, fuzzy
+msgid "Generate plan"
+msgstr "通用"
+
+#: resources/plan_view.ui:32
+msgid "Add Sector"
+msgstr "航段"
+
+#: resources/plan_view.ui:45
+msgid "Move up"
+msgstr "上移"
+
+#: resources/plan_view.ui:59
+msgid "Move down"
+msgstr "下移"
 
 #: resources/plan_view.ui:77
 msgid "Set max altitude"

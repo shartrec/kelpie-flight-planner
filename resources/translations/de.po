@@ -10,8 +10,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 16:37+1000\n"
-"PO-Revision-Date: 2025-04-21 16:49+1000\n"
+"POT-Creation-Date: 2025-04-21 17:14+1000\n"
+"PO-Revision-Date: 2025-04-21 17:27+1000\n"
 "Last-Translator: ChatGPT <chatgpt@openai.com>\n"
 "Language-Team: Deutsch <de@li.org>\n"
 "Language: de\n"
@@ -105,6 +105,23 @@ msgstr "Entfernen"
 #: resources/plan_popover.ui:19
 msgid "Show on map"
 msgstr "Auf der Karte zeigen"
+
+#: resources/plan_view.ui:19
+#, fuzzy
+msgid "Generate plan"
+msgstr "Allgemein"
+
+#: resources/plan_view.ui:32
+msgid "Add Sector"
+msgstr "Sektor hinzufSektor hinzufügenügen"
+
+#: resources/plan_view.ui:45
+msgid "Move up"
+msgstr "Nach oben"
+
+#: resources/plan_view.ui:59
+msgid "Move down"
+msgstr "Nach unten"
 
 #: resources/plan_view.ui:77
 msgid "Set max altitude"

@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 16:37+1000\n"
+"POT-Creation-Date: 2025-04-21 17:14+1000\n"
 "PO-Revision-Date: 2025-04-20 11:10+1000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -103,6 +103,22 @@ msgstr ""
 
 #: resources/plan_popover.ui:19
 msgid "Show on map"
+msgstr ""
+
+#: resources/plan_view.ui:19
+msgid "Generate plan"
+msgstr ""
+
+#: resources/plan_view.ui:32
+msgid "Add Sector"
+msgstr ""
+
+#: resources/plan_view.ui:45
+msgid "Move up"
+msgstr ""
+
+#: resources/plan_view.ui:59
+msgid "Move down"
 msgstr ""
 
 #: resources/plan_view.ui:77
