@@ -1,5 +1,6 @@
 #! /bin/bash
-# Copyright (c) 2003-2025. Trevor Campbell and others.
+#
+# Copyright (c) 2003-2003-2025. Trevor Campbell and others.
 #
 # This file is part of Kelpie Flight Planner.
 #
@@ -29,5 +30,7 @@ xtr -o rs.pot src/*.rs
 xgettext -o all.pot ui.pot rs.pot
 
 for po_file in resources/translations/*.po; do
-    msgmerge -u "$po_file" all.pot
+    msgmerge -U "$po_file" all.pot
 done
+
+rm *.pot
