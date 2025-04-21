@@ -58,27 +58,7 @@ fn main() -> glib::ExitCode {
     // and flush it when the instance goes out of scope
     let _logger = Logger::new();
 
-    match TextDomain::new("kelpie_rust_planner")
-        .push("/home/trevor/KelpieRustPlanner")
-        .init() {
-        Ok(_)     => {}
-        Err(err)  => {
-            match err {
-                TextDomainError::InvalidLocale(locale) => {
-                    warn!("Failed to find translation for {}, using default", locale);
-                }
-                TextDomainError::TranslationNotFound(locale) => {
-                    warn!("Failed to find translation for {}, using default", locale);
-                }
-                _ => {}
-            }
-            TextDomain::new("kelpie_rust_planner")
-                .push("/home/trevor/KelpieRustPlanner")
-                .locale("")
-                .init()
-                .expect("Failed to initialize text domain");
-        }
-    }
+    init_locale();
 
     init_opengl();
 
@@ -103,6 +83,61 @@ fn main() -> glib::ExitCode {
 
     // Run the application
     app.run()
+}
+
+fn init_locale() {
+    let path = match std::env::current_exe() {
+        Ok(exe_path) => {
+            match exe_path.canonicalize() {
+                Ok(canonical_path) => {
+                    if let Some(parent) = canonical_path.parent() {
+                        Some(parent.display().to_string())
+                    } else {
+                        warn!("Failed to get executable path: No parent directory");
+                        None
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to get executable path: {}", e);
+                    None
+                },
+            }
+        }
+        Err(e) => {
+            warn!("Failed to get executable path: {}", e);
+            None
+        },
+    };
+
+    let mut text_domain = TextDomain::new("kelpie_rust_planner");
+    if let Some(path) = path.clone() {
+        text_domain = text_domain.push(path);
+    }
+    match text_domain
+        .init() {
+        Ok(_) => {}
+        Err(err) => {
+            match err {
+                TextDomainError::InvalidLocale(locale) => {
+                    warn!("Failed to find translation for {}, using default", locale);
+                }
+                TextDomainError::TranslationNotFound(locale) => {
+                    warn!("Failed to find translation for {}, using default", locale);
+                }
+                _ => {}
+            }
+            let mut text_domain = TextDomain::new("kelpie_rust_planner");
+            if let Some(path) = path {
+                text_domain = text_domain.push(path);
+            }
+            match text_domain.locale("").init() {
+                Ok(_) => {}
+                Err(err) => {
+                    error!("Failed to initialize text domain: {}", err);
+                }
+            }
+        }
+    }
 }
 
 fn init_opengl() {

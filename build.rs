@@ -34,46 +34,44 @@ fn main() {
         "kelpie_planner.gresource",
     );
 
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let dest_locale_dir = out_dir.join("locale");
-    println!("dest locale={}", dest_locale_dir.display());
+    let profile = env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
 
-    let source_locale_dir = Path::new("locale");
-    println!("source locale={}", source_locale_dir.display());
+    let target_dir = PathBuf::from(env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string()));
+    let debug_dir = Path::new(&target_dir).join(profile);
+    let dest_locale_dir = debug_dir.join("locale");
+    println!("cargo:warning=dest locale={}", dest_locale_dir.display());
+
+    let source_locale_dir = Path::new("resources/translations");
+    println!("cargo:warning=source locale={}", source_locale_dir.display());
 
     // Compile .po files into .mo files
-    compile_po_to_mo(source_locale_dir).expect("Failed to compile .po files");
-
-    // Make OUT_DIR/locale path available at runtime
-    println!("cargo:rustc-env=LOCALE_DIR={}", dest_locale_dir.display());
-
+    compile_po_to_mo(source_locale_dir, &dest_locale_dir).expect("Failed to compile .po files");
 }
 
-fn compile_po_to_mo(base_dir: &Path) -> std::io::Result<()> {
-    for lang_dir in fs::read_dir(base_dir)? {
-        let lang_dir = lang_dir?;
-        let lc_messages = lang_dir.path().join("LC_MESSAGES");
+fn compile_po_to_mo(base_dir: &Path, dest_dir: &Path) -> std::io::Result<()> {
+    for entry in fs::read_dir(base_dir)? {
+        let entry = entry?;
+        let path = entry.path();
 
-        if lc_messages.exists() {
-            for entry in fs::read_dir(&lc_messages)? {
-                let entry = entry?;
-                let path = entry.path();
+        if let Some(lang) = path.file_stem() {
+            let lang = lang.to_string_lossy();
+            let lc_messages_dir = dest_dir.join(&*lang).join("LC_MESSAGES");
 
-                if let Some(ext) = path.extension() {
-                    if ext == "po" {
-                        let mo_path = path.with_extension("mo");
+            // Create the LC_MESSAGES directory if it doesn't exist
+            fs::create_dir_all(&lc_messages_dir)?;
 
-                        // Compile using msgfmt
-                        let status = Command::new("msgfmt")
-                            .arg(&path)
-                            .arg("-o")
-                            .arg(&mo_path)
-                            .status()?;
+            if path.extension().map_or(false, |ext| ext == "po") {
+                let mo_path = lc_messages_dir.join("kelpie_rust_planner.mo");
 
-                        if !status.success() {
-                            panic!("msgfmt failed on {}", path.display());
-                        }
-                    }
+                // Compile using msgfmt
+                let status = Command::new("msgfmt")
+                    .arg(&path)
+                    .arg("-o")
+                    .arg(&mo_path)
+                    .status()?;
+
+                if !status.success() {
+                    panic!("msgfmt failed on {}", path.display());
                 }
             }
         }
