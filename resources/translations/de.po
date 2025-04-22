@@ -5,12 +5,11 @@
 # the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-21 17:14+1000\n"
+"POT-Creation-Date: 2025-04-22 08:55+1000\n"
 "PO-Revision-Date: 2025-04-21 17:27+1000\n"
 "Last-Translator: ChatGPT <chatgpt@openai.com>\n"
 "Language-Team: Deutsch <de@li.org>\n"
@@ -107,7 +106,6 @@ msgid "Show on map"
 msgstr "Auf der Karte zeigen"
 
 #: resources/plan_view.ui:19
-#, fuzzy
 msgid "Generate plan"
 msgstr "Allgemein"
 
@@ -139,7 +137,7 @@ msgstr "Breite"
 msgid "Freq"
 msgstr "Frequenz"
 
-#: resources/plan_view.ui:127
+#: resources/plan_view.ui:127 src/window/plan_view.rs:147
 msgid "Hdg(mag)"
 msgstr "Kurs (mag)"
 
@@ -405,12 +403,10 @@ msgid "Airport Map"
 msgstr "Flughafenkarte"
 
 #: resources/world_map_view.ui:26
-#, fuzzy
 msgid "Show Airports"
 msgstr "Flughäfen"
 
 #: resources/world_map_view.ui:40
-#, fuzzy
 msgid "Show Navaids"
 msgstr "Navigationshilfen"
 
@@ -445,6 +441,10 @@ msgstr "Bitte Pfade zu den FlightGear-Flughafen- und Navigationsdateien festlege
 #: src/window/imp.rs:360 src/window/imp.rs:429
 msgid "Save Plan"
 msgstr "Plan speichern"
+
+#: src/window/plan_view.rs:149
+msgid "Hdg(true)"
+msgstr "Kurs (wahr)"
 
 #: src/window/world_map_view.rs:250
 msgid "View {} layout"

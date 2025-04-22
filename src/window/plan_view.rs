@@ -39,7 +39,7 @@ mod imp {
     use std::ops::{Deref, DerefMut};
     use std::rc::Rc;
     use std::sync::Arc;
-
+    use gettextrs::gettext;
     use crate::earth::coordinate::Coordinate;
     use crate::event::Event;
     use crate::hangar::hangar::get_hangar;
@@ -144,12 +144,12 @@ mod imp {
             // update the heading if required for Mag vs True Hdg
             let pref = crate::preference::manager();
             let col_hdg = if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
-                "Hdg(mag)"
+                gettext("Hdg(mag)")
             } else {
-                "Hdg(true)"
+                gettext("Hdg(true)")
             };
 
-            self.col_hdg.set_title(Some(col_hdg));
+            self.col_hdg.set_title(Some(&*col_hdg));
 
             let plan = self.get_plan();
             let plan_object = PlanObject::new(&plan.clone());
