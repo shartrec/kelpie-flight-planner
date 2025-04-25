@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-22 08:55+1000\n"
+"POT-Creation-Date: 2025-04-22 12:17+1000\n"
 "PO-Revision-Date: 2025-04-21 17:27+1000\n"
 "Last-Translator: \n"
 "Language-Team: LANGUAGE <fr@li.org>\n"
@@ -52,7 +52,7 @@ msgid "ID"
 msgstr "ID"
 
 #: resources/airport_view.ui:35 resources/navaid_view.ui:32
-#: resources/plan_view.ui:102 resources/preference_aircraft_dialog.ui:26
+#: resources/plan_view.ui:115 resources/preference_aircraft_dialog.ui:26
 msgid "Name"
 msgstr "Nom"
 
@@ -80,7 +80,7 @@ msgid "or near Lat"
 msgstr "ou près de la Lat"
 
 #: resources/airport_view.ui:99 resources/fix_view.ui:89
-#: resources/navaid_view.ui:96 resources/plan_view.ui:117
+#: resources/navaid_view.ui:96 resources/plan_view.ui:130
 msgid "Long"
 msgstr "Long"
 
@@ -114,42 +114,47 @@ msgid "Add Sector"
 msgstr "Ajouter un secteur"
 
 #: resources/plan_view.ui:45
+#, fuzzy
+msgid "Add Return Sector"
+msgstr "Ajouter un secteur"
+
+#: resources/plan_view.ui:58
 msgid "Move up"
 msgstr "Vers le haut"
 
-#: resources/plan_view.ui:59
+#: resources/plan_view.ui:72
 msgid "Move down"
 msgstr "Vers le bas"
 
-#: resources/plan_view.ui:77
+#: resources/plan_view.ui:90
 msgid "Set max altitude"
 msgstr "Définir l'altitude maximale"
 
-#: resources/plan_view.ui:107
+#: resources/plan_view.ui:120
 msgid "Alt"
 msgstr "Alt"
 
-#: resources/plan_view.ui:112
+#: resources/plan_view.ui:125
 msgid "Lat"
 msgstr "Lat"
 
-#: resources/plan_view.ui:122
+#: resources/plan_view.ui:135
 msgid "Freq"
 msgstr "Fréq"
 
-#: resources/plan_view.ui:127 src/window/plan_view.rs:147
+#: resources/plan_view.ui:140 src/window/plan_view.rs:149
 msgid "Hdg(mag)"
 msgstr "Cap(mag)"
 
-#: resources/plan_view.ui:132
+#: resources/plan_view.ui:145
 msgid "Dist"
 msgstr "Dist"
 
-#: resources/plan_view.ui:137
+#: resources/plan_view.ui:150
 msgid "Time"
 msgstr "Temps"
 
-#: resources/plan_view.ui:142
+#: resources/plan_view.ui:155
 msgid "Speed - IAS"
 msgstr "Vitesse - IAS"
 
@@ -445,7 +450,7 @@ msgstr ""
 msgid "Save Plan"
 msgstr "Enregistrer le plan"
 
-#: src/window/plan_view.rs:149
+#: src/window/plan_view.rs:151
 msgid "Hdg(true)"
 msgstr "Cap(vrai)"
 

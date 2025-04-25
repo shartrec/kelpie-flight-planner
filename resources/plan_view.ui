@@ -41,6 +41,19 @@
           </object>
         </child>
         <child>
+          <object class="GtkButton" id="btn_return_sector">
+            <property name="tooltip_text" translatable="yes">Add Return Sector</property>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/return.gif</property>
+                <property name="icon_size">1</property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
           <object class="GtkButton" id="btn_move_up">
             <property name="tooltip_text" translatable="yes">Move up</property>
             <property name="sensitive">false</property>

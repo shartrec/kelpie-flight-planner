@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-22 08:55+1000\n"
+"POT-Creation-Date: 2025-04-22 12:17+1000\n"
 "PO-Revision-Date: 2025-04-21 17:26+1000\n"
 "Last-Translator: \n"
 "Language-Team: Chinese (Simplified) <zh_CN@li.org>\n"
@@ -53,7 +53,7 @@ msgid "ID"
 msgstr "标识"
 
 #: resources/airport_view.ui:35 resources/navaid_view.ui:32
-#: resources/plan_view.ui:102 resources/preference_aircraft_dialog.ui:26
+#: resources/plan_view.ui:115 resources/preference_aircraft_dialog.ui:26
 msgid "Name"
 msgstr "名称"
 
@@ -81,7 +81,7 @@ msgid "or near Lat"
 msgstr "或附近纬度"
 
 #: resources/airport_view.ui:99 resources/fix_view.ui:89
-#: resources/navaid_view.ui:96 resources/plan_view.ui:117
+#: resources/navaid_view.ui:96 resources/plan_view.ui:130
 msgid "Long"
 msgstr "经度"
 
@@ -115,42 +115,47 @@ msgid "Add Sector"
 msgstr "航段"
 
 #: resources/plan_view.ui:45
+#, fuzzy
+msgid "Add Return Sector"
+msgstr "航段"
+
+#: resources/plan_view.ui:58
 msgid "Move up"
 msgstr "上移"
 
-#: resources/plan_view.ui:59
+#: resources/plan_view.ui:72
 msgid "Move down"
 msgstr "下移"
 
-#: resources/plan_view.ui:77
+#: resources/plan_view.ui:90
 msgid "Set max altitude"
 msgstr "设置最大高度"
 
-#: resources/plan_view.ui:107
+#: resources/plan_view.ui:120
 msgid "Alt"
 msgstr "高度"
 
-#: resources/plan_view.ui:112
+#: resources/plan_view.ui:125
 msgid "Lat"
 msgstr "纬度"
 
-#: resources/plan_view.ui:122
+#: resources/plan_view.ui:135
 msgid "Freq"
 msgstr "频率"
 
-#: resources/plan_view.ui:127 src/window/plan_view.rs:147
+#: resources/plan_view.ui:140 src/window/plan_view.rs:149
 msgid "Hdg(mag)"
 msgstr "航向(磁)"
 
-#: resources/plan_view.ui:132
+#: resources/plan_view.ui:145
 msgid "Dist"
 msgstr "距离"
 
-#: resources/plan_view.ui:137
+#: resources/plan_view.ui:150
 msgid "Time"
 msgstr "时间"
 
-#: resources/plan_view.ui:142
+#: resources/plan_view.ui:155
 msgid "Speed - IAS"
 msgstr "速度 - 表速"
 
@@ -443,7 +448,7 @@ msgstr "请设置FlightGear机场和导航台文件的路径"
 msgid "Save Plan"
 msgstr "保存计划"
 
-#: src/window/plan_view.rs:149
+#: src/window/plan_view.rs:151
 msgid "Hdg(true)"
 msgstr "航向(真)"
 
