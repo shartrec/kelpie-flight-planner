@@ -35,6 +35,7 @@ use crate::window::map_utils::Vertex;
 
 pub struct PlanRenderer {
     plan: Rc<RefCell<Plan>>,
+    plan_vertex_array: GLuint,
     plan_vertex_buffer: GLuint,
     plan_index_buffer: GLuint,
     waypoints: Cell<usize>,
@@ -45,14 +46,31 @@ impl PlanRenderer {
     pub fn new(plan: Rc<RefCell<Plan>>) -> Self {
         let mut plan_vertex_buffer: GLuint = 0;
         let mut plan_index_buffer: GLuint = 0;
+        let mut plan_vertex_array: GLuint = 0;
         unsafe {
+            gl::GenVertexArrays(1, &mut plan_vertex_array);
+            gl::BindVertexArray(plan_vertex_array);
+
             gl::GenBuffers(1, &mut plan_vertex_buffer);
             gl::GenBuffers(1, &mut plan_index_buffer);
         }
         let vertices = Self::load_buffers(plan.clone(), plan_vertex_buffer, plan_index_buffer);
+        unsafe {
+            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
+            gl::VertexAttribPointer(
+                0, // index of the generic vertex attribute ("layout (location = 0)")
+                3, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                std::ptr::null(), // offset of the first component
+            );
+            gl::BindVertexArray(0);
+        }
 
         PlanRenderer {
             plan: plan.clone(),
+            plan_vertex_array,
             plan_vertex_buffer,
             plan_index_buffer,
             waypoints: Cell::new(vertices.len()),
@@ -77,37 +95,31 @@ impl PlanRenderer {
                 indices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::DYNAMIC_DRAW, // usage
             );
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
         vertices
     }
 
     pub fn plan_changed(&self) {
+        unsafe {
+            gl::BindVertexArray(self.plan_vertex_array);
+        }
         let vertices = Self::load_buffers(self.plan.clone(), self.plan_vertex_buffer, self.plan_index_buffer);
         self.waypoints.replace(vertices.len());
+        unsafe {
+            gl::BindVertexArray(0);
+        }
     }
 
     pub fn draw(&self, _area: &GLArea, shader_program_id: GLuint) {
         unsafe {
+            gl::BindVertexArray(self.plan_vertex_array);
+
             gl::LineWidth(2.0);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.plan_vertex_buffer);
-            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
-            gl::VertexAttribPointer(
-                0, // index of the generic vertex attribute ("layout (location = 0)")
-                3, // the number of components per generic vertex attribute
-                gl::FLOAT, // data type
-                gl::FALSE, // normalized (int-to-float conversion)
-                (3 * size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
-                std::ptr::null(), // offset of the first component
-            );
 
             let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(shader_program_id, c, 4.0);
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.plan_index_buffer);
-            gl::BindVertexArray(self.plan_index_buffer);
             gl::DrawElements(
                 gl::POINTS, // mode
                 self.waypoints.get() as gl::types::GLsizei,
@@ -123,16 +135,14 @@ impl PlanRenderer {
             gl::ProgramUniform1f(shader_program_id, c, 1.0);
 
             gl::LineWidth(1.0);
-
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0); //Bind GL_ARRAY_BUFFER to our handle
-            gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DeleteBuffers(1, &self.plan_vertex_buffer.clone());
-            gl::DeleteBuffers(1, &self.plan_index_buffer.clone());
+            gl::DeleteBuffers(1, &self.plan_vertex_buffer);
+            gl::DeleteBuffers(1, &self.plan_index_buffer);
+            gl::DeleteVertexArrays(1, &self.plan_vertex_array);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
             gl::BindVertexArray(0);

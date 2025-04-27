@@ -107,6 +107,8 @@ impl AirportRenderer {
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+
+            gl::BindVertexArray(0);
         }
 
         AirportRenderer {
@@ -124,8 +126,6 @@ impl AirportRenderer {
     pub fn draw(&self, _area: &GLArea, medium: bool, small: bool, shader_program_id: GLuint) {
         unsafe {
             gl::BindVertexArray(self.airport_vertex_arrays);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.airport_vertex_buffer);
-            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
 
             let mut point_size = 2.0;
             if small {
@@ -166,8 +166,6 @@ impl AirportRenderer {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
-
-            gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
 

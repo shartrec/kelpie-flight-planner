@@ -91,10 +91,7 @@ impl SphereRenderer {
 
     pub fn draw(&self, _area: &GLArea) {
         unsafe {
-            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
-
             gl::BindVertexArray(self.sphere_vertex_array);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.sphere_vertex_buffer);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.sphere_index_buffer);
 
             gl::DrawElements(
@@ -103,11 +100,6 @@ impl SphereRenderer {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
-            gl::BindVertexArray(0);  // Index buffer
-
-            gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
 

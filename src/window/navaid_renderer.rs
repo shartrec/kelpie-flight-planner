@@ -94,6 +94,8 @@ impl NavaidRenderer {
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+            gl::BindVertexArray(0);
+
         }
 
         NavaidRenderer {
@@ -109,8 +111,6 @@ impl NavaidRenderer {
     pub fn draw(&self, _area: &GLArea, ndb: bool, shader_program_id: GLuint) {
         unsafe {
             gl::BindVertexArray(self.navaid_vertex_arrays);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.navaid_vertex_buffer);
-            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
 
             let mut point_size = 2.0;
             if ndb {
@@ -137,8 +137,6 @@ impl NavaidRenderer {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
-
-            gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
 

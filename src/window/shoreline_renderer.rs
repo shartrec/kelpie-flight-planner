@@ -93,10 +93,7 @@ impl ShorelineRenderer {
 
     pub fn draw(&self, _area: &GLArea) {
         unsafe {
-            gl::EnableVertexAttribArray(0);
-
             gl::BindVertexArray(self.shoreline_vertex_array);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.shoreline_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.shoreline_index_buffer);
 
             gl::DrawElements(
@@ -105,11 +102,6 @@ impl ShorelineRenderer {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
-            gl::BindVertexArray(0);  // Index buffer
-
-            gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
 
