@@ -30,6 +30,7 @@ use crate::window::map_utils::Vertex;
 pub struct SphereRenderer {
     sphere_vertex_buffer: GLuint,
     sphere_index_buffer: GLuint,
+    sphere_vertex_array: GLuint,
     sphere_triangles: usize,
 }
 
@@ -41,8 +42,12 @@ impl SphereRenderer {
         info!("Sphere vertices: {}", vertices.len());
 
         let mut sphere_vertex_buffer: GLuint = 0;
+        let mut sphere_vertex_array: GLuint = 0;
         let mut sphere_index_buffer: GLuint = 0;
         unsafe {
+            gl::GenVertexArrays(1, &mut sphere_vertex_array);
+            gl::BindVertexArray(sphere_vertex_array);
+
             gl::GenBuffers(1, &mut sphere_vertex_buffer);
             gl::BindBuffer(gl::ARRAY_BUFFER, sphere_vertex_buffer);
             gl::BufferData(
@@ -61,21 +66,6 @@ impl SphereRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
-            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-        }
-
-        SphereRenderer {
-            sphere_vertex_buffer,
-            sphere_index_buffer,
-            sphere_triangles: indices.len(),
-        }
-    }
-
-    pub fn draw(&self, _area: &GLArea) {
-        unsafe {
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.sphere_vertex_buffer);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.sphere_index_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
             gl::VertexAttribPointer(
                 0, // index of the generic vertex attribute ("layout (location = 0)")
@@ -86,12 +76,37 @@ impl SphereRenderer {
                 std::ptr::null(), // offset of the first component
             );
 
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+            gl::BindVertexArray(0);
+        }
+
+        SphereRenderer {
+            sphere_vertex_buffer,
+            sphere_index_buffer,
+            sphere_vertex_array,
+            sphere_triangles: indices.len(),
+        }
+    }
+
+    pub fn draw(&self, _area: &GLArea) {
+        unsafe {
+            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
+
+            gl::BindVertexArray(self.sphere_vertex_array);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.sphere_vertex_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.sphere_index_buffer);
+
             gl::DrawElements(
                 gl::TRIANGLES, // mode
                 self.sphere_triangles as gl::types::GLsizei,
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
+            gl::BindVertexArray(0);  // Index buffer
+
             gl::DisableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
         }
     }
@@ -100,8 +115,10 @@ impl SphereRenderer {
         unsafe {
             gl::DeleteBuffers(1, &self.sphere_vertex_buffer.clone());
             gl::DeleteBuffers(1, &self.sphere_index_buffer.clone());
+            gl::DeleteVertexArrays(1, &self.sphere_vertex_array.clone());
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
+            gl::BindVertexArray(0);  // Index buffer
         }
     }
 }

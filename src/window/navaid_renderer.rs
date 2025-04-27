@@ -82,6 +82,16 @@ impl NavaidRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
+            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
+            gl::VertexAttribPointer(
+                0, // index of the generic vertex attribute ("layout (location = 0)")
+                3, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                std::ptr::null(), // offset of the first component
+            );
+
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
         }
@@ -98,16 +108,9 @@ impl NavaidRenderer {
 
     pub fn draw(&self, _area: &GLArea, ndb: bool, shader_program_id: GLuint) {
         unsafe {
+            gl::BindVertexArray(self.navaid_vertex_arrays);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.navaid_vertex_buffer);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
-            gl::VertexAttribPointer(
-                0, // index of the generic vertex attribute ("layout (location = 0)")
-                3, // the number of components per generic vertex attribute
-                gl::FLOAT, // data type
-                gl::FALSE, // normalized (int-to-float conversion)
-                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
-                std::ptr::null(), // offset of the first component
-            );
 
             let mut point_size = 2.0;
             if ndb {
@@ -115,7 +118,6 @@ impl NavaidRenderer {
                 gl::ProgramUniform1f(shader_program_id, c, point_size);
 
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_ndb_index_buffer);
-                gl::BindVertexArray(self.navaid_ndb_index_buffer);
                 gl::DrawElements(
                     gl::POINTS, // mode
                     self.navaid_ndb as gl::types::GLsizei,
@@ -129,7 +131,6 @@ impl NavaidRenderer {
             gl::ProgramUniform1f(shader_program_id, c, point_size);
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_vor_index_buffer);
-            gl::BindVertexArray(self.navaid_vor_index_buffer);
             gl::DrawElements(
                 gl::POINTS, // mode
                 self.navaid_vor as gl::types::GLsizei,
@@ -146,10 +147,10 @@ impl NavaidRenderer {
             gl::DeleteBuffers(1, &self.navaid_vertex_buffer.clone());
             gl::DeleteBuffers(1, &self.navaid_vor_index_buffer.clone());
             gl::DeleteBuffers(1, &self.navaid_ndb_index_buffer.clone());
+            gl::DeleteVertexArrays(1, &self.navaid_vertex_arrays);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
             gl::BindVertexArray(0);
-            gl::DeleteVertexArrays(1, &self.navaid_vertex_arrays);
         }
     }
 
