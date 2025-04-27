@@ -196,6 +196,25 @@ impl AirportParserFG850 {
                         latitude = (r_lat + r1_lat) / 2.0;
                         longitude = (r_long + r1_long) / 2.0;
                     }
+                } else if r_type == "101" {
+                    // let r_width = token_f64(tokens.next()) * 3.28;
+                    // let r_surface = tokens.next().unwrap_or("");
+                    let _width = token_f64(tokenizer.next()) * 3.28;
+                    let _buoys = token_f64(tokenizer.next());
+                    let _number = tokenizer.next().unwrap_or("");
+                    let r_lat = token_f64(tokenizer.next());
+                    let r_long = token_f64(tokenizer.next());
+                    let _1_number = tokenizer.next().unwrap_or("");
+                    let r1_lat = token_f64(tokenizer.next());
+                    let r1_long = token_f64(tokenizer.next());
+                    let c1 = Coordinate::new(r_lat, r_long);
+                    let c2 = Coordinate::new(r1_lat, r1_long);
+                    let r_length = c1.distance_to(&c2) * 6076.0;
+                    if r_length > max_length {
+                        max_length = r_length;
+                        latitude = (r_lat + r1_lat) / 2.0;
+                        longitude = (r_long + r1_long) / 2.0;
+                    }
                 } else if r_type == "102" {
                     // let r_width = token_f64(tokens.next()) * 3.28;
                     // let r_surface = tokens.next().unwrap_or("");
@@ -387,6 +406,35 @@ impl AirportParserFG850 {
                     false,
                     r_surface.to_string(),
                     r_edge_lights.to_string(),
+                );
+                airport.add_runway(runway);
+            } else if r_type == "101" {
+                // let r_width = token_f64(tokens.next()) * 3.28;
+                // let r_surface = tokens.next().unwrap_or("");
+                let r_width = token_f64(tokenizer.next()) * 3.28;
+                let r_buoys = token_f64(tokenizer.next());
+                let r_number = tokenizer.next().unwrap_or("");
+                let r_lat = token_f64(tokenizer.next());
+                let r_long = token_f64(tokenizer.next());
+                let r1_lat = token_f64(tokenizer.next());
+                let r1_long = token_f64(tokenizer.next());
+                let c1 = Coordinate::new(r_lat, r_long);
+                let c2 = Coordinate::new(r1_lat, r1_long);
+                let r_length = (c1.distance_to(&c2) * 6076.0)  as i32;
+                let r_hdg = c1.bearing_to(&c2).to_degrees();
+                let lat = (r_lat + r1_lat) / 2.0;
+                let long = (r_long + r1_long) / 2.0;
+                let runway = Runway::new(
+                    r_number.to_string(),
+                    Some(RunwayType::Runway),
+                    lat,
+                    long,
+                    r_length,
+                    r_width as i32,
+                    r_hdg,
+                    false,
+                    "".to_string(),
+                    "".to_string(),
                 );
                 airport.add_runway(runway);
 
