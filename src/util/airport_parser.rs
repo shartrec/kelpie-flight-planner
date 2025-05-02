@@ -412,7 +412,7 @@ impl AirportParserFG850 {
                 // let r_width = token_f64(tokens.next()) * 3.28;
                 // let r_surface = tokens.next().unwrap_or("");
                 let r_width = token_f64(tokenizer.next()) * 3.28;
-                let r_buoys = token_f64(tokenizer.next());
+                let _r_buoys = token_f64(tokenizer.next());
                 let r_number = tokenizer.next().unwrap_or("");
                 let r_lat = token_f64(tokenizer.next());
                 let r_long = token_f64(tokenizer.next());
