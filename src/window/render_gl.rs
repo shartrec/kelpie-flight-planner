@@ -108,6 +108,7 @@ impl Drop for Program {
     }
 }
 
+#[derive(Clone)]
 pub struct Shader {
     id: gl::types::GLuint,
 }
@@ -207,10 +208,7 @@ impl Renderer {
         ).unwrap();
 
         let shader_program = Program::from_shaders(
-            &[vert_shader, frag_shader]
-        ).unwrap();
-        let vert_shader = Shader::from_vert_source(
-            &CString::new(include_str!("shadow_program.vert")).unwrap()
+            &[vert_shader.clone(), frag_shader]
         ).unwrap();
 
         let frag_shader = Shader::from_frag_source(
@@ -324,9 +322,61 @@ impl Renderer {
         let true_centre = self.increment_to_centre();
         let trans = self.build_matrix(aspect_ratio, zoom);
 
-        self.shader_program.gl_use();
+        self.shadow_program.gl_use();
 
         let point_size = 1.0f32;
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(self.shadow_program.id(), c, point_size);
+
+            let mat = gl::GetUniformLocation(self.shadow_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniformMatrix4fv(self.shadow_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
+
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
+
+            let shadow_strength = 0.25f32;
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"shadow_strength\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(self.shadow_program.id(), c, shadow_strength);
+        }
+
+        let color = [0.00, 0.5, 1.0f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.sphere_renderer.draw(area);
+
+        let color = [0.652, 0.697, 0.138f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.world_renderer.draw(area);
+
+        let color = [0.3, 0.65, 1.0f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.lake_renderer.draw(area);
+
+        let color = [0.652, 0.697, 0.138f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.island_renderer.draw(area);
+
+        let color = [0.95, 0.95, 0.95f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.antarctic_renderer.draw(area);
+
+        self.shader_program.gl_use();
+
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(self.shader_program.id(), c, point_size);
@@ -334,69 +384,6 @@ impl Renderer {
             let mat = gl::GetUniformLocation(self.shader_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
         }
-
-        let color = [0.00, 0.5, 1.0f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.sphere_renderer.draw(area);
-
-        let color = [0.652, 0.697, 0.138f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.world_renderer.draw(area);
-
-        let color = [0.3, 0.65, 1.0f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.lake_renderer.draw(area);
-
-        let color = [0.652, 0.697, 0.138f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.island_renderer.draw(area);
-
-        let color = [0.95, 0.95, 0.95f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.antarctic_renderer.draw(area);
-
-        // Draw the shadow
-        self.shadow_program.gl_use();
-
-        let point_size = 1.0f32;
-        unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
-
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform1f(self.shadow_program.id(), c, point_size);
-
-            let mat = gl::GetUniformLocation(self.shadow_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniformMatrix4fv(self.shadow_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
-
-            let color = [0.00, 0.0, 0.0, 0.4f32];
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color4\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-        }
-        self.sphere_renderer.draw(area);
-        unsafe {
-            gl::Disable(gl::BLEND);
-        }
-
-        self.shader_program.gl_use();
 
         if with_navaids {
             let color = [0.2, 0.2, 1.0f32];

@@ -1,15 +1,20 @@
 #version 320 es
 
-layout (location = 0) in mediump vec3 Position;
-layout (location = 0) out mediump vec3 vColor;
+precision mediump float;
 
-uniform mediump mat4 matrix;
-uniform mediump vec3 color;
-uniform mediump float pointSize;
+layout (location = 0) in vec3 aPos;
+layout (location = 0) out vec4 vColor;
+layout (location = 1) out vec3 vWorldPos;
+
+uniform mat4 matrix;
+uniform vec3 color;
+uniform float pointSize;
 
 void main()
 {
-    gl_Position = matrix * vec4(Position, 1.0);
+    vec4 worldPos = vec4(aPos, 1.0);
+    vWorldPos = worldPos.xyz;
+    vColor = vec4(color, 1.0);
+    gl_Position = matrix * vec4(aPos, 1.0);
     gl_PointSize = pointSize;
-    vColor = color;
 }
