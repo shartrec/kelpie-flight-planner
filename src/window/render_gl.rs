@@ -32,7 +32,6 @@ use adw::glib::timeout_add_local_once;
 use glm::*;
 use gtk::GLArea;
 use adw::prelude::WidgetExt;
-
 use crate::earth::coordinate::Coordinate;
 use crate::earth::spherical_projector::SphericalProjector;
 use crate::model::plan::Plan;
@@ -180,6 +179,7 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
 
 pub struct Renderer {
     shader_program: Program,
+    shadow_program: Program,
     sphere_renderer: SphereRenderer,
     world_renderer: ShorelineRenderer,
     lake_renderer: ShorelineRenderer,
@@ -191,6 +191,7 @@ pub struct Renderer {
     aircraft_renderer: RefCell<AircraftRenderer>,
 
     zoom_level: Cell<f32>,
+    sun_direction: Cell<[f32; 3]>,
     map_centre: RefCell<Coordinate>,
     last_map_centre: RefCell<Coordinate>,
 }
@@ -208,6 +209,17 @@ impl Renderer {
         let shader_program = Program::from_shaders(
             &[vert_shader, frag_shader]
         ).unwrap();
+        let vert_shader = Shader::from_vert_source(
+            &CString::new(include_str!("shadow_program.vert")).unwrap()
+        ).unwrap();
+
+        let frag_shader = Shader::from_frag_source(
+            &CString::new(include_str!("shadow_program.frag")).unwrap()
+        ).unwrap();
+
+        let shadow_program = Program::from_shaders(
+            &[vert_shader, frag_shader]
+        ).unwrap();
 
         let sphere_renderer = SphereRenderer::new();
         let world_renderer = ShorelineRenderer::new("GSHHS_l_L1.shp");
@@ -220,6 +232,7 @@ impl Renderer {
 
         Renderer {
             shader_program,
+            shadow_program,
             sphere_renderer,
             world_renderer,
             lake_renderer,
@@ -230,6 +243,7 @@ impl Renderer {
             plan_renderer: RefCell::new(None),
             aircraft_renderer: RefCell::new(aircraft_renderer),
             zoom_level: Cell::new(1.0),
+            sun_direction: Cell::new([0.5, 0.5, 0.0]),
             map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
             last_map_centre: RefCell::new(Coordinate::new(0.0, 0.0)),
         }
@@ -274,11 +288,19 @@ impl Renderer {
         self.aircraft_renderer.borrow().set_aircraft_position(aircraft_position);
     }
 
+    pub fn set_sub_solar_point(&self, sub_solar_point: (f64, f64)) {
+        let projector = SphericalProjector::new(1.0);
+        let sun_direction = projector.project(sub_solar_point.0, sub_solar_point.1);
+        self.sun_direction.replace(sun_direction);
+    }
+
     pub fn draw(&self, area: &GLArea, with_airports: bool, with_navaids: bool) {
         unsafe {
             gl::Enable(gl::POINT_SIZE);
             // Enable line smoothing - Not actually supported under GTK
             gl::Enable(gl::LINE_SMOOTH);
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             // Disable depth testing
             // * We don't need this as we push the far side of Earth outside the clipping ares
             // * We don't want it as without we can draw everything in the same surface as
@@ -352,6 +374,34 @@ impl Renderer {
         }
         self.antarctic_renderer.draw(area);
 
+        // Draw the shadow
+        self.shadow_program.gl_use();
+
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
+        }
+
+        let point_size = 1.0f32;
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(self.shadow_program.id(), c, point_size);
+        }
+
+        unsafe {
+            let mat = gl::GetUniformLocation(self.shadow_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniformMatrix4fv(self.shadow_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
+        }
+
+        let color = [0.00, 0.0, 0.0, 0.4f32];
+        unsafe {
+            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color4\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.sphere_renderer.draw(area);
+
+        self.shader_program.gl_use();
+
         if with_navaids {
             let color = [0.2, 0.2, 1.0f32];
             unsafe {
@@ -386,6 +436,7 @@ impl Renderer {
         }
         self.aircraft_renderer.borrow().draw(area);
 
+
         if !true_centre {
             let my_area = area.clone();
             timeout_add_local_once(Duration::from_millis(20), move || {
@@ -415,6 +466,7 @@ impl Renderer {
     pub fn drop_buffers(&self) {
         unsafe {
             gl::DeleteProgram(self.shader_program.id);
+            gl::DeleteProgram(self.shadow_program.id);
         }
         self.sphere_renderer.drop_buffers();
         self.world_renderer.drop_buffers();

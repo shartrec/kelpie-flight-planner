@@ -39,8 +39,8 @@ use crate::model::location::Location;
 use crate::model::navaid::Navaid;
 use crate::util::airport_parser::AirportParserFG850;
 use crate::util::fix_parser::FixParserFG;
-use crate::util::navaid_parser::NavaidParserFG;
 
+use crate::util::navaid_parser::NavaidParserFG;
 pub mod coordinate;
 pub mod geomagnetism;
 pub(crate) mod shapefile;
@@ -48,6 +48,7 @@ pub(crate) mod spherical_projector;
 pub(crate) mod airport_list_model;
 pub(crate) mod navaid_list_model;
 pub(crate) mod fix_list_model;
+pub (crate) mod solar;
 
 pub const FEET_PER_DEGREE: i32 = 6076 * 60;
 
@@ -249,5 +250,3 @@ fn load_fixes(path: &str) -> Result<(), Error> {
     event::manager().notify_listeners(Event::StatusChange("".to_string()));
     result
 }
-
-

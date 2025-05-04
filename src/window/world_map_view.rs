@@ -25,8 +25,9 @@
 #![forbid(unsafe_code)]
 
 use async_channel::Sender;
+use chrono::Utc;
 use gtk::{self, glib, CompositeTemplate};
-
+use crate::earth::solar::subsolar_point;
 use crate::util::fg_link::{get_aircraft_position, AircraftPositionInfo};
 
 mod imp {
@@ -86,8 +87,10 @@ mod imp {
         drag_start: RefCell<Option<[f64; 2]>>,
         drag_last: RefCell<Option<[f64; 2]>>,
         zoom_level: Cell<f32>,
-        scheduler_handle: RefCell<Option<SchedulerHandle>>,
+        scheduler_handle_ap: RefCell<Option<SchedulerHandle>>,
         aircraft_position_info: RefCell<Option<AircraftPositionInfo>>,
+        scheduler_handle_ssp: RefCell<Option<SchedulerHandle>>,
+        sub_solar_point: RefCell<(f64, f64)>,
     }
 
     const MAX_ZOOM: f32 = 50.;
@@ -136,13 +139,35 @@ mod imp {
                 }
             }));
 
+            // Get the aircraft position every 5 seconds
             let recurring_handle = scheduling::Scheduler::delayed_recurring(
                 std::time::Duration::from_secs(2),
                 std::time::Duration::from_secs(5),
                 move || get_aircraft_position_task(tx.clone()),
             )
                 .start();
-            self.scheduler_handle.replace(Some(recurring_handle));
+            self.scheduler_handle_ap.replace(Some(recurring_handle));
+
+            // Set up the scheduled tasks to query the subsolar point
+            let (tx, rx) = async_channel::unbounded::<(f64, f64)>();
+            MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
+                while let Ok(ap) = rx.recv().await {
+                    if let Some(renderer) = view.renderer.borrow().as_ref() {
+                        view.sub_solar_point.replace(ap.clone());
+                        renderer.set_sub_solar_point(ap);
+                        view.gl_area.queue_draw();
+                    }
+                }
+            }));
+
+            // Get the subsolar point every 4 minutes, which is equivalent to a one degree shift
+            let recurring_handle = scheduling::Scheduler::delayed_recurring(
+                std::time::Duration::from_secs(0),
+                std::time::Duration::from_secs(240),
+                move || get_subsolar_point(tx.clone()),
+            )
+                .start();
+            self.scheduler_handle_ssp.replace(Some(recurring_handle));
         }
 
         pub fn center_map(&self, point: Coordinate) {
@@ -616,7 +641,11 @@ mod imp {
                 popover.unparent();
             };
 
-            if let Some(scheduler) = self.scheduler_handle.borrow_mut().deref() {
+            if let Some(scheduler) = self.scheduler_handle_ap.borrow_mut().deref() {
+                scheduler.cancel();
+            }
+
+            if let Some(scheduler) = self.scheduler_handle_ssp.borrow_mut().deref() {
                 scheduler.cancel();
             }
         }
@@ -646,5 +675,11 @@ impl Default for WorldMapView {
 fn get_aircraft_position_task(tx: Sender<Option<AircraftPositionInfo>>) {
     // Your task implementation goes here
     let ap = get_aircraft_position();
+    let _ = tx.try_send(ap);
+}
+
+fn get_subsolar_point(tx: Sender<(f64, f64)>) {
+    // Your task implementation goes here
+    let ap = subsolar_point(Utc::now());
     let _ = tx.try_send(ap);
 }
