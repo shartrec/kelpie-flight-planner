@@ -388,7 +388,7 @@ impl Renderer {
             let c = gl::GetUniformLocation(self.shadow_program.id(), b"color4\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
 
-            // gl::Enable(gl::BLEND);
+            gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
         self.sphere_renderer.draw(area);
