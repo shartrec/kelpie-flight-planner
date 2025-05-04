@@ -1,6 +1,5 @@
 # Project exclude paths
 /target/
 /kelpie-planner.log
-/Cargo.lock
 /Cargo.sublime-project
 /Cargo.sublime-workspace
