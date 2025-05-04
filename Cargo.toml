@@ -8,15 +8,15 @@ edition = "2024"
 [dependencies]
 chrono = "0.4.38"
 dirs-next = "2.0.0"
-gtk = { version = "^0.9", package = "gtk4", features = ["v4_14"] }
+gtk = { version = "0.9", package = "gtk4", features = ["v4_14"] }
 adw = { version = "0.7.2", package = "libadwaita", features = ["v1_5"] }
-log = "^0.4"
+log = "0.4"
 rolling-file = "0.2.0"
 gettext-rs = { version = "0.7", features = ["gettext-system"]}
 preferences = "2.0.0"
 regex-lite = "0.1.5"
 shapefile = { version = "0.6.0", features = ["geo-types"] }
-simplelog = "^0.12.2"
+simplelog = "0.12.2"
 yaml-rust = "0.4.5"
 libloading = "0.8.5"
 epoxy = "0.1.0"
@@ -26,7 +26,7 @@ flate2 = "1.0.35"
 xmltree = "0.11.0"
 rust-embed = "8.5.0"
 ureq = { version = "2.9.1", features = ["json"] }
-serde = { version = "^1.0", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 scheduling = "0.1.2"
 home = "0.5.9"
 async-channel = "2.3.1"
