@@ -13,7 +13,7 @@ adw = { version = "0.7.2", package = "libadwaita", features = ["v1_5"] }
 log = "^0.4"
 rolling-file = "0.2.0"
 gettext-rs = { version = "0.7", features = ["gettext-system"]}
-preferences = "^1.1.0"
+preferences = "2.0.0"
 regex-lite = "0.1.5"
 shapefile = { version = "0.6.0", features = ["geo-types"] }
 simplelog = "^0.12.2"
