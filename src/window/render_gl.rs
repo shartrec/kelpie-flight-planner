@@ -299,8 +299,6 @@ impl Renderer {
             gl::Enable(gl::POINT_SIZE);
             // Enable line smoothing - Not actually supported under GTK
             gl::Enable(gl::LINE_SMOOTH);
-            gl::Enable(gl::BLEND);
-            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
             // Disable depth testing
             // * We don't need this as we push the far side of Earth outside the clipping ares
             // * We don't want it as without we can draw everything in the same surface as
@@ -332,9 +330,7 @@ impl Renderer {
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(self.shader_program.id(), c, point_size);
-        }
 
-        unsafe {
             let mat = gl::GetUniformLocation(self.shader_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
         }
@@ -377,28 +373,28 @@ impl Renderer {
         // Draw the shadow
         self.shadow_program.gl_use();
 
+        let point_size = 1.0f32;
         unsafe {
             let c = gl::GetUniformLocation(self.shadow_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
-        }
 
-        let point_size = 1.0f32;
-        unsafe {
             let c = gl::GetUniformLocation(self.shadow_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(self.shadow_program.id(), c, point_size);
-        }
 
-        unsafe {
             let mat = gl::GetUniformLocation(self.shadow_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniformMatrix4fv(self.shadow_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
-        }
 
-        let color = [0.00, 0.0, 0.0, 0.4f32];
-        unsafe {
+            let color = [0.00, 0.0, 0.0, 0.4f32];
             let c = gl::GetUniformLocation(self.shadow_program.id(), b"color4\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+
+            // gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
         self.sphere_renderer.draw(area);
+        unsafe {
+            gl::Disable(gl::BLEND);
+        }
 
         self.shader_program.gl_use();
 
