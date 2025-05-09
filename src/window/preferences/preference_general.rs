@@ -30,6 +30,7 @@ mod imp {
     use gtk::glib::subclass::InitializingObject;
     use adw::prelude::{ButtonExt, CheckButtonExt, EditableExt};
     use adw::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
+    use gettextrs::gettext;
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::preference::*;
@@ -144,16 +145,16 @@ mod imp {
                 manager().put(FIXES_PATH, editable.text());
             });
             self.fg_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
-                process_file_browse(view.fg_path.clone(), button.clone(), "Flightgear data directory", true);
+                process_file_browse(view.fg_path.clone(), button.clone(), &gettext("Flightgear data directory"), true);
             }));
             self.apt_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
-                process_file_browse(view.apt_path.clone(), button.clone(), "Location for Flightgear airport data", false);
+                process_file_browse(view.apt_path.clone(), button.clone(), &gettext("Location for Flightgear airport data"), false);
             }));
             self.nav_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
-                process_file_browse(view.nav_path.clone(), button.clone(), "Location for Flightgear navaid data", false);
+                process_file_browse(view.nav_path.clone(), button.clone(), &gettext("Location for Flightgear navaid data"), false);
             }));
             self.fix_browse.connect_clicked(clone!(#[weak(rename_to = view)] self, move | button | {
-                process_file_browse(view.fix_path.clone(), button.clone(), "Location for Flightgear fix data", false);
+                process_file_browse(view.fix_path.clone(), button.clone(), &gettext("Location for Flightgear fix data"), false);
             }));
         }
     }

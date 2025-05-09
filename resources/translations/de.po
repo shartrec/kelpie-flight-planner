@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-22 12:17+1000\n"
+"POT-Creation-Date: 2025-05-09 10:03+1000\n"
 "PO-Revision-Date: 2025-04-21 17:27+1000\n"
 "Last-Translator: ChatGPT <chatgpt@openai.com>\n"
 "Language-Team: Deutsch <de@li.org>\n"
@@ -30,19 +30,19 @@ msgstr "Flughafen anzeigen"
 
 #: resources/airport_popover.ui:17 resources/fix_popover.ui:13
 #: resources/navaid_popover.ui:13 resources/plan_popover.ui:25
-#: src/window/world_map_view.rs:272
+#: src/window/world_map_view.rs:297
 msgid "Find airports near"
 msgstr "Flughäfen in der Nähe finden"
 
 #: resources/airport_popover.ui:21 resources/fix_popover.ui:17
 #: resources/navaid_popover.ui:17 resources/plan_popover.ui:29
-#: src/window/world_map_view.rs:274
+#: src/window/world_map_view.rs:299
 msgid "Find navaids near"
 msgstr "Navigationshilfen in der Nähe finden"
 
 #: resources/airport_popover.ui:25 resources/fix_popover.ui:21
 #: resources/navaid_popover.ui:21 resources/plan_popover.ui:33
-#: src/window/world_map_view.rs:276
+#: src/window/world_map_view.rs:301
 msgid "Find fixes near"
 msgstr "Fixpunkte in der Nähe finden"
 
@@ -423,6 +423,18 @@ msgstr "Vergrößern"
 msgid "Zoom out"
 msgstr "Verkleinern"
 
+#: src/earth/mod.rs:180
+msgid "Loading Airports aids from : {}"
+msgstr "Lade Flughafendaten von: {}"
+
+#: src/earth/mod.rs:207
+msgid "Loading Nav aids from : {}"
+msgstr "Lade Navigationshilfen von: {}"
+
+#: src/earth/mod.rs:234
+msgid "Loading Fixes aids from : {}"
+msgstr "Lade Fixpunkte von: {}"
+
 #: src/window/airport_map_view.rs:96
 msgid "Runways"
 msgstr "Start- und Landebahnen"
@@ -452,10 +464,26 @@ msgstr "Plan speichern"
 msgid "Hdg(true)"
 msgstr "Kurs (wahr)"
 
-#: src/window/world_map_view.rs:250
+#: src/window/world_map_view.rs:275
 msgid "View {} layout"
 msgstr "Layout von {} anzeigen"
 
-#: src/window/world_map_view.rs:253 src/window/world_map_view.rs:261
+#: src/window/world_map_view.rs:278 src/window/world_map_view.rs:286
 msgid "Add {} to plan"
 msgstr "{} zum Plan hinzufügen"
+
+#: src/window/preferences/preference_general.rs:148
+msgid "Flightgear data directory"
+msgstr "FlightGear-Datenverzeichnis"
+
+#: src/window/preferences/preference_general.rs:151
+msgid "Location for Flightgear airport data"
+msgstr "Speicherort der FlightGear-Flughafendaten"
+
+#: src/window/preferences/preference_general.rs:154
+msgid "Location for Flightgear navaid data"
+msgstr "Speicherort der FlightGear-Navigationshilfen"
+
+#: src/window/preferences/preference_general.rs:157
+msgid "Location for Flightgear fix data"
+msgstr "Speicherort der FlightGear-Fixpunktdaten"

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-22 12:17+1000\n"
+"POT-Creation-Date: 2025-05-09 10:03+1000\n"
 "PO-Revision-Date: 2025-04-20 11:10+1000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,19 +29,19 @@ msgstr ""
 
 #: resources/airport_popover.ui:17 resources/fix_popover.ui:13
 #: resources/navaid_popover.ui:13 resources/plan_popover.ui:25
-#: src/window/world_map_view.rs:272
+#: src/window/world_map_view.rs:297
 msgid "Find airports near"
 msgstr ""
 
 #: resources/airport_popover.ui:21 resources/fix_popover.ui:17
 #: resources/navaid_popover.ui:17 resources/plan_popover.ui:29
-#: src/window/world_map_view.rs:274
+#: src/window/world_map_view.rs:299
 msgid "Find navaids near"
 msgstr ""
 
 #: resources/airport_popover.ui:25 resources/fix_popover.ui:21
 #: resources/navaid_popover.ui:21 resources/plan_popover.ui:33
-#: src/window/world_map_view.rs:276
+#: src/window/world_map_view.rs:301
 msgid "Find fixes near"
 msgstr ""
 
@@ -421,6 +421,18 @@ msgstr ""
 msgid "Zoom out"
 msgstr ""
 
+#: src/earth/mod.rs:180
+msgid "Loading Airports aids from : {}"
+msgstr ""
+
+#: src/earth/mod.rs:207
+msgid "Loading Nav aids from : {}"
+msgstr ""
+
+#: src/earth/mod.rs:234
+msgid "Loading Fixes aids from : {}"
+msgstr ""
+
 #: src/window/airport_map_view.rs:96
 msgid "Runways"
 msgstr ""
@@ -449,10 +461,26 @@ msgstr ""
 msgid "Hdg(true)"
 msgstr ""
 
-#: src/window/world_map_view.rs:250
+#: src/window/world_map_view.rs:275
 msgid "View {} layout"
 msgstr ""
 
-#: src/window/world_map_view.rs:253 src/window/world_map_view.rs:261
+#: src/window/world_map_view.rs:278 src/window/world_map_view.rs:286
 msgid "Add {} to plan"
+msgstr ""
+
+#: src/window/preferences/preference_general.rs:148
+msgid "Flightgear data directory"
+msgstr ""
+
+#: src/window/preferences/preference_general.rs:151
+msgid "Location for Flightgear airport data"
+msgstr ""
+
+#: src/window/preferences/preference_general.rs:154
+msgid "Location for Flightgear navaid data"
+msgstr ""
+
+#: src/window/preferences/preference_general.rs:157
+msgid "Location for Flightgear fix data"
 msgstr ""

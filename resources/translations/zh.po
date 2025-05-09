@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-22 12:17+1000\n"
+"POT-Creation-Date: 2025-05-09 10:03+1000\n"
 "PO-Revision-Date: 2025-04-21 17:26+1000\n"
 "Last-Translator: \n"
 "Language-Team: Chinese (Simplified) <zh_CN@li.org>\n"
@@ -31,19 +31,19 @@ msgstr "查看机场"
 
 #: resources/airport_popover.ui:17 resources/fix_popover.ui:13
 #: resources/navaid_popover.ui:13 resources/plan_popover.ui:25
-#: src/window/world_map_view.rs:272
+#: src/window/world_map_view.rs:297
 msgid "Find airports near"
 msgstr "查找附近机场"
 
 #: resources/airport_popover.ui:21 resources/fix_popover.ui:17
 #: resources/navaid_popover.ui:17 resources/plan_popover.ui:29
-#: src/window/world_map_view.rs:274
+#: src/window/world_map_view.rs:299
 msgid "Find navaids near"
 msgstr "查找附近导航台"
 
 #: resources/airport_popover.ui:25 resources/fix_popover.ui:21
 #: resources/navaid_popover.ui:21 resources/plan_popover.ui:33
-#: src/window/world_map_view.rs:276
+#: src/window/world_map_view.rs:301
 msgid "Find fixes near"
 msgstr "查找附近航点"
 
@@ -424,6 +424,17 @@ msgstr "放大"
 msgid "Zoom out"
 msgstr "缩小"
 
+#: src/earth/mod.rs:180
+msgid "Loading Airports aids from : {}"
+msgstr "正在从 {} 加载机场数据"
+
+#: src/earth/mod.rs:207
+msgid "Loading Nav aids from : {}"
+msgstr "正在从 {} 加载导航辅助数据"
+
+#: src/earth/mod.rs:234
+msgid "Loading Fixes aids from : {}"
+msgstr "正在从 {} 加载航点数据"
 #: src/window/airport_map_view.rs:96
 msgid "Runways"
 msgstr "跑道"
@@ -452,10 +463,27 @@ msgstr "保存计划"
 msgid "Hdg(true)"
 msgstr "航向(真)"
 
-#: src/window/world_map_view.rs:250
+#: src/window/world_map_view.rs:275
 msgid "View {} layout"
 msgstr "查看 {} 布局"
 
-#: src/window/world_map_view.rs:253 src/window/world_map_view.rs:261
+#: src/window/world_map_view.rs:278 src/window/world_map_view.rs:286
 msgid "Add {} to plan"
 msgstr "将 {} 添加到计划"
+
+#: src/window/preferences/preference_general.rs:148
+#, fuzzy
+msgid "Flightgear data directory"
+msgstr "FlightGear 目录"
+
+#: src/window/preferences/preference_general.rs:151
+msgid "Location for Flightgear airport data"
+msgstr "FlightGear 机场数据的位置"
+
+#: src/window/preferences/preference_general.rs:154
+msgid "Location for Flightgear navaid data"
+msgstr "FlightGear 导航设备数据的位置"
+
+#: src/window/preferences/preference_general.rs:157
+msgid "Location for Flightgear fix data"
+msgstr "FlightGear 航点数据的位置"
