@@ -21,6 +21,8 @@
  *      Trevor Campbell
  *
  */
+#![allow(unsafe_code)]
+
 
 use gl::types::{GLint, GLuint};
 use gtk::GLArea;

@@ -23,6 +23,7 @@
  */
 
 #![windows_subsystem = "windows"]
+#![deny(unsafe_code)]
 
 use std::ptr;
 
@@ -140,6 +141,7 @@ fn init_locale() {
     }
 }
 
+#[allow(unsafe_code)]
 fn init_opengl() {
     #[cfg(target_os = "macos")]
         let library = unsafe { libloading::os::unix::Library::new("libepoxy.0.dylib") };

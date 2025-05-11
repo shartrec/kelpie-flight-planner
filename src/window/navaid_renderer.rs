@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![allow(unsafe_code)]
 
 use std::sync::{Arc, RwLockReadGuard};
 

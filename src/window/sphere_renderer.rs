@@ -21,6 +21,8 @@
  *      Trevor Campbell
  *
  */
+#![allow(unsafe_code)]
+
 use gl::types::GLuint;
 use gtk::GLArea;
 use log::info;

@@ -21,6 +21,9 @@
  *      Trevor Campbell
  *
  */
+
+#![allow(unsafe_code)]
+
 extern crate nalgebra_glm as glm;
 
 use std::cell::{Cell, RefCell};

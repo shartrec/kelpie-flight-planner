@@ -21,6 +21,7 @@
  *      Trevor Campbell
  *
  */
+#![allow(unsafe_code)]
 
 use std::cell::{Cell, RefCell};
 use std::f32::consts::PI;

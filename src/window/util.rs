@@ -187,6 +187,7 @@ fn get_gl_info() -> String {
 }
 
 
+#[allow(unsafe_code)]
 pub(crate) fn get_gl_string(name: types::GLenum) -> Option<String> {
     unsafe {
         let string_ptr = gl::GetString(name);
