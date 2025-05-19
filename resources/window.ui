@@ -7,44 +7,43 @@
   <requires lib="gtk+" version="4.0"/>
   <menu id="main-menu">
     <submenu>
-      <attribute name="label" translatable="yes">Plan</attribute>
+      <attribute name="label" translatable="yes">_Plan</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">New</attribute>
+          <attribute name="label" translatable="yes">_New</attribute>
           <attribute name="action">app.new</attribute>
+          <attribute name="icon">document-new-symbolic</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">Open</attribute>
+          <attribute name="label" translatable="yes">_Open</attribute>
           <attribute name="action">app.open</attribute>
+          <attribute name="icon">document-open</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">Save</attribute>
+          <attribute name="label" translatable="yes">_Save</attribute>
           <attribute name="action">app.save</attribute>
+          <attribute name="icon">document-save</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">Export for Route Manager</attribute>
+          <attribute name="label" translatable="yes">_Export for Route Manager</attribute>
           <attribute name="action">app.export_fg_rm</attribute>
-        </item>
-        <item>
-          <attribute name="label" translatable="yes">Quit</attribute>
-          <attribute name="action">app.quit</attribute>
         </item>
       </section>
     </submenu>
     <submenu>
-      <attribute name="label" translatable="yes">Edit</attribute>
+      <attribute name="label" translatable="yes">_Edit</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Preferences</attribute>
+          <attribute name="label" translatable="yes">_Preferences</attribute>
           <attribute name="action">app.preferences</attribute>
         </item>
       </section>
     </submenu>
     <submenu>
-      <attribute name="label" translatable="yes">Tools</attribute>
+      <attribute name="label" translatable="yes">_Tools</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Reload Airport and Nav Aids</attribute>
+          <attribute name="label" translatable="yes">_Reload Airport and Nav Aids</attribute>
           <attribute name="action">app.reload</attribute>
         </item>
       </section>
@@ -53,15 +52,22 @@
       <attribute name="label" translatable="yes">Help</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">About</attribute>
+          <attribute name="label" translatable="yes">_About</attribute>
           <attribute name="action">app.help-about</attribute>
         </item>
         <item>
-          <attribute name="label" translatable="yes">Contents</attribute>
+          <attribute name="label" translatable="yes">_Contents</attribute>
           <attribute name="action">app.help-contents</attribute>
         </item>
       </section>
     </submenu>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Quit</attribute>
+        <attribute name="action">app.quit</attribute>
+        <attribute name="icon">application-exit</attribute>
+      </item>
+    </section>
   </menu>
   <template class="KelpiePlannerWindow" parent="AdwApplicationWindow">
     <property name="title" translatable="yes">Kelpie Flight Planner for FlightGear</property>
@@ -75,6 +81,7 @@
                 <object class="GtkMenuButton">
                   <property name="icon-name">open-menu-symbolic</property>
                   <property name="menu-model">main-menu</property>
+                  <property name="primary">True</property>
                 </object>
               </child>
       </object>

@@ -6,31 +6,31 @@
   <menu id="plan-menu">
     <section>
       <item>
-        <attribute name="label" translatable="yes">Remove</attribute>
+        <attribute name="label" translatable="yes">_Remove</attribute>
         <attribute name="action">plan.remove</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">View airport</attribute>
+        <attribute name="label" translatable="yes">_View airport</attribute>
         <attribute name="action">plan.view</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">Show on map</attribute>
+        <attribute name="label" translatable="yes">Show on _map</attribute>
         <attribute name="action">plan.show_on_map</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="label" translatable="yes">Find airports near</attribute>
+        <attribute name="label" translatable="yes">Find _airports near</attribute>
         <attribute name="action">plan.find_airports_near</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">Find navaids near</attribute>
+        <attribute name="label" translatable="yes">Find _navaids near</attribute>
         <attribute name="action">plan.find_navaids_near</attribute>
       </item>
       <item>
-        <attribute name="label" translatable="yes">Find fixes near</attribute>
+        <attribute name="label" translatable="yes">Find _fixes near</attribute>
         <attribute name="action">plan.find_fixes_near</attribute>
       </item>
     </section>

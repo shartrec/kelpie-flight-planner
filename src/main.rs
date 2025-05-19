@@ -245,6 +245,7 @@ fn connect_actions(app: &Application, window: &Window) {
             .launch(Some(&window), Some(&Cancellable::default()), |_| {});
     }));
     app.add_action(&action);
+    app.set_accels_for_action("app.help-contents", &["F1"]);
 }
 
 fn build_ui(app: &Application) {

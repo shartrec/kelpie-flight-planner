@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-09 10:03+1000\n"
+"POT-Creation-Date: 2025-05-19 16:07+1000\n"
 "PO-Revision-Date: 2025-04-20 11:10+1000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,29 +20,29 @@ msgstr ""
 
 #: resources/airport_popover.ui:9 resources/fix_popover.ui:9
 #: resources/navaid_popover.ui:9
-msgid "Add to plan"
+msgid "Add to _plan"
 msgstr ""
 
 #: resources/airport_popover.ui:13 resources/plan_popover.ui:15
-msgid "View airport"
+msgid "_View airport"
 msgstr ""
 
 #: resources/airport_popover.ui:17 resources/fix_popover.ui:13
 #: resources/navaid_popover.ui:13 resources/plan_popover.ui:25
 #: src/window/world_map_view.rs:297
-msgid "Find airports near"
+msgid "Find _airports near"
 msgstr ""
 
 #: resources/airport_popover.ui:21 resources/fix_popover.ui:17
 #: resources/navaid_popover.ui:17 resources/plan_popover.ui:29
 #: src/window/world_map_view.rs:299
-msgid "Find navaids near"
+msgid "Find _navaids near"
 msgstr ""
 
 #: resources/airport_popover.ui:25 resources/fix_popover.ui:21
 #: resources/navaid_popover.ui:21 resources/plan_popover.ui:33
 #: src/window/world_map_view.rs:301
-msgid "Find fixes near"
+msgid "Find _fixes near"
 msgstr ""
 
 #: resources/airport_view.ui:30 resources/fix_view.ui:27
@@ -96,12 +96,12 @@ msgstr ""
 msgid "Frequency"
 msgstr ""
 
-#: resources/plan_popover.ui:9 resources/preference_aircraft.ui:47
-msgid "Remove"
+#: resources/plan_popover.ui:9
+msgid "_Remove"
 msgstr ""
 
 #: resources/plan_popover.ui:19
-msgid "Show on map"
+msgid "Show on _map"
 msgstr ""
 
 #: resources/plan_view.ui:19
@@ -192,8 +192,12 @@ msgstr ""
 msgid "Add"
 msgstr ""
 
-#: resources/preference_aircraft.ui:41 resources/window.ui:35
+#: resources/preference_aircraft.ui:41
 msgid "Edit"
+msgstr ""
+
+#: resources/preference_aircraft.ui:47
+msgid "Remove"
 msgstr ""
 
 #: resources/preference_aircraft.ui:53
@@ -297,7 +301,7 @@ msgstr ""
 msgid "Radio beacons"
 msgstr ""
 
-#: resources/preference_planner.ui:122 resources/window.ui:153
+#: resources/preference_planner.ui:122 resources/window.ui:160
 msgid "Fixes"
 msgstr ""
 
@@ -338,70 +342,74 @@ msgid "FlightGear Link"
 msgstr ""
 
 #: resources/window.ui:10
-msgid "Plan"
+msgid "_Plan"
 msgstr ""
 
 #: resources/window.ui:13
-msgid "New"
+msgid "_New"
 msgstr ""
 
-#: resources/window.ui:17
-msgid "Open"
+#: resources/window.ui:18
+msgid "_Open"
 msgstr ""
 
-#: resources/window.ui:21
-msgid "Save"
+#: resources/window.ui:23
+msgid "_Save"
 msgstr ""
 
-#: resources/window.ui:25
-msgid "Export for Route Manager"
+#: resources/window.ui:28
+msgid "_Export for Route Manager"
 msgstr ""
 
-#: resources/window.ui:29
-msgid "Quit"
+#: resources/window.ui:34
+msgid "_Edit"
 msgstr ""
 
-#: resources/window.ui:38
-msgid "Preferences"
+#: resources/window.ui:37
+msgid "_Preferences"
 msgstr ""
 
-#: resources/window.ui:44
-msgid "Tools"
+#: resources/window.ui:43
+msgid "_Tools"
 msgstr ""
 
-#: resources/window.ui:47
-msgid "Reload Airport and Nav Aids"
+#: resources/window.ui:46
+msgid "_Reload Airport and Nav Aids"
 msgstr ""
 
-#: resources/window.ui:53
+#: resources/window.ui:52
 msgid "Help"
 msgstr ""
 
-#: resources/window.ui:56
-msgid "About"
+#: resources/window.ui:55
+msgid "_About"
 msgstr ""
 
-#: resources/window.ui:60
-msgid "Contents"
+#: resources/window.ui:59
+msgid "_Contents"
 msgstr ""
 
-#: resources/window.ui:67
+#: resources/window.ui:66
+msgid "_Quit"
+msgstr ""
+
+#: resources/window.ui:73
 msgid "Kelpie Flight Planner for FlightGear"
 msgstr ""
 
-#: resources/window.ui:135
+#: resources/window.ui:142
 msgid "Airports"
 msgstr ""
 
-#: resources/window.ui:144
+#: resources/window.ui:151
 msgid "Navaids"
 msgstr ""
 
-#: resources/window.ui:178
+#: resources/window.ui:185
 msgid "Map"
 msgstr ""
 
-#: resources/window.ui:187
+#: resources/window.ui:194
 msgid "Airport Map"
 msgstr ""
 
@@ -462,11 +470,11 @@ msgid "Hdg(true)"
 msgstr ""
 
 #: src/window/world_map_view.rs:275
-msgid "View {} layout"
+msgid "_View {} layout"
 msgstr ""
 
 #: src/window/world_map_view.rs:278 src/window/world_map_view.rs:286
-msgid "Add {} to plan"
+msgid "Add {} to _plan"
 msgstr ""
 
 #: src/window/preferences/preference_general.rs:148

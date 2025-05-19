@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-09 10:03+1000\n"
+"POT-Creation-Date: 2025-05-19 16:07+1000\n"
 "PO-Revision-Date: 2025-04-21 17:26+1000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -21,29 +21,34 @@ msgstr ""
 
 #: resources/airport_popover.ui:9 resources/fix_popover.ui:9
 #: resources/navaid_popover.ui:9
-msgid "Add to plan"
+#, fuzzy
+msgid "Add to _plan"
 msgstr "Adicionar ao plano"
 
 #: resources/airport_popover.ui:13 resources/plan_popover.ui:15
-msgid "View airport"
+#, fuzzy
+msgid "_View airport"
 msgstr "Ver aeroporto"
 
 #: resources/airport_popover.ui:17 resources/fix_popover.ui:13
 #: resources/navaid_popover.ui:13 resources/plan_popover.ui:25
 #: src/window/world_map_view.rs:297
-msgid "Find airports near"
+#, fuzzy
+msgid "Find _airports near"
 msgstr "Encontrar aeroportos próximos"
 
 #: resources/airport_popover.ui:21 resources/fix_popover.ui:17
 #: resources/navaid_popover.ui:17 resources/plan_popover.ui:29
 #: src/window/world_map_view.rs:299
-msgid "Find navaids near"
+#, fuzzy
+msgid "Find _navaids near"
 msgstr "Encontrar ajudas à navegação próximas"
 
 #: resources/airport_popover.ui:25 resources/fix_popover.ui:21
 #: resources/navaid_popover.ui:21 resources/plan_popover.ui:33
 #: src/window/world_map_view.rs:301
-msgid "Find fixes near"
+#, fuzzy
+msgid "Find _fixes near"
 msgstr "Encontrar pontos de referência próximos"
 
 #: resources/airport_view.ui:30 resources/fix_view.ui:27
@@ -97,12 +102,14 @@ msgstr "ID"
 msgid "Frequency"
 msgstr "Frequência"
 
-#: resources/plan_popover.ui:9 resources/preference_aircraft.ui:47
-msgid "Remove"
+#: resources/plan_popover.ui:9
+#, fuzzy
+msgid "_Remove"
 msgstr "Remover"
 
 #: resources/plan_popover.ui:19
-msgid "Show on map"
+#, fuzzy
+msgid "Show on _map"
 msgstr "Mostrar no mapa"
 
 #: resources/plan_view.ui:19
@@ -194,9 +201,13 @@ msgstr "Ok"
 msgid "Add"
 msgstr "Adicionar"
 
-#: resources/preference_aircraft.ui:41 resources/window.ui:35
+#: resources/preference_aircraft.ui:41
 msgid "Edit"
 msgstr "Editar"
+
+#: resources/preference_aircraft.ui:47
+msgid "Remove"
+msgstr "Remover"
 
 #: resources/preference_aircraft.ui:53
 msgid "Set default"
@@ -299,7 +310,7 @@ msgstr "Construir o plano utilizando"
 msgid "Radio beacons"
 msgstr "Faróis de rádio"
 
-#: resources/preference_planner.ui:122 resources/window.ui:153
+#: resources/preference_planner.ui:122 resources/window.ui:160
 msgid "Fixes"
 msgstr "Pontos de referência"
 
@@ -340,70 +351,85 @@ msgid "FlightGear Link"
 msgstr "Link do FlightGear"
 
 #: resources/window.ui:10
-msgid "Plan"
+#, fuzzy
+msgid "_Plan"
 msgstr "Plano"
 
 #: resources/window.ui:13
-msgid "New"
-msgstr "Novo"
+msgid "_New"
+msgstr ""
 
-#: resources/window.ui:17
-msgid "Open"
+#: resources/window.ui:18
+#, fuzzy
+msgid "_Open"
 msgstr "Abrir"
 
-#: resources/window.ui:21
-msgid "Save"
+#: resources/window.ui:23
+#, fuzzy
+msgid "_Save"
 msgstr "Salvar"
 
-#: resources/window.ui:25
-msgid "Export for Route Manager"
+#: resources/window.ui:28
+#, fuzzy
+msgid "_Export for Route Manager"
 msgstr "Exportar para o Gerenciador de Rotas"
 
-#: resources/window.ui:29
-msgid "Quit"
-msgstr "Sair"
+#: resources/window.ui:34
+#, fuzzy
+msgid "_Edit"
+msgstr "Editar"
 
-#: resources/window.ui:38
-msgid "Preferences"
+#: resources/window.ui:37
+#, fuzzy
+msgid "_Preferences"
 msgstr "Preferências"
 
-#: resources/window.ui:44
-msgid "Tools"
+#: resources/window.ui:43
+#, fuzzy
+msgid "_Tools"
 msgstr "Ferramentas"
 
-#: resources/window.ui:47
-msgid "Reload Airport and Nav Aids"
+#: resources/window.ui:46
+#, fuzzy
+msgid "_Reload Airport and Nav Aids"
 msgstr "Recarregar Aeroportos e Ajudas à Navegação"
 
-#: resources/window.ui:53
+#: resources/window.ui:52
 msgid "Help"
 msgstr "Ajuda"
 
-#: resources/window.ui:56
-msgid "About"
+#: resources/window.ui:55
+#, fuzzy
+msgid "_About"
 msgstr "Sobre"
 
-#: resources/window.ui:60
-msgid "Contents"
+#: resources/window.ui:59
+#, fuzzy
+msgid "_Contents"
 msgstr "Conteúdo"
 
-#: resources/window.ui:67
+#: resources/window.ui:66
+#, fuzzy
+msgid "_Quit"
+msgstr "Sair"
+
+#: resources/window.ui:73
 msgid "Kelpie Flight Planner for FlightGear"
 msgstr "Planejador de Voos Kelpie para FlightGear"
 
-#: resources/window.ui:135
+#: resources/window.ui:142
 msgid "Airports"
 msgstr "Aeroportos"
 
-#: resources/window.ui:144
+#: resources/window.ui:151
 msgid "Navaids"
 msgstr "Ajudas à navegação"
 
-#: resources/window.ui:178
+#: resources/window.ui:185
 msgid "Map"
 msgstr "Mapa"
 
-#: resources/window.ui:187
+#: resources/window.ui:194
 msgid "Airport Map"
 msgstr "Mapa do Aeroporto"
 
@@ -434,7 +460,6 @@ msgstr "A carregar auxílios à navegação de: {}"
 #: src/earth/mod.rs:234
 msgid "Loading Fixes aids from : {}"
 msgstr "A carregar pontos de navegação de: {}"
-
 
 #: src/window/airport_map_view.rs:96
 msgid "Runways"
@@ -467,11 +492,13 @@ msgid "Hdg(true)"
 msgstr "Rumo(verdadeiro)"
 
 #: src/window/world_map_view.rs:275
-msgid "View {} layout"
+#, fuzzy
+msgid "_View {} layout"
 msgstr "Visualizar layout de {}"
 
 #: src/window/world_map_view.rs:278 src/window/world_map_view.rs:286
-msgid "Add {} to plan"
+#, fuzzy
+msgid "Add {} to _plan"
 msgstr "Adicionar {} ao plano"
 
 #: src/window/preferences/preference_general.rs:148
@@ -490,3 +517,15 @@ msgstr "Localização dos dados de auxílios à navegação do FlightGear"
 #: src/window/preferences/preference_general.rs:157
 msgid "Location for Flightgear fix data"
 msgstr "Localização dos dados de pontos fixos do FlightGear"
+
+#~ msgid "Find airports near"
+#~ msgstr "Encontrar aeroportos próximos"
+
+#~ msgid "Find navaids near"
+#~ msgstr "Encontrar ajudas à navegação próximas"
+
+#~ msgid "Find fixes near"
+#~ msgstr "Encontrar pontos de referência próximos"
+
+#~ msgid "New"
+#~ msgstr "Novo"
