@@ -239,7 +239,7 @@ mod imp {
             }
             planner.recalc_plan_elevations(plan.deref_mut());
             drop(plan);
-            if let Some(map_view) = get_world_map_view(&self.plan_window) {
+            if let Some(map_view) = get_world_map_view(self.plan_window.deref()) {
                 if let Some(wp) = loc {
                     map_view.imp().set_plan(self.plan.clone());
                     map_view.imp().center_map(wp.get_loc().clone());
@@ -909,8 +909,8 @@ mod imp {
 
             let action = SimpleAction::new("show_on_map", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-               if let Some(map_view) = get_world_map_view(&view.plan_window) {
-                    show_world_map_view(&view.plan_window);
+               if let Some(map_view) = get_world_map_view(view.plan_window.deref()) {
+                    show_world_map_view(view.plan_window.deref());
                     if let Some(loc) = view.get_selected_location() {
                         map_view.imp().set_plan(view.plan.clone());
                         map_view.imp().center_map(loc.clone());
@@ -922,8 +922,8 @@ mod imp {
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
-                    if let Some(airport_view) = get_airport_view(&view.plan_window.get()) {
-                        show_airport_view(&view.plan_window.get());
+                    if let Some(airport_view) = get_airport_view(view.plan_window.deref()) {
+                        show_airport_view(view.plan_window.deref());
                         airport_view.imp().search_near(&loc);
                     }
                }
@@ -933,8 +933,8 @@ mod imp {
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
-                    if let Some(navaid_view) = get_navaid_view(&view.plan_window.get()) {
-                        show_navaid_view(&view.plan_window.get());
+                    if let Some(navaid_view) = get_navaid_view(view.plan_window.deref()) {
+                        show_navaid_view(view.plan_window.deref());
                         navaid_view.imp().search_near(&loc);
                     }
                 }
@@ -944,7 +944,7 @@ mod imp {
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 if let Some(loc) = view.get_selected_location() {
-                    if let Some(fix_view) = get_fix_view(&view.plan_window.get()) {
+                    if let Some(fix_view) = get_fix_view(view.plan_window.deref()) {
                         show_fix_view(&view.plan_window.get());
                         fix_view.imp().search_near(&loc);
                     }

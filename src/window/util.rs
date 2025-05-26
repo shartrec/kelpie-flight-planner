@@ -25,7 +25,7 @@
 use std::ffi::CStr;
 use adw::AlertDialog;
 use gl::types;
-use gtk::{AboutDialog, glib, Label, ListItem, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow, TreeListModel};
+use gtk::{AboutDialog, glib, Label, ListItem, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow, TreeListModel, Widget};
 use gtk::gdk::Texture;
 use gtk::glib::Object;
 use adw::prelude::{AdwDialogExt, AlertDialogExt, Cast, CastNone, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
@@ -201,7 +201,7 @@ pub(crate) fn get_gl_string(name: types::GLenum) -> Option<String> {
     }
 }
 
-pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
+pub(crate) fn get_plan_view<W: IsA<Widget>>(widget: &W) -> Option<PlanView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -215,7 +215,7 @@ pub(crate) fn get_plan_view(widget: &ScrolledWindow) -> Option<PlanView> {
     }
 }
 
-pub(crate) fn get_world_map_view(widget: &ScrolledWindow) -> Option<WorldMapView> {
+pub(crate) fn get_world_map_view<W: IsA<Widget>>(widget: &W) -> Option<WorldMapView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -225,7 +225,7 @@ pub(crate) fn get_world_map_view(widget: &ScrolledWindow) -> Option<WorldMapView
     }
 }
 
-pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
+pub(crate) fn show_world_map_view<W: IsA<Widget>>(widget: &W) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
         if let Some(notebook) = our_window.imp().map_notebook.try_get() {
@@ -237,7 +237,7 @@ pub(crate) fn show_world_map_view(widget: &ScrolledWindow) {
     }
 }
 
-pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMapView> {
+pub(crate) fn get_airport_map_view<W: IsA<Widget>>(widget: &W) -> Option<AirportMapView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -247,7 +247,7 @@ pub(crate) fn get_airport_map_view(widget: &ScrolledWindow) -> Option<AirportMap
     }
 }
 
-pub(crate) fn show_airport_map_view(widget: &ScrolledWindow) {
+pub(crate) fn show_airport_map_view<W: IsA<Widget>>(widget: &W) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
         if let Some(notebook) = our_window.imp().map_notebook.try_get() {
@@ -259,7 +259,7 @@ pub(crate) fn show_airport_map_view(widget: &ScrolledWindow) {
     }
 }
 
-pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
+pub(crate) fn get_airport_view<W: IsA<Widget>>(widget: &W) -> Option<AirportView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -269,7 +269,7 @@ pub(crate) fn get_airport_view(widget: &ScrolledWindow) -> Option<AirportView> {
     }
 }
 
-pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
+pub(crate) fn show_airport_view<W: IsA<Widget>>(widget: &W) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
         if let Some(notebook) = our_window.imp().search_notebook.try_get() {
@@ -281,7 +281,7 @@ pub(crate) fn show_airport_view(widget: &ScrolledWindow) {
     }
 }
 
-pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
+pub(crate) fn get_navaid_view<W: IsA<Widget>>(widget: &W) -> Option<NavaidView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -291,7 +291,7 @@ pub(crate) fn get_navaid_view(widget: &ScrolledWindow) -> Option<NavaidView> {
     }
 }
 
-pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
+pub(crate) fn show_navaid_view<W: IsA<Widget>>(widget: &W) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
         if let Some(notebook) = our_window.imp().search_notebook.try_get() {
@@ -303,7 +303,7 @@ pub(crate) fn show_navaid_view(widget: &ScrolledWindow) {
     }
 }
 
-pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
+pub(crate) fn get_fix_view<W: IsA<Widget>>(widget: &W) -> Option<FixView> {
     match widget.root() {
         Some(r) => {
             let our_window = r.downcast::<Window>().unwrap();
@@ -313,7 +313,7 @@ pub(crate) fn get_fix_view(widget: &ScrolledWindow) -> Option<FixView> {
     }
 }
 
-pub(crate) fn show_fix_view(widget: &ScrolledWindow) {
+pub(crate) fn show_fix_view<W: IsA<Widget>>(widget: &W) {
     if let Some(r) = widget.root() {
         let our_window = r.downcast::<Window>().unwrap();
         if let Some(notebook) = our_window.imp().search_notebook.try_get() {
