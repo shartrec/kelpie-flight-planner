@@ -25,7 +25,7 @@
 use std::ffi::CStr;
 use adw::AlertDialog;
 use gl::types;
-use gtk::{AboutDialog, glib, Label, ListItem, Root, ScrolledWindow, SignalListItemFactory, TreeExpander, TreeListRow, TreeListModel, Widget};
+use gtk::{AboutDialog, glib, Label, ListItem, Root, SignalListItemFactory, TreeExpander, TreeListRow, TreeListModel, Widget};
 use gtk::gdk::Texture;
 use gtk::glib::Object;
 use adw::prelude::{AdwDialogExt, AlertDialogExt, Cast, CastNone, EditableExt, EditableExtManual, GtkWindowExt, IsA, ListItemExt, WidgetExt};
