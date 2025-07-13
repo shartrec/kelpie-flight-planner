@@ -255,11 +255,17 @@ impl Sector {
     }
 
     pub fn get_duration(&self, plan: &Plan) -> f64 {
-        self.waypoints
+        let d = self.waypoints
             .iter()
             .map(move |wp| plan.get_time_to(wp))
             .reduce(|acc, t| acc + t)
-            .unwrap_or(0.0)
+            .unwrap_or(0.0);
+        let d1 = if let Some(end) = &self.airport_end {
+            plan.get_time_to(end)
+        } else {
+            0.0
+        };
+        d + d1
     }
     pub fn get_distance_as_string(&self, plan: &Plan) -> String {
         let pref = crate::preference::manager();
@@ -269,11 +275,17 @@ impl Sector {
         distance_format.format(distance)
     }
     pub fn get_distance(&self, plan: &Plan) -> f64 {
-        self.waypoints
+        let d = self.waypoints
             .iter()
             .map(move |wp| plan.get_leg_distance_to(wp))
             .reduce(|acc, t| acc + t)
-            .unwrap_or(0.0)
+            .unwrap_or(0.0);
+        let d1 = if let Some(end) = &self.airport_end {
+            plan.get_leg_distance_to(end)
+        } else {
+            0.0
+        };
+        d + d1
     }
 
     pub fn is_dirty(&self) -> bool {
