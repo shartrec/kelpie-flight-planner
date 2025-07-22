@@ -53,6 +53,9 @@ impl NavaidRenderer {
         let mut navaid_vor_index_buffer: GLuint = 0;
         let mut navaid_ndb_index_buffer: GLuint = 0;
         unsafe {
+            gl::GenVertexArrays(1, &mut navaid_vertex_arrays);
+            gl::BindVertexArray(navaid_vertex_arrays);
+
             gl::GenBuffers(1, &mut navaid_vertex_buffer);
             gl::BindBuffer(gl::ARRAY_BUFFER, navaid_vertex_buffer);
             gl::BufferData(
@@ -61,9 +64,6 @@ impl NavaidRenderer {
                 vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
-
-            gl::GenVertexArrays(1, &mut navaid_vertex_arrays);
-            gl::BindVertexArray(navaid_vertex_arrays);
 
             gl::GenBuffers(1, &mut navaid_vor_index_buffer);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_vor_index_buffer);
@@ -95,8 +95,6 @@ impl NavaidRenderer {
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
-            gl::BindVertexArray(0);
-
         }
 
         NavaidRenderer {
@@ -111,7 +109,18 @@ impl NavaidRenderer {
 
     pub fn draw(&self, _area: &GLArea, ndb: bool, shader_program_id: GLuint) {
         unsafe {
+            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
             gl::BindVertexArray(self.navaid_vertex_arrays);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.navaid_vertex_buffer);
+
+            gl::VertexAttribPointer(
+                0, // index of the generic vertex attribute ("layout (location = 0)")
+                3, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                std::ptr::null(), // offset of the first component
+            );
 
             let mut point_size = 2.0;
             if ndb {

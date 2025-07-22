@@ -113,7 +113,18 @@ impl PlanRenderer {
 
     pub fn draw(&self, _area: &GLArea, shader_program_id: GLuint) {
         unsafe {
+            gl::EnableVertexAttribArray(0);
             gl::BindVertexArray(self.plan_vertex_array);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.plan_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
+
+            gl::VertexAttribPointer(
+                0, // index of the generic vertex attribute ("layout (location = 0)")
+                3, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (3 * size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
+                std::ptr::null(), // offset of the first component
+            );
 
             gl::LineWidth(2.0);
 

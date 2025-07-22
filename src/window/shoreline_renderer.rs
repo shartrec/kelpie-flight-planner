@@ -95,7 +95,20 @@ impl ShorelineRenderer {
 
     pub fn draw(&self, _area: &GLArea) {
         unsafe {
+
+            gl::EnableVertexAttribArray(0);
             gl::BindVertexArray(self.shoreline_vertex_array);
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.shoreline_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
+
+            gl::VertexAttribPointer(
+                0, // index of the generic vertex attribute ("layout (location = 0)")
+                3, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (3 * size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
+                std::ptr::null(), // offset of the first component
+            );
+
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.shoreline_index_buffer);
 
             gl::DrawElements(
@@ -104,6 +117,9 @@ impl ShorelineRenderer {
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
+            gl::BindVertexArray(0);  // Index buffer
         }
     }
 
