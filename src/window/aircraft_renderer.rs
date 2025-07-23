@@ -53,17 +53,6 @@ impl AircraftRenderer {
             gl::GenBuffers(1, &mut aircraft_vertex_buffer);
             gl::BindBuffer(gl::ARRAY_BUFFER, aircraft_vertex_buffer);
 
-            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
-            gl::VertexAttribPointer(
-                0, // index of the generic vertex attribute ("layout (location = 0)")
-                3, // the number of components per generic vertex attribute
-                gl::FLOAT, // data type
-                gl::FALSE, // normalized (int-to-float conversion)
-                (3 * size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
-                std::ptr::null(), // offset of the first component
-            );
-            gl::BindVertexArray(0);
-
         }
         AircraftRenderer {
             aircraft_vertex_array,
@@ -87,6 +76,16 @@ impl AircraftRenderer {
             let vertices = self.build_aircraft_vertices(api);
             unsafe {
                 gl::BindVertexArray(self.aircraft_vertex_array);
+                gl::VertexAttribPointer(
+                    0, // index of the generic vertex attribute ("layout (location = 0)")
+                    3, // the number of components per generic vertex attribute
+                    gl::FLOAT, // data type
+                    gl::FALSE, // normalized (int-to-float conversion)
+                    (3 * size_of::<f32>()) as GLint, // stride (byte offset between consecutive attributes)
+                    std::ptr::null(), // offset of the first component
+                );
+
+                gl::BindBuffer(gl::ARRAY_BUFFER, self.aircraft_vertex_buffer);
                 gl::BufferData(
                     gl::ARRAY_BUFFER, // target
                     (vertices.len() * size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
@@ -94,6 +93,7 @@ impl AircraftRenderer {
                     gl::DYNAMIC_DRAW, // usage
                 );
 
+                gl::BindBuffer(gl::ARRAY_BUFFER, 0);
                 gl::BindVertexArray(0);
             }
         }
@@ -103,6 +103,7 @@ impl AircraftRenderer {
         if self.aircraft_position.borrow().is_some() {
             unsafe {
                 gl::EnableVertexAttribArray(0);
+
                 gl::BindVertexArray(self.aircraft_vertex_array);
 
                 gl::BindBuffer(gl::ARRAY_BUFFER, self.aircraft_vertex_buffer);
