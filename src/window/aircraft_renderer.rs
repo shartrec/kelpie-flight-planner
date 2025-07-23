@@ -25,11 +25,11 @@
 
 use std::cell::{Cell, RefCell};
 use std::ops::Deref;
-
 use gl::types::{GLint, GLuint};
 use gtk::GLArea;
 
 use crate::earth::spherical_projector::SphericalProjector;
+use crate::earth::coordinate::Coordinate;
 use crate::util::fg_link::AircraftPositionInfo;
 use crate::window::map_utils::Vertex;
 
@@ -143,65 +143,53 @@ impl AircraftRenderer {
         let line_length = 200.0 / self.zoom_level.get() as f64;
 
         // Define the length and width of the aircraft
-        let fuselage_length = line_length * 1.0; // Full length of the fuselage
-        let fuselage_width = line_length * 0.2; // Width of the fuselage
-        let wing_length = line_length * 0.9; // Length of the wings
-        let wing_width = line_length * 0.3; // wing width
-        let tail_length = line_length * 0.5; // Length of the tail section
-        let tail_width = line_length * 0.15; // Width of the tail section
+        let fuselage_length = line_length * 1.0;
+        let fuselage_width = line_length * 0.2;
+        let wing_length = line_length * 0.9;
+        let wing_width = line_length * 0.3;
+        let tail_length = line_length * 0.5;
+        let tail_width = line_length * 0.15;
 
-// Calculate positions of key points based on aircraft heading
+        // Calculate positions of key points based on aircraft heading
         let nose_r = aircraft_position.coordinate_at(fuselage_length / 2.0, heading).coordinate_at(fuselage_width / 2.0, (heading + 90.0) % 360.0);
         let nose_l = aircraft_position.coordinate_at(fuselage_length / 2.0, heading).coordinate_at(fuselage_width / 2.0, (heading + 270.0) % 360.0);
         let tail_r = aircraft_position.coordinate_at(fuselage_length / 2.0, heading + 180.0).coordinate_at(fuselage_width / 5.0, (heading + 90.0) % 360.0);
         let tail_l = aircraft_position.coordinate_at(fuselage_length / 2.0, heading + 180.0).coordinate_at(fuselage_width / 5.0, (heading + 270.0) % 360.0);
         let left_wing_r = aircraft_position.coordinate_at(wing_length / 2.0, (heading + 270.0) % 360.0);
-        let left_wing_f = aircraft_position.coordinate_at(wing_width, (heading) % 360.0);
+        let left_wing_f = aircraft_position.coordinate_at(wing_width, heading);
         let right_wing_r = aircraft_position.coordinate_at(wing_length / 2.0, (heading + 90.0) % 360.0);
-        let right_wing_f = aircraft_position.coordinate_at(wing_width, (heading) % 360.0);
+        let right_wing_f = aircraft_position.coordinate_at(wing_width, heading);
         let left_tail_r = aircraft_position.coordinate_at(fuselage_length / 2.0, (heading + 180.0) % 360.0).coordinate_at(tail_length / 2.0, (heading + 270.0) % 360.0);
         let left_tail_f = left_tail_r.coordinate_at(tail_width, heading);
         let right_tail_f = left_tail_f.coordinate_at(tail_length, (heading + 90.0) % 360.0);
         let right_tail_r = left_tail_r.coordinate_at(tail_length, (heading + 90.0) % 360.0);
 
-// Project the coordinates to 2D map space
-        let nose_projected_l = projector.project(nose_l.get_latitude(), nose_l.get_longitude());
-        let nose_projected_r = projector.project(nose_r.get_latitude(), nose_r.get_longitude());
-        let tail_projected_l = projector.project(tail_l.get_latitude(), tail_l.get_longitude());
-        let tail_projected_r = projector.project(tail_r.get_latitude(), tail_r.get_longitude());
-        let left_wing_projected_f = projector.project(left_wing_f.get_latitude(), left_wing_f.get_longitude());
-        let left_wing_projected_r = projector.project(left_wing_r.get_latitude(), left_wing_r.get_longitude());
-        let right_wing_projected_f = projector.project(right_wing_f.get_latitude(), right_wing_f.get_longitude());
-        let right_wing_projected_r = projector.project(right_wing_r.get_latitude(), right_wing_r.get_longitude());
-        let left_tail_projected_f = projector.project(left_tail_f.get_latitude(), left_tail_f.get_longitude());
-        let left_tail_projected_r = projector.project(left_tail_r.get_latitude(), left_tail_r.get_longitude());
-        let right_tail_projected_f = projector.project(right_tail_f.get_latitude(), right_tail_f.get_longitude());
-        let right_tail_projected_r = projector.project(right_tail_r.get_latitude(), right_tail_r.get_longitude());
+        // Fuselage
+        let f = [nose_r, nose_l, tail_l, tail_r];
+        push_vertices(&mut vertices, &f, &projector);
 
-        // Fuselage (two triangles)
-        vertices.push(Vertex { position: nose_projected_l });
-        vertices.push(Vertex { position: nose_projected_r });
-        vertices.push(Vertex { position: tail_projected_r });
-        vertices.push(Vertex { position: tail_projected_r });
-        vertices.push(Vertex { position: tail_projected_l });
-        vertices.push(Vertex { position: nose_projected_l });
+        // Wings
+        let wings = [left_wing_f, left_wing_r, right_wing_r, right_wing_f];
+        push_vertices(&mut vertices, &wings, &projector);
 
-        // Wings (two triangles)
-        vertices.push(Vertex { position: left_wing_projected_r });
-        vertices.push(Vertex { position: right_wing_projected_r });
-        vertices.push(Vertex { position: right_wing_projected_f });
-        vertices.push(Vertex { position: right_wing_projected_f });
-        vertices.push(Vertex { position: left_wing_projected_f });
-        vertices.push(Vertex { position: left_wing_projected_r });
-
-        // Tail (two triangles)
-        vertices.push(Vertex { position: left_tail_projected_r });
-        vertices.push(Vertex { position: right_tail_projected_r });
-        vertices.push(Vertex { position: right_tail_projected_f });
-        vertices.push(Vertex { position: right_tail_projected_f });
-        vertices.push(Vertex { position: left_tail_projected_f });
-        vertices.push(Vertex { position: left_tail_projected_r });
+        // Tail
+        let tail = [left_tail_f, left_tail_r, right_tail_r, right_tail_f];
+        push_vertices(&mut vertices, &tail, &projector);
 
         vertices
     }
+}
+
+fn push_vertices(vertices: &mut Vec<Vertex>, quad: &[Coordinate; 4], projector: &SphericalProjector) {
+    // Project each coordinate and push as triangles
+    let projected: Vec<[f32; 3]> = quad.iter()
+        .map(|c| projector.project(c.get_latitude(), c.get_longitude()))
+        .collect();
+
+    vertices.push(Vertex { position: projected[0] });
+    vertices.push(Vertex { position: projected[1] });
+    vertices.push(Vertex { position: projected[2] });
+    vertices.push(Vertex { position: projected[2] });
+    vertices.push(Vertex { position: projected[3] });
+    vertices.push(Vertex { position: projected[0] });
 }
