@@ -177,7 +177,7 @@ pub fn initialise() -> Result<(), Error> {
 }
 
 fn load_airports(path: &str) -> Result<(), Error> {
-    let status = gettext("Loading Airports aids from : {}").replace("{}", path);
+    let status = gettext("Loading Airports from : {}").replace("{}", path);
     event::manager().notify_listeners(Event::StatusChange(status));
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
@@ -231,7 +231,7 @@ fn load_navaids(path: &str) -> Result<(), Error> {
 }
 
 fn load_fixes(path: &str) -> Result<(), Error> {
-    let status = gettext("Loading Fixes aids from : {}").replace("{}", path);
+    let status = gettext("Loading Fixes from : {}").replace("{}", path);
     event::manager().notify_listeners(Event::StatusChange(status));
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);

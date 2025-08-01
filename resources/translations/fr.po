@@ -451,15 +451,15 @@ msgid "Zoom out"
 msgstr "Rétrécir"
 
 #: src/earth/mod.rs:180
-msgid "Loading Airports aids from : {}"
-msgstr "Chargement des aides des aéroports depuis : {}"
+msgid "Loading Airports from : {}"
+msgstr "Chargement des aéroports depuis : {}"
 
 #: src/earth/mod.rs:207
 msgid "Loading Nav aids from : {}"
 msgstr "Chargement des aides à la navigation depuis : {}"
 
 #: src/earth/mod.rs:234
-msgid "Loading Fixes aids from : {}"
+msgid "Loading Fixes from : {}"
 msgstr "Chargement des points fixes depuis : {}"
 
 #: src/window/airport_map_view.rs:96

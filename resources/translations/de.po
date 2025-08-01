@@ -451,7 +451,7 @@ msgstr "Verkleinern"
 
 #: src/earth/mod.rs:180
 msgid "Loading Airports aids from : {}"
-msgstr "Lade Flughafendaten von: {}"
+msgstr "Lade Flughäfen von: {}"
 
 #: src/earth/mod.rs:207
 msgid "Loading Nav aids from : {}"

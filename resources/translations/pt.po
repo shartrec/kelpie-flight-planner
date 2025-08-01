@@ -450,16 +450,16 @@ msgid "Zoom out"
 msgstr "Reduzir"
 
 #: src/earth/mod.rs:180
-msgid "Loading Airports aids from : {}"
-msgstr "A carregar dados de aeroportos de: {}"
+msgid "Loading Airports from : {}"
+msgstr "A carregar aeroportos de: {}"
 
 #: src/earth/mod.rs:207
 msgid "Loading Nav aids from : {}"
 msgstr "A carregar auxílios à navegação de: {}"
 
 #: src/earth/mod.rs:234
-msgid "Loading Fixes aids from : {}"
-msgstr "A carregar pontos de navegação de: {}"
+msgid "Loading Fixes from : {}"
+msgstr "A carregar pontos de: {}"
 
 #: src/window/airport_map_view.rs:96
 msgid "Runways"

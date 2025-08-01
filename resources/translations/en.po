@@ -430,7 +430,7 @@ msgid "Zoom out"
 msgstr ""
 
 #: src/earth/mod.rs:180
-msgid "Loading Airports aids from : {}"
+msgid "Loading Airports from : {}"
 msgstr ""
 
 #: src/earth/mod.rs:207
@@ -438,7 +438,7 @@ msgid "Loading Nav aids from : {}"
 msgstr ""
 
 #: src/earth/mod.rs:234
-msgid "Loading Fixes aids from : {}"
+msgid "Loading Fixes from : {}"
 msgstr ""
 
 #: src/window/airport_map_view.rs:96
