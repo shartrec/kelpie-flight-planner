@@ -31,6 +31,7 @@ mod imp {
     use adw::prelude::{ButtonExt, CheckButtonExt, EditableExt};
     use adw::subclass::prelude::{BoxImpl, CompositeTemplate, ObjectImpl, ObjectImplExt, ObjectSubclass, WidgetClassExt};
     use gettextrs::gettext;
+    use gtk::prelude::WidgetExt;
     use gtk::subclass::widget::{CompositeTemplateInitializingExt, WidgetImpl};
 
     use crate::preference::*;
@@ -80,11 +81,17 @@ mod imp {
                     _ => ()
                 }
             }
-            self.btn_use_dft_paths.set_active(prefs.get::<bool>(FGFS_USE_DFT_PATH).unwrap_or(false));
+            let use_dft = prefs.get::<bool>(FGFS_USE_DFT_PATH).unwrap_or(false);
+            self.btn_use_dft_paths.set_active(use_dft);
             self.fg_path.set_text(prefs.get::<String>(FGFS_DIR).unwrap_or("".to_string()).as_str());
             self.apt_path.set_text(prefs.get::<String>(AIRPORTS_PATH).unwrap_or("".to_string()).as_str());
             self.nav_path.set_text(prefs.get::<String>(NAVAIDS_PATH).unwrap_or("".to_string()).as_str());
             self.fix_path.set_text(prefs.get::<String>(FIXES_PATH).unwrap_or("".to_string()).as_str());
+            self.apt_path.set_sensitive(!use_dft);
+            self.nav_path.set_sensitive(!use_dft);
+            self.fix_path.set_sensitive(!use_dft);
+            self.fg_path.set_sensitive(use_dft);
+
         }
     }
 
@@ -111,9 +118,25 @@ mod imp {
 
             self.initialise();
 
-            self.btn_use_dft_paths.connect_toggled(|button| {
+            self.btn_use_dft_paths.connect_toggled(clone!(#[weak(rename_to = view)] self, move |button| {
                 manager().put(FGFS_USE_DFT_PATH, button.is_active());
-            });
+                view.apt_path.set_sensitive(!button.is_active());
+                view.nav_path.set_sensitive(!button.is_active());
+                view.fix_path.set_sensitive(!button.is_active());
+
+                if !button.is_active() {
+                    if view.apt_path.text().is_empty() {
+                        view.apt_path.set_text(&view.fg_path.text());
+                    }
+                    if view.nav_path.text().is_empty() {
+                        view.nav_path.set_text(&view.fg_path.text());
+                    }
+                    if view.fix_path.text().is_empty() {
+                        view.fix_path.set_text(&view.fg_path.text());
+                    }
+                }
+            }));
+
             self.btn_use_mag_hdg.connect_toggled(|button| {
                 manager().put(USE_MAGNETIC_HEADINGS, button.is_active());
             });
