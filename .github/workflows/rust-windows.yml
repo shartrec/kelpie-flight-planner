@@ -30,6 +30,13 @@ jobs:
       shell: bash
       run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
 
+    - name: Set up MSYS2 and install GLib
+      shell: bash
+      run: |
+        pacman -Syu --noconfirm
+        pacman -S --noconfirm mingw-w64-x86_64-glib2 mingw-w64-x86_64-pkg-config
+        echo 'C:/msys64/mingw64/bin' >> $GITHUB_PATH    
+        
     - name: Build
       shell: bash
       run: cargo build --verbose
