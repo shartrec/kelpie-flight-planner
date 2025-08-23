@@ -1,0 +1,39 @@
+name: Rust (Windows)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        update: true
+        install: >-
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-gtk4
+          mingw-w64-x86_64-libadwaita
+          mingw-w64-x86_64-gettext
+
+    - name: Add MSYS2 to PATH
+      shell: bash
+      run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
+
+    - name: Build
+      shell: bash
+      run: cargo build --verbose
+
+    - name: Run tests
+      shell: bash
+      run: cargo test --verbose
