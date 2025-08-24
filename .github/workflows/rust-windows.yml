@@ -39,7 +39,7 @@ jobs:
       shell: bash
       run: |
         which pkg-config || echo "pkg-config not found"
-        pkg-config --version || echo "pkg-config not working"
+        /c/msys64/mingw64/bin/pkg-config --version || echo "pkg-config not working"
         echo $PATH        
     
     - name: Build
