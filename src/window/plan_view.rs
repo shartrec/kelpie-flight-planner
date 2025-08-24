@@ -462,36 +462,37 @@ mod imp {
             let mut plan = self.plan.borrow_mut();
             let mut new_selection = None;
 
-            loop {
-                if let Some((tree_path, sel_pos)) = self.get_selected_path() {
-                    if tree_path.len() > 1 {
-                        let mut sector = plan.get_sectors_mut()[tree_path[0] as usize].borrow_mut();
-                        // Only if a waypoint.  index > 0 and < waypoint count
-                        let mut wp_index = tree_path[1] as usize;
+            if let Some((tree_path, sel_pos)) = self.get_selected_path() {
+                if tree_path.len() > 1 {
+                    let mut sector = plan.get_sectors_mut()[tree_path[0] as usize].borrow_mut();
+                    // Only if a waypoint.  index > 0 and < waypoint count
+                    let mut wp_index = tree_path[1] as usize;
 
+                    // If we have a start and the index is 0, then we are removing the start
+                    if sector.get_start().is_some() && wp_index == 0 {
+                        sector.set_start(None);
+                    } else {
+                        // Decrement the index if we have a start
                         if sector.get_start().is_some() {
-                            if wp_index == 0 {
-                                sector.set_start(None);
-                                new_selection = None;
-                                break;
-                            }
                             wp_index -= 1;
                         }
-                        if wp_index < sector.get_waypoint_count() - 1
-                        {
+                        if wp_index < sector.get_waypoint_count() - 1 {
                             sector.remove_waypoint(wp_index);
                             new_selection = Some(sel_pos);
-                        }
-                    } else {
-                        let sector_index = tree_path[0];
-                        if sector_index < plan.get_sectors().len() as u32 {
-                            plan.remove_sector_at(sector_index as usize);
-                            new_selection = None;
+                        } else if wp_index == sector.get_waypoint_count() && sector.get_end().is_some() {
+                            sector.set_end(None);
+                            new_selection = Some(sel_pos - 1);
                         }
                     }
+                } else {
+                    let sector_index = tree_path[0];
+                    if sector_index < plan.get_sectors().len() as u32 {
+                        plan.remove_sector_at(sector_index as usize);
+                        new_selection = None;
+                    }
                 }
-                break;
             }
+
             drop(plan);
             self.refresh(new_selection);
             event::manager().notify_listeners(Event::PlanChanged);

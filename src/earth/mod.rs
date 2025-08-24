@@ -26,6 +26,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::{BufReader, Error};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, RwLock};
 
 use flate2::read;
@@ -154,30 +155,58 @@ pub fn get_earth_model() -> &'static Earth {
 }
 
 pub fn initialise() -> Result<(), Error> {
-    let timer = std::time::Instant::now();
-    let pref = crate::preference::manager();
-    match pref.get::<String>(crate::preference::AIRPORTS_PATH) {
-        Some(p) => load_airports(&p)?,
-        None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Airport path not set")),
+    let prefs = crate::preference::manager();
+
+    // Check if the default path should be used
+    let use_default_path = prefs.get::<bool>(crate::preference::FGFS_USE_DFT_PATH).unwrap_or(false);
+
+    let airports_path;
+    let navaids_path;
+    let fixes_path;
+
+    if use_default_path {
+        let base_dir : String = match prefs.get::<String>(crate::preference::FGFS_DIR) {
+            Some(path) => path,
+            None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear base path not set")),
+        };
+        // Use the default Flightgear paths
+        let base_path = Path::new(&base_dir);
+        airports_path = base_path.join("Airports").join("apt.dat.gz");
+        navaids_path = base_path.join("Navaids").join("nav.dat.gz");
+        fixes_path = base_path.join("Navaids").join("fix.dat.gz");
+    } else {
+        // Use the user-defined paths
+        airports_path = match prefs.get::<String>(crate::preference::AIRPORTS_PATH) {
+            Some(path) => Path::new(&path).to_path_buf(),
+            None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Airport path not set")),
+        };
+        navaids_path = match prefs.get::<String>(crate::preference::NAVAIDS_PATH) {
+            Some(path) => Path::new(&path).to_path_buf(),
+            None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Navaid path not set")),
+        };
+        fixes_path = match prefs.get::<String>(crate::preference::FIXES_PATH) {
+            Some(path) => Path::new(&path).to_path_buf(),
+            None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Fix path not set")),
+        };
     }
+
+    let timer = std::time::Instant::now();
+    load_airports(&airports_path)?;
     info!("{} Airports loaded in {:?}", get_earth_model().get_airports().read().expect("Unable to get lock on Airports").len(), timer.elapsed());
+
     let timer = std::time::Instant::now();
-    match pref.get::<String>(crate::preference::NAVAIDS_PATH) {
-        Some(p) => load_navaids(&p)?,
-        None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Navaid path not set")),
-    }
+    load_navaids(&navaids_path)?;
     info!("{} Navaids loaded in {:?}", get_earth_model().get_navaids().read().expect("Unable to get lock on Navaids").len(), timer.elapsed());
+
     let timer = std::time::Instant::now();
-    match pref.get::<String>(crate::preference::FIXES_PATH) {
-        Some(p) => load_fixes(&p)?,
-        None => return Err(Error::new(std::io::ErrorKind::NotFound, "Flightgear Fix path not set")),
-    }
+    load_fixes(&fixes_path)?;
     info!("{} Fixes loaded in {:?}", get_earth_model().get_fixes().read().expect("Unable to get lock on Fixes").len(), timer.elapsed());
+
     Ok(())
 }
 
-fn load_airports(path: &str) -> Result<(), Error> {
-    let status = gettext("Loading Airports from : {}").replace("{}", path);
+fn load_airports(path: &PathBuf) -> Result<(), Error> {
+    let status = gettext("Loading Airports from : {}").replace("{}", path.to_str().unwrap_or(""));
     event::manager().notify_listeners(Event::StatusChange(status));
     let mut airports: Vec<Arc<Airport>> = Vec::new();
     let mut runway_offsets = HashMap::with_capacity(25000);
@@ -203,8 +232,8 @@ fn load_airports(path: &str) -> Result<(), Error> {
     result
 }
 
-fn load_navaids(path: &str) -> Result<(), Error> {
-    let status = gettext("Loading Nav aids from : {}").replace("{}", path);
+fn load_navaids(path: &PathBuf) -> Result<(), Error> {
+    let status = gettext("Loading Nav aids from : {}").replace("{}", path.to_str().unwrap_or(""));
     event::manager().notify_listeners(Event::StatusChange(status));
     let mut navaids: Vec<Arc<Navaid>> = Vec::new();
     let mut ils: HashMap<String, Vec<(String, f64)>> = HashMap::new();
@@ -230,8 +259,8 @@ fn load_navaids(path: &str) -> Result<(), Error> {
     result
 }
 
-fn load_fixes(path: &str) -> Result<(), Error> {
-    let status = gettext("Loading Fixes from : {}").replace("{}", path);
+fn load_fixes(path: &PathBuf) -> Result<(), Error> {
+    let status = gettext("Loading Fixes from : {}").replace("{}", path.to_str().unwrap_or(""));
     event::manager().notify_listeners(Event::StatusChange(status));
     let mut fixes: Vec<Arc<Fix>> = Vec::new();
     let file = fs::File::open(path);
