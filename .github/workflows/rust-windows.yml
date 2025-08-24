@@ -38,8 +38,7 @@ jobs:
     - name: Check for pkgconf and symlink
       shell: bash
       run: |
-        ls -l /c/msys64/mingw64/bin/pkgconf*
-        ls -l /c/msys64/mingw64/bin/pkg-config*
+        ls -l /c/msys64/mingw64/bin
         echo $PATH        
     
     - name: Build
