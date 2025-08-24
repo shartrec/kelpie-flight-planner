@@ -35,11 +35,11 @@ jobs:
     - name: Set PKG_CONFIG_PATH
       run: echo "PKG_CONFIG_PATH=C:/msys64/mingw64/lib/pkgconfig" >> $GITHUB_ENV
     
-    - name: Check for pkg-config
+    - name: Check for pkgconf and symlink
       shell: bash
       run: |
-        which pkg-config || echo "pkg-config not found"
-        /c/msys64/mingw64/bin/pkg-config --version || echo "pkg-config not working"
+        ls -l /c/msys64/mingw64/bin/pkgconf*
+        ls -l /c/msys64/mingw64/bin/pkg-config*
         echo $PATH        
     
     - name: Build
