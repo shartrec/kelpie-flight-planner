@@ -227,20 +227,27 @@ impl Window {
         let pref = crate::preference::manager();
 
         // Set the size of the window
-        if let Some(p) = pref.get::<i32>("vertical-split-pos") {
-            self.pane_1v.set_position(p);
+        let (w, h) = self.obj().default_size();
+        if let Some(p) = pref.get::<f32>("vertical-split-pos") {
+            let v_split = (w as f32 * p).round() as i32;
+            self.pane_1v.set_position(v_split);
         }
-        if let Some(p) = pref.get::<i32>("horizontal-split-pos") {
-            self.pane_1h.set_position(p);
+        if let Some(p) = pref.get::<f32>("horizontal-split-pos") {
+            let h_split = (h as f32 * p).round() as i32;
+            self.pane_1h.set_position(h_split);
         }
     }
 
     fn save_panel_layout(&self) {
         let pref = crate::preference::manager();
 
+        let (w, h) = self.obj().default_size();
+        let v_split  = self.pane_1v.position() as f32 / w as f32;
+        let h_split  = self.pane_1h.position() as f32 / h as f32;
+
         // Set the size of the window
-        pref.put("vertical-split-pos", self.pane_1v.position());
-        pref.put("horizontal-split-pos", self.pane_1h.position());
+        pref.put("vertical-split-pos", v_split);
+        pref.put("horizontal-split-pos", h_split);
     }
 
 
@@ -317,7 +324,7 @@ impl ObjectImpl for Window {
         obj.setup_actions();
         obj.load_window_size();
 
-        self.layout_panels();
+        // self.layout_panels();
 
         // Listen for setup required message
         if let Some(rx) = event::manager().register_listener() {
@@ -403,6 +410,8 @@ impl WidgetImpl for Window {
 
             self.pane_1v.set_position(new_v_div.round() as i32);
             self.pane_1h.set_position(new_h_div.round() as i32);
+        } else {
+            self.layout_panels();
         }
     }
 }
