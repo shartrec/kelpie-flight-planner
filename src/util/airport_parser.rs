@@ -247,7 +247,7 @@ impl AirportParserFG850 {
         Ok(())
     }
 
-    fn bytes_to_utf8(byte_buf: &[u8]) -> Cow<str> {
+    fn bytes_to_utf8(byte_buf: &[u8]) -> Cow<'_, str> {
         match std::str::from_utf8(byte_buf) {
             Ok(ccc) => {
                 Cow::Borrowed(ccc)
