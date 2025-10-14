@@ -77,6 +77,8 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         filter_list_model: RefCell<Option<FilterListModel>>,
+        // Fix ID for the row that opened the popover (if any)
+        context_fix_id: RefCell<Option<String>>,
 
     }
 
@@ -175,6 +177,15 @@ mod imp {
             self.get_selection().map(|fix| fix.imp().fix().clone())
         }
 
+        fn get_context_or_selected_fix(&self) -> Option<Arc<Fix>> {
+            if let Some(id) = self.context_fix_id.borrow().as_ref() {
+                if let Some(ap) = crate::earth::get_earth_model().get_fix_by_id(id.as_str()) {
+                    return Some(ap);
+                }
+            }
+            self.get_selected_fix()
+        }
+
         fn get_selection(&self) -> Option<FixObject> {
             let selection = self.fix_list.model().unwrap().selection();
             let sel_ap = selection.nth(0);
@@ -249,27 +260,65 @@ mod imp {
         }
     }
 
+    impl FixView {
+        fn attach_context_menu(&self, label: &Label, context_id: String) {
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(3);
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, #[weak(rename_to = l)] label, move |gesture, _n, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                // remember which fix opened this menu
+                view.context_fix_id.replace(Some(context_id.clone()));
+                if let Some(popover) = view.popover.borrow().as_ref() {
+                    popover.unparent();
+                    popover.set_parent(&l);
+                    popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                    popover.popup();
+                };
+            }));
+            label.add_controller(gesture);
+        }
+    }
+
     impl ObjectImpl for FixView {
         fn constructed(&self) {
             self.parent_constructed();
             self.initialise();
 
-            self.col_id.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
+            // build popover menu
+            let builder = Builder::from_resource("/com/shartrec/kelpie_planner/fix_popover.ui");
+            let menu = builder.object::<MenuModel>("fixes-menu");
+            match menu {
+                Some(popover) => {
+                    let popover = PopoverMenu::builder()
+                        .menu_model(&popover)
+                        .has_arrow(false)
+                        .build();
+                    let _ = self.popover.replace(Some(popover));
+                }
+                None => error!(" Not a popover"),
+            }
+            self.col_id.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, fix: &FixObject| {
                 label.set_label(fix.imp().fix().get_id());
                 label.set_xalign(0.0);
+                let context_id = fix.imp().fix().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
                 fix.imp().set_ui(Some(label.clone()));
-            })));
+            }))));
 
 
-            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
+            self.col_lat.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, fix: &FixObject| {
                 label.set_label(&fix.imp().fix().get_lat_as_string());
                 label.set_xalign(0.0);
-            })));
+                let context_id = fix.imp().fix().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+            }))));
 
-            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, fix: &FixObject| {
+            self.col_lon.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, fix: &FixObject| {
                 label.set_label(&fix.imp().fix().get_long_as_string());
                 label.set_xalign(0.0);
-            })));
+                let context_id = fix.imp().fix().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+            }))));
 
 
             self.fix_list.connect_activate(
@@ -279,21 +328,6 @@ mod imp {
                     }
                 }),
             );
-            // build popover menu
-
-            let builder = Builder::from_resource("/com/shartrec/kelpie_planner/fix_popover.ui");
-            let menu = builder.object::<MenuModel>("fixes-menu");
-            match menu {
-                Some(popover) => {
-                    let popover = PopoverMenu::builder()
-                        .menu_model(&popover)
-                        .has_arrow(false)
-                        .build();
-                    popover.set_parent(&self.fix_window.get());
-                    let _ = self.popover.replace(Some(popover));
-                }
-                None => error!(" Not a popover"),
-            }
 
             // Enable context menu key
             let ev_key = gtk::EventControllerKey::new();
@@ -317,17 +351,6 @@ mod imp {
 
             }));
             self.fix_list.add_controller(ev_key);
-
-            let gesture = gtk::GestureClick::new();
-            gesture.set_button(3);
-            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move |gesture, _n, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                if let Some(popover) = view.popover.borrow().as_ref() {
-                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
-                        popover.popup();
-                };
-            }));
-            self.fix_window.add_controller(gesture);
 
             self.fix_search
                 .connect_clicked(clone!(#[weak(rename_to = window)] self, move |_search| {
@@ -353,7 +376,7 @@ mod imp {
 
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(fix) = view.get_selected_fix() {
+                if let Some(fix) = view.get_context_or_selected_fix() {
                     view.add_to_plan(fix);
                 }
             }));
@@ -361,7 +384,7 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(fix) = view.get_selected_fix() {
+                if let Some(fix) = view.get_context_or_selected_fix() {
                     if let Some(airport_view) = get_airport_view(&view.fix_window.get()) {
                         show_airport_view(&view.fix_window.get());
                         airport_view.imp().search_near(fix.get_loc());
@@ -372,7 +395,7 @@ mod imp {
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-               if let Some(fix) = view.get_selected_fix() {
+               if let Some(fix) = view.get_context_or_selected_fix() {
                     if let Some(navaid_view) = get_airport_view(&view.fix_window.get()) {
                         show_navaid_view(&view.fix_window.get());
                         navaid_view.imp().search_near(fix.get_loc());
@@ -383,7 +406,7 @@ mod imp {
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(fix) = view.get_selected_fix() {
+                if let Some(fix) = view.get_context_or_selected_fix() {
                         view.search_near(fix.get_loc());
                }
             }));

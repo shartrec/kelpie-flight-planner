@@ -143,6 +143,10 @@ mod imp {
             if let Some(page) = &self.page.borrow().deref() {
                 page.set_title(&self.plan.borrow().get_name());
             }
+            if let Some(popover) = self.popover.borrow().as_ref() {
+                popover.unparent();
+            }
+
             // update the heading if required for Mag vs True Hdg
             let pref = crate::preference::manager();
             let col_hdg = if pref.get::<bool>(USE_MAGNETIC_HEADINGS).unwrap_or(false) {
@@ -620,7 +624,7 @@ mod imp {
         fn constructed(&self) {
             self.parent_constructed();
 
-            self.col_name.set_factory(Some(&build_tree_column_factory(|label: Label, row: &TreeListRow| {
+            self.col_name.set_factory(Some(&build_tree_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, row: &TreeListRow| {
                 // get the item from the tree list row
                 let item = row.item().unwrap();
                 if item.is::<SectorObject>() {
@@ -639,7 +643,27 @@ mod imp {
                     label.set_label(cell.borrow().as_ref().unwrap().number_pair().as_str());
                 }
                 label.set_xalign(0.0);
-            })));
+
+                // Attach right-click popup to this specific label and select the row
+                let pos = row.position();
+                let gesture = gtk::GestureClick::new();
+                gesture.set_button(3);
+                gesture.connect_released(clone!(#[weak] view, #[weak] label, move |gesture, _n, x, y| {
+                    gesture.set_state(gtk::EventSequenceState::Claimed);
+                    if let Some(model) = view.plan_tree.model() {
+                        if let Ok(ss) = model.downcast::<SingleSelection>() {
+                            ss.set_selected(pos);
+                        }
+                    }
+                    if let Some(popover) = view.popover.borrow().as_ref() {
+                        popover.unparent();
+                        popover.set_parent(&label);
+                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                        popover.popup();
+                    }
+                }));
+                label.add_controller(gesture);
+            }))));
 
             self.col_alt.set_factory(Some(&build_column_factory(|label: Label, row: &TreeListRow| {
                 // get the item from the tree list row
@@ -794,7 +818,7 @@ mod imp {
                         .menu_model(&popover)
                         .has_arrow(false)
                         .build();
-                    popover.set_parent(&self.plan_tree.get());
+                    popover.set_parent(&self.plan_window.get());
                     let _ = self.popover.replace(Some(popover));
                 }
                 None => error!(" Not a popover"),
@@ -821,16 +845,6 @@ mod imp {
             }));
             self.plan_window.add_controller(ev_key);
 
-            let gesture = gtk::GestureClick::new();
-            gesture.set_button(3);
-            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move |gesture, _n, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                if let Some(popover) = view.popover.borrow().as_ref() {
-                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
-                        popover.popup();
-                };
-            }));
-            self.plan_window.add_controller(gesture);
 
             self.btn_return_sector
                 .connect_clicked(clone!(#[weak(rename_to = view)] self, move |_| {

@@ -31,9 +31,7 @@ mod imp {
     use std::sync::Arc;
 
     use glib::subclass::InitializingObject;
-    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter,
-              Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow,
-              SingleSelection, SortListModel};
+    use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, MainContext};
@@ -81,6 +79,8 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         filter_list_model: RefCell<Option<FilterListModel>>,
+        // Airport ID for the row that opened the popover (if any)
+        context_airport_id: RefCell<Option<String>>,
 
     }
 
@@ -178,6 +178,15 @@ mod imp {
             self.get_selection().map(|airport| airport.imp().airport().clone())
         }
 
+        fn get_context_or_selected_airport(&self) -> Option<Arc<Airport>> {
+            if let Some(id) = self.context_airport_id.borrow().as_ref() {
+                if let Some(ap) = crate::earth::get_earth_model().get_airport_by_id(id.as_str()) {
+                    return Some(ap);
+                }
+            }
+            self.get_selected_airport()
+        }
+
         fn get_selection(&self) -> Option<AirportObject> {
             let selection = self.airport_list.model().unwrap().selection();
             let sel_ap = selection.nth(0);
@@ -259,44 +268,29 @@ mod imp {
         }
     }
 
+    impl AirportView {
+        fn attach_context_menu(&self, label: &Label, context_id: String) {
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(3);
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, #[weak(rename_to = l)] label, move |gesture, _n, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                // remember which airport opened this menu
+                view.context_airport_id.replace(Some(context_id.clone()));
+                if let Some(popover) = view.popover.borrow().as_ref() {
+                    popover.unparent();
+                    popover.set_parent(&l);
+                    popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                    popover.popup();
+                };
+            }));
+            label.add_controller(gesture);
+        }
+    }
+
     impl ObjectImpl for AirportView {
         fn constructed(&self) {
             self.parent_constructed();
             self.initialise();
-
-            self.col_id.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
-                label.set_label(airport.imp().airport().get_id());
-                label.set_xalign(0.0);
-                airport.imp().set_ui(Some(label.clone()));
-            })));
-
-            self.col_name.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
-                label.set_label(airport.imp().airport().get_name());
-                label.set_xalign(0.0);
-            })));
-
-            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
-                label.set_label(&airport.imp().airport().get_lat_as_string());
-                label.set_xalign(0.0);
-            })));
-
-            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
-                label.set_label(&airport.imp().airport().get_long_as_string());
-                label.set_xalign(0.0);
-            })));
-
-            self.col_elev.set_factory(Some(&build_column_factory(|label: Label, airport: &AirportObject| {
-                label.set_label(&airport.imp().airport().get_elevation().to_string());
-                label.set_xalign(1.0);
-            })));
-
-            self.airport_list.connect_activate(
-                clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
-                    if let Some(airport) = view.get_model_airport(position) {
-                        view.add_to_plan(airport.imp().airport().clone());
-                    }
-                }),
-            );
 
             // build popover menu
             let builder = Builder::from_resource("/com/shartrec/kelpie_planner/airport_popover.ui");
@@ -307,11 +301,54 @@ mod imp {
                         .menu_model(&popover)
                         .has_arrow(false)
                         .build();
-                    popover.set_parent(&self.airport_list.get());
                     let _ = self.popover.replace(Some(popover));
                 }
                 None => error!(" Not a popover"),
             }
+
+            self.col_id.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, airport: &AirportObject| {
+                label.set_label(airport.imp().airport().get_id());
+                label.set_xalign(0.0);
+                let context_id = airport.imp().airport().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+                airport.imp().set_ui(Some(label.clone()));
+            }))));
+
+            self.col_name.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, airport: &AirportObject| {
+                label.set_label(airport.imp().airport().get_name());
+                label.set_xalign(0.0);
+                let context_id = airport.imp().airport().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+            }))));
+
+            self.col_lat.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, airport: &AirportObject| {
+                label.set_label(&airport.imp().airport().get_lat_as_string());
+                label.set_xalign(0.0);
+                let context_id = airport.imp().airport().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+            }))));
+
+            self.col_lon.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, airport: &AirportObject| {
+                label.set_label(&airport.imp().airport().get_long_as_string());
+                label.set_xalign(0.0);
+                let context_id = airport.imp().airport().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+            }))));
+
+            self.col_elev.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, airport: &AirportObject| {
+                label.set_label(&airport.imp().airport().get_elevation().to_string());
+                label.set_xalign(1.0);
+                let context_id = airport.imp().airport().get_id().to_string();
+                view.attach_context_menu(&label, context_id);
+            }))));
+
+            self.airport_list.connect_activate(
+                clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
+                    if let Some(airport) = view.get_model_airport(position) {
+                        view.add_to_plan(airport.imp().airport().clone());
+                    }
+                }),
+            );
 
             // Enable context menu key
             let ev_key = gtk::EventControllerKey::new();
@@ -319,6 +356,8 @@ mod imp {
                     move | _event, key_val, _key_code, modifier | {
                 if key_val == Key::Menu && modifier == ModifierType::empty() {
                     if let Some(airport) = view.get_selection() {
+                        // remember which airport opened this menu
+                        view.context_airport_id.replace(Some(airport.imp().airport().get_id().to_string()));
                         if let Some(label) = airport.imp().ui().as_ref() {
                             let rect = label.compute_bounds(&view.airport_list.get()).unwrap();
                             let rect = Rectangle::new(rect.x() as i32, rect.y() as i32, 1, 1);
@@ -335,17 +374,6 @@ mod imp {
 
             }));
             self.airport_list.add_controller(ev_key);
-
-            let gesture = gtk::GestureClick::new();
-            gesture.set_button(3);
-            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move | gesture, _n, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                if let Some(popover) = view.popover.borrow().as_ref() {
-                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
-                        popover.popup();
-                };
-            }));
-            self.airport_list.add_controller(gesture);
 
             // If the user clicks search or presses enter in any of the search fields do the search
             self.airport_search
@@ -375,7 +403,7 @@ mod imp {
 
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(airport) = view.get_selected_airport() {
+                if let Some(airport) = view.get_context_or_selected_airport() {
                     view.add_to_plan(airport);
                 }
             }));
@@ -383,7 +411,7 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                    if let Some(airport) = view.get_selected_airport() {
+                    if let Some(airport) = view.get_context_or_selected_airport() {
                         view.search_near(airport.get_loc());
                     }
             }));
@@ -391,7 +419,7 @@ mod imp {
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                    if let Some(airport) = view.get_selected_airport() {
+                    if let Some(airport) = view.get_context_or_selected_airport() {
                         if let Some(navaid_view) = get_navaid_view(&view.airport_window.get()) {
                             show_navaid_view(&view.airport_window.get());
                             navaid_view.imp().search_near(airport.get_loc());
@@ -402,7 +430,7 @@ mod imp {
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(airport) = view.get_selected_airport() {
+                if let Some(airport) = view.get_context_or_selected_airport() {
                         if let Some(fix_view) = get_fix_view(&view.airport_window.get()) {
                             show_fix_view(&view.airport_window.get());
                             fix_view.imp().search_near(airport.get_loc());
@@ -413,7 +441,7 @@ mod imp {
 
             let action = SimpleAction::new("view", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(airport) = view.get_selected_airport() {
+                if let Some(airport) = view.get_context_or_selected_airport() {
                     if let Some(airport_map_view) = get_airport_map_view(&view.airport_window.get()) {
                         show_airport_map_view(&view.airport_window.get());
                         airport_map_view.imp().set_airport(airport.clone());

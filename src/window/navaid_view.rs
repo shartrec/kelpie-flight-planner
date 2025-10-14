@@ -81,6 +81,8 @@ mod imp {
 
         popover: RefCell<Option<PopoverMenu>>,
         filter_list_model: RefCell<Option<FilterListModel>>,
+        // Navaid ID for the row that opened the popover (if any)
+        context_navaid_id: RefCell<Option<(String, String)>>,
 
     }
 
@@ -181,6 +183,14 @@ mod imp {
             self.get_selection().map(|navaid| navaid.imp().navaid().clone())
         }
 
+        fn get_context_or_selected_navaid(&self) -> Option<Arc<Navaid>> {
+            if let Some((id, name)) = self.context_navaid_id.borrow().as_ref() {
+                if let Some(ap) = crate::earth::get_earth_model().get_navaid_by_id_and_name(id, name) {
+                    return Some(ap);
+                }
+            }
+            self.get_selected_navaid()
+        }
         fn get_selection(&self) -> Option<NavaidObject> {
             let selection = self.navaid_list.model().unwrap().selection();
             let sel_ap = selection.nth(0);
@@ -262,44 +272,29 @@ mod imp {
         }
     }
 
+    impl NavaidView {
+        fn attach_context_menu(&self, label: &Label, context_id: (String, String)) {
+            let gesture = gtk::GestureClick::new();
+            gesture.set_button(3);
+            gesture.connect_released(clone!(#[weak(rename_to = view)] self, #[weak(rename_to = l)] label, move |gesture, _n, x, y| {
+                gesture.set_state(gtk::EventSequenceState::Claimed);
+                // remember which navaid opened this menu
+                view.context_navaid_id.replace(Some(context_id.clone()));
+                if let Some(popover) = view.popover.borrow().as_ref() {
+                    popover.unparent();
+                    popover.set_parent(&l);
+                    popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
+                    popover.popup();
+                };
+            }));
+            label.add_controller(gesture);
+        }
+    }
+
     impl ObjectImpl for NavaidView {
         fn constructed(&self) {
             self.parent_constructed();
             self.initialise();
-
-            self.col_id.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(navaid.imp().navaid().get_id());
-                label.set_xalign(0.0);
-                navaid.imp().set_ui(Some(label.clone()));
-            })));
-
-            self.col_name.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(navaid.imp().navaid().get_name());
-                label.set_xalign(0.0);
-            })));
-
-            self.col_lat.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(&navaid.imp().navaid().get_lat_as_string());
-                label.set_xalign(0.0);
-            })));
-
-            self.col_lon.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(&navaid.imp().navaid().get_long_as_string());
-                label.set_xalign(0.0);
-            })));
-
-            self.col_freq.set_factory(Some(&build_column_factory(|label: Label, navaid: &NavaidObject| {
-                label.set_label(&navaid.imp().navaid().get_freq().to_string());
-                label.set_xalign(1.0);
-            })));
-
-            self.navaid_list.connect_activate(
-                clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
-                    if let Some(navaid) = view.get_model_navaid(position) {
-                        view.add_to_plan(navaid.imp().navaid().clone());
-                    }
-                }),
-            );
 
             // build popover menu
             let builder = Builder::from_resource("/com/shartrec/kelpie_planner/navaid_popover.ui");
@@ -310,11 +305,59 @@ mod imp {
                         .menu_model(&popover)
                         .has_arrow(false)
                         .build();
-                    popover.set_parent(&self.navaid_list.get());
                     let _ = self.popover.replace(Some(popover));
                 }
                 None => error!(" Not a popover"),
             }
+
+            self.col_id.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, navaid: &NavaidObject| {
+                label.set_label(navaid.imp().navaid().get_id());
+                label.set_xalign(0.0);
+                let context_id = navaid.imp().navaid().get_id().to_string();
+                let context_name = navaid.imp().navaid().get_name().to_string();
+                view.attach_context_menu(&label, (context_id, context_name));
+                navaid.imp().set_ui(Some(label.clone()));
+            }))));
+
+            self.col_name.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, navaid: &NavaidObject| {
+                label.set_label(navaid.imp().navaid().get_name());
+                label.set_xalign(0.0);
+                let context_id = navaid.imp().navaid().get_id().to_string();
+                let context_name = navaid.imp().navaid().get_name().to_string();
+                view.attach_context_menu(&label, (context_id, context_name));
+            }))));
+
+            self.col_lat.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_lat_as_string());
+                label.set_xalign(0.0);
+                let context_id = navaid.imp().navaid().get_id().to_string();
+                let context_name = navaid.imp().navaid().get_name().to_string();
+                view.attach_context_menu(&label, (context_id, context_name));
+            }))));
+
+            self.col_lon.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_long_as_string());
+                label.set_xalign(0.0);
+                let context_id = navaid.imp().navaid().get_id().to_string();
+                let context_name = navaid.imp().navaid().get_name().to_string();
+                view.attach_context_menu(&label, (context_id, context_name));
+            }))));
+
+            self.col_freq.set_factory(Some(&build_column_factory(clone!(#[weak(rename_to = view)] self, move |label: Label, navaid: &NavaidObject| {
+                label.set_label(&navaid.imp().navaid().get_freq().to_string());
+                label.set_xalign(1.0);
+                let context_id = navaid.imp().navaid().get_id().to_string();
+                let context_name = navaid.imp().navaid().get_name().to_string();
+                view.attach_context_menu(&label, (context_id, context_name));
+            }))));
+
+            self.navaid_list.connect_activate(
+                clone!(#[weak(rename_to = view)] self, move | _list_view, position | {
+                    if let Some(navaid) = view.get_model_navaid(position) {
+                        view.add_to_plan(navaid.imp().navaid().clone());
+                    }
+                }),
+            );
 
             // Enable context menu key
             let ev_key = gtk::EventControllerKey::new();
@@ -339,16 +382,6 @@ mod imp {
             }));
             self.navaid_list.add_controller(ev_key);
 
-            let gesture = gtk::GestureClick::new();
-            gesture.set_button(3);
-            gesture.connect_released(clone!(#[weak(rename_to = view)] self, move |gesture, _n, x, y| {
-                gesture.set_state(gtk::EventSequenceState::Claimed);
-                if let Some(popover) = view.popover.borrow().as_ref() {
-                        popover.set_pointing_to(Some(&Rectangle::new(x as i32, y as i32, 1, 1)));
-                        popover.popup();
-                };
-            }));
-            self.navaid_window.add_controller(gesture);
 
             self.navaid_search
                 .connect_clicked(clone!(#[weak(rename_to = window)] self, move |_search| {
@@ -376,7 +409,7 @@ mod imp {
                 .insert_action_group("navaid", Some(&actions));
             let action = SimpleAction::new("add_to_plan", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(navaid) = view.get_selected_navaid() {
+                if let Some(navaid) = view.get_context_or_selected_navaid() {
                     view.add_to_plan(navaid);
                 }
             }));
@@ -384,7 +417,7 @@ mod imp {
 
             let action = SimpleAction::new("find_airports_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                    if let Some(navaid) = view.get_selected_navaid() {
+                    if let Some(navaid) = view.get_context_or_selected_navaid() {
                         if let Some(airport_view) = get_airport_view(&view.navaid_window.get()) {
                             show_airport_view(&view.navaid_window.get());
                             airport_view.imp().search_near(navaid.get_loc());
@@ -395,7 +428,7 @@ mod imp {
 
             let action = SimpleAction::new("find_navaids_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(navaid) = view.get_selected_navaid() {
+                if let Some(navaid) = view.get_context_or_selected_navaid() {
                     view.search_near(navaid.get_loc());
                 }
             }));
@@ -403,7 +436,7 @@ mod imp {
 
             let action = SimpleAction::new("find_fixes_near", None);
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
-                if let Some(navaid) = view.get_selected_navaid() {
+                if let Some(navaid) = view.get_context_or_selected_navaid() {
                         if let Some(fix_view) = get_fix_view(&view.navaid_window.get()) {
                             show_fix_view(&view.navaid_window.get());
                             fix_view.imp().search_near(navaid.get_loc());

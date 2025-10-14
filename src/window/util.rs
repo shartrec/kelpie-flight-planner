@@ -106,7 +106,7 @@ pub(crate) fn build_column_factory<F: Fn(Label, &T) + 'static, T: IsA<Object>>(f
     factory
 }
 
-pub(crate) fn build_tree_column_factory(f: fn(Label, &TreeListRow)) -> SignalListItemFactory {
+pub(crate) fn build_tree_column_factory<F: Fn(Label, &TreeListRow) + 'static>(f: F) -> SignalListItemFactory {
     let factory = SignalListItemFactory::new();
     factory.connect_setup(move |_, list_item| {
         let label = Label::new(None);
