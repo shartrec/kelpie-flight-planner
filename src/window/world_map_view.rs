@@ -657,7 +657,8 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct WorldMapView(ObjectSubclass<imp::WorldMapView>) @extends gtk::Widget, gtk::Box;
+    pub struct WorldMapView(ObjectSubclass<imp::WorldMapView>)
+        @extends gtk::Widget, gtk::Box, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl WorldMapView {

@@ -459,7 +459,8 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct NavaidView(ObjectSubclass<imp::NavaidView>) @extends gtk::Widget, gtk::Box;
+    pub struct NavaidView(ObjectSubclass<imp::NavaidView>)
+        @extends gtk::Widget, gtk::Box, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl NavaidView {

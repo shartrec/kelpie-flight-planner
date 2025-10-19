@@ -144,7 +144,6 @@ pub(crate) fn build_tree_column_factory<F: Fn(Label, &TreeListRow) + 'static>(f:
                 .expect("The child has to be a `Label`.");
             // Set "label" to "value"
             f(label, &obj);
-
             expander.set_list_row(Some(&obj));
         }
     });
@@ -335,8 +334,7 @@ pub(crate) fn get_tree_path(row: u32, trm: &TreeListModel) -> Vec<u32> {
             if path_index as usize >= path.len() {
                 path.push(0);
             } else {
-                let old_val = path.remove(path_index as usize);
-                path.insert(path_index as usize, old_val + 1);
+                path[path_index as usize] += 1;
             }
             // clear lower level paths
             path.truncate((path_index + 1) as usize);

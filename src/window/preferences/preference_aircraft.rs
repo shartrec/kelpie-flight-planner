@@ -182,7 +182,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct PreferenceAircraftPage(ObjectSubclass<imp::PreferenceAircraftPage>)
-        @extends gtk::Box, gtk::Widget;
+        @extends gtk::Box, gtk::Widget, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PreferenceAircraftPage {

@@ -157,7 +157,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct AirportMapView(ObjectSubclass<imp::AirportMapView>)
-        @extends gtk::Widget, gtk::Box;
+        @extends gtk::Widget, gtk::Box, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AirportMapView {

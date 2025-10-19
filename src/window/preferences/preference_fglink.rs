@@ -96,7 +96,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct PreferenceFgLinkPage(ObjectSubclass<imp::PreferenceFgLinkPage>)
-        @extends gtk::Box, gtk::Widget;
+        @extends gtk::Box, gtk::Widget, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PreferenceFgLinkPage {

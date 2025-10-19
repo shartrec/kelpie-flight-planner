@@ -464,7 +464,8 @@ mod imp {
 }
 
 glib::wrapper! {
-    pub struct AirportView(ObjectSubclass<imp::AirportView>) @extends gtk::Widget, gtk::Box;
+    pub struct AirportView(ObjectSubclass<imp::AirportView>)
+        @extends gtk::Widget, gtk::Box, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl AirportView {

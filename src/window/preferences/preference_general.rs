@@ -189,7 +189,7 @@ mod imp {
 
 glib::wrapper! {
     pub struct PreferenceGeneralPage(ObjectSubclass<imp::PreferenceGeneralPage>)
-        @extends gtk::Box, gtk::Widget;
+        @extends gtk::Box, gtk::Widget, gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl PreferenceGeneralPage {
