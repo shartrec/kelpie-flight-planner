@@ -21,7 +21,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/generate_plan.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/generate_plan.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -34,7 +34,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/new_sector.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/new_sector.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -47,7 +47,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/return.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/return.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -61,7 +61,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/up.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/up.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -75,7 +75,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/down.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/down.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>

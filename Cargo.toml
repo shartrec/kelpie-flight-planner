@@ -38,4 +38,4 @@ earcutr = "0.4.3"
 opt-level = 3
 
 [build-dependencies]
-glib-build-tools = "0.20.0"
+glib-build-tools = "0.21.0"

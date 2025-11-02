@@ -29,7 +29,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/airport.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/airport.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -42,7 +42,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/navaid.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/navaid.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -55,7 +55,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/plus.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/plus.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>
@@ -68,7 +68,7 @@
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="resource">/com/shartrec/kelpie_planner/images/minus.gif</property>
+                <property name="resource">/com/shartrec/kelpie_planner/images/minus.png</property>
                 <property name="icon_size">1</property>
               </object>
             </child>

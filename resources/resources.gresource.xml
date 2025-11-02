@@ -25,16 +25,16 @@
     <file compressed="true" preprocess="xml-stripblanks">preference_aircraft_dialog.ui</file>
 
     <!-- Icon images follow -->
-    <file>images/generate_plan.gif</file>
-    <file>images/new_sector.gif</file>
-    <file>images/return.gif</file>
-    <file>images/up.gif</file>
-    <file>images/down.gif</file>
-    <file>images/plus.gif</file>
-    <file>images/minus.gif</file>
-    <file>images/airport.gif</file>
-    <file>images/navaid.gif</file>
+    <file>images/airport.png</file>
+    <file>images/down.png</file>
+    <file>images/generate_plan.png</file>
     <file>images/kelpiedog_120x120_transparent.png</file>
+    <file>images/minus.png</file>
+    <file>images/navaid.png</file>
+    <file>images/new_sector.png</file>
+    <file>images/plus.png</file>
+    <file>images/return.png</file>
+    <file>images/up.png</file>
 
     <!--CSS-->
     <file compressed="true">style.css</file>
