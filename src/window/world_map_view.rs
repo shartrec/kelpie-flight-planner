@@ -49,7 +49,7 @@ mod imp {
     use std::sync::Arc;
     use gettextrs::gettext;
     use crate::earth::coordinate::Coordinate;
-    use crate::event::Event;
+    use crate::event::EventType;
     use crate::model::airport::{Airport, AirportType};
     use crate::model::location::Location;
     use crate::model::navaid::{Navaid, NavaidType};
@@ -99,29 +99,33 @@ mod imp {
         pub fn initialise(&self) {
             self.zoom_level.replace(1.0);
 
-            if let Some(rx) = event::manager().register_listener() {
+            if let Some(rx) = event::manager().register_listener(EventType::PlanChanged) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(ev) = rx.recv().await {
-                        match ev {
-                            Event::PlanChanged => {
-                                if let Some(renderer) = view.renderer.borrow().as_ref() {
-                                    renderer.plan_changed();
-                                    view.gl_area.queue_draw();
-                                }
-                            }
-                            Event::AirportsLoaded => {
-                                if let Some(renderer) = view.renderer.borrow().as_ref() {
-                                    renderer.airports_loaded();
-                                    view.gl_area.queue_draw();
-                                }
-                            }
-                            Event::NavaidsLoaded => {
-                                if let Some(renderer) = view.renderer.borrow().as_ref() {
-                                    renderer.navaids_loaded();
-                                    view.gl_area.queue_draw();
-                                }
-                            }
-                        _ => {}}
+                    while let Ok(_) = rx.recv().await {
+                        if let Some(renderer) = view.renderer.borrow().as_ref() {
+                            renderer.plan_changed();
+                            view.gl_area.queue_draw();
+                        }
+                    }
+                }));
+            }
+            if let Some(rx) = event::manager().register_listener(EventType::AirportsLoaded) {
+                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
+                    while let Ok(_) = rx.recv().await {
+                        if let Some(renderer) = view.renderer.borrow().as_ref() {
+                            renderer.airports_loaded();
+                            view.gl_area.queue_draw();
+                        }
+                    }
+                }));
+            }
+            if let Some(rx) = event::manager().register_listener(EventType::NavaidsLoaded) {
+                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
+                    while let Ok(_) = rx.recv().await {
+                        if let Some(renderer) = view.renderer.borrow().as_ref() {
+                            renderer.navaids_loaded();
+                            view.gl_area.queue_draw();
+                        }
                     }
                 }));
             }

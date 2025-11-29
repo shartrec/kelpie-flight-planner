@@ -24,13 +24,24 @@
 
 #![forbid(unsafe_code)]
 
+use std::collections::HashMap;
 use std::sync::{LazyLock, RwLock};
 
 use async_channel::{Receiver, Sender, TrySendError};
 use log::warn;
 
-#[derive(Clone, PartialEq)]
-#[derive(Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub enum EventType {
+    AirportsLoaded,
+    NavaidsLoaded,
+    FixesLoaded,
+    PlanChanged,
+    PreferencesChanged,
+    SetupRequired,
+    StatusChange,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Event {
     AirportsLoaded,
     NavaidsLoaded,
@@ -41,8 +52,22 @@ pub enum Event {
     StatusChange(String),
 }
 
+impl Event {
+    fn event_type(&self) -> EventType {
+        match self {
+            Event::AirportsLoaded => EventType::AirportsLoaded,
+            Event::NavaidsLoaded => EventType::NavaidsLoaded,
+            Event::FixesLoaded => EventType::FixesLoaded,
+            Event::PlanChanged => EventType::PlanChanged,
+            Event::PreferencesChanged => EventType::PreferencesChanged,
+            Event::SetupRequired => EventType::SetupRequired,
+            Event::StatusChange(_) => EventType::StatusChange,
+        }
+    }
+}
+
 static MANAGER: LazyLock<EventManager> = LazyLock::new(|| EventManager {
-    listeners: RwLock::new(Vec::new()),
+    listeners: RwLock::new(HashMap::new()),
 });
 
 pub fn manager() -> &'static EventManager {
@@ -50,33 +75,47 @@ pub fn manager() -> &'static EventManager {
 }
 
 pub struct EventManager {
-    listeners: RwLock<Vec<Sender<Event>>>,
+    listeners: RwLock<HashMap<EventType, Vec<Sender<Event>>>>,
 }
 
 impl EventManager {
-    pub fn register_listener(&self) -> Option<Receiver<Event>> {
+    /// Register a listener for a specific `event_type`.
+    /// Returns a receiver that will receive copies of that event when notified.
+    pub fn register_listener(&self, event_type: EventType) -> Option<Receiver<Event>> {
         let (tx, rx) = async_channel::unbounded::<Event>();
 
         self.listeners.write().ok().map(|mut listeners| {
-            listeners.push(tx);
+            listeners
+                .entry(event_type)
+                .or_insert_with(Vec::new)
+                .push(tx);
             rx
         })
     }
 
+    /// Notify only listeners registered for the specific `ev`.
     pub fn notify_listeners(&self, ev: Event) {
+        let key = ev.event_type();
+
         if let Ok(listeners) = self.listeners.read() {
-            for listener in listeners.iter() {
-                match listener.try_send(ev.clone()) {
-                    Ok(_) => {}
-                    Err(TrySendError::Closed(_)) => {
-                        warn!("Listener channel closed")
+            if let Some(vec) = listeners.get(&key) {
+                for listener in vec.iter() {
+                    match listener.try_send(ev.clone()) {
+                        Ok(_) => {}
+                        Err(TrySendError::Closed(_)) => {
+                            warn!("Listener channel closed");
+                        }
+                        Err(TrySendError::Full(_)) => {}
                     }
-                    Err(TrySendError::Full(_)) => {}
                 }
             }
         }
         if let Ok(mut listeners) = self.listeners.write() {
-            listeners.retain(|l| !l.is_closed())
+            // Remove closed senders and remove empty vectors
+            listeners.retain(|_, v| {
+                v.retain(|l| !l.is_closed());
+                !v.is_empty()
+            });
         }
     }
 }
@@ -89,20 +128,20 @@ mod tests {
     #[test]
     fn test_register_listener() {
         let manager = EventManager {
-            listeners: RwLock::new(Vec::new()),
+            listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver = manager.register_listener();
+        let receiver = manager.register_listener(EventType::AirportsLoaded);
         assert!(receiver.is_some());
     }
 
     #[test]
     fn test_notify_listeners() {
         let manager = EventManager {
-            listeners: RwLock::new(Vec::new()),
+            listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver = manager.register_listener().unwrap();
+        let receiver = manager.register_listener(EventType::AirportsLoaded).unwrap();
         manager.notify_listeners(Event::AirportsLoaded);
 
         match receiver.try_recv() {
@@ -114,11 +153,11 @@ mod tests {
     #[test]
     fn test_notify_multiple_listeners() {
         let manager = EventManager {
-            listeners: RwLock::new(Vec::new()),
+            listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver1 = manager.register_listener().unwrap();
-        let receiver2 = manager.register_listener().unwrap();
+        let receiver1 = manager.register_listener(EventType::NavaidsLoaded).unwrap();
+        let receiver2 = manager.register_listener(EventType::NavaidsLoaded).unwrap();
         manager.notify_listeners(Event::NavaidsLoaded);
 
         match receiver1.try_recv() {
@@ -135,10 +174,10 @@ mod tests {
     #[test]
     fn test_listener_channel_closed() {
         let manager = EventManager {
-            listeners: RwLock::new(Vec::new()),
+            listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver = manager.register_listener().unwrap();
+        let receiver = manager.register_listener(EventType::FixesLoaded).unwrap();
         drop(receiver); // Close the receiver
 
         manager.notify_listeners(Event::FixesLoaded);
@@ -150,11 +189,17 @@ mod tests {
     #[test]
     fn test_listener_channel_full() {
         let manager = EventManager {
-            listeners: RwLock::new(Vec::new()),
+            listeners: RwLock::new(HashMap::new()),
         };
 
         let (tx, rx) = async_channel::bounded::<Event>(1);
-        manager.listeners.write().unwrap().push(tx);
+        manager
+            .listeners
+            .write()
+            .unwrap()
+            .entry(EventType::PlanChanged)
+            .or_insert_with(Vec::new)
+            .push(tx);
 
         // Fill the channel
         manager.notify_listeners(Event::PlanChanged);
@@ -170,6 +215,24 @@ mod tests {
             Ok(_) => panic!("Unexpected event received"),
             Err(TryRecvError::Empty) => {}
             Err(_) => panic!("Unexpected error"),
+        }
+    }
+
+    #[test]
+    fn test_status_change_with_payload() {
+        let manager = EventManager {
+            listeners: RwLock::new(HashMap::new()),
+        };
+
+        let rx = manager.register_listener(EventType::StatusChange).unwrap();
+        manager.notify_listeners(Event::StatusChange("hello".to_string()));
+
+        match rx.try_recv() {
+            Ok(event) => match event {
+                Event::StatusChange(s) => assert_eq!(s, "hello"),
+                _ => panic!("Wrong event variant"),
+            },
+            Err(_) => panic!("Expected status change event"),
         }
     }
 }

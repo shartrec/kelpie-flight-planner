@@ -41,7 +41,7 @@ mod imp {
     use std::sync::Arc;
     use gettextrs::gettext;
     use crate::earth::coordinate::Coordinate;
-    use crate::event::Event;
+    use crate::event::{Event, EventType};
     use crate::hangar::hangar::get_hangar;
     use crate::model::airport::Airport;
     use crate::model::location::Location;
@@ -256,12 +256,10 @@ mod imp {
         }
 
         pub fn initialise(&self) {
-            if let Some(rx) = event::manager().register_listener() {
+            if let Some(rx) = event::manager().register_listener(EventType::PreferencesChanged) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(ev) = rx.recv().await {
-                        if let Event::PreferencesChanged = ev {
-                            view.refresh(None);
-                        }
+                    while let Ok(_) = rx.recv().await {
+                        view.refresh(None);
                     }
                 }));
             }

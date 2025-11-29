@@ -40,7 +40,7 @@ mod imp {
     use crate::earth::airport_list_model::Airports;
     use crate::earth::coordinate::Coordinate;
     use crate::event;
-    use crate::event::Event;
+    use crate::event::EventType;
     use crate::glib::Propagation;
     use crate::model::airport::Airport;
     use crate::model::airport_object::AirportObject;
@@ -105,12 +105,10 @@ mod imp {
             self.airport_list.set_model(Some(&selection_model));
             self.airport_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener() {
+            if let Some(rx) = event::manager().register_listener(EventType::AirportsLoaded) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(ev) = rx.recv().await {
-                        if let Event::AirportsLoaded = ev {
-                            view.airport_search.set_sensitive(true);
-                        }
+                    while let Ok(_) = rx.recv().await {
+                        view.airport_search.set_sensitive(true);
                     }
                 }));
             }

@@ -41,7 +41,7 @@ mod imp {
     use crate::earth::coordinate::Coordinate;
     use crate::earth::navaid_list_model::Navaids;
     use crate::event;
-    use crate::event::Event;
+    use crate::event::EventType;
     use crate::glib::Propagation;
     use crate::model::location::Location;
     use crate::model::navaid::Navaid;
@@ -107,12 +107,10 @@ mod imp {
             self.navaid_list.set_model(Some(&selection_model));
             self.navaid_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener() {
+            if let Some(rx) = event::manager().register_listener(EventType::NavaidsLoaded) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(ev) = rx.recv().await {
-                        if let Event::NavaidsLoaded = ev {
-                            view.navaid_search.set_sensitive(true);
-                        }
+                    while let Ok(_) = rx.recv().await {
+                       view.navaid_search.set_sensitive(true);
                     }
                 }));
             }

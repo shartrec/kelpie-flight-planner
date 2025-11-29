@@ -42,7 +42,7 @@ mod imp {
     use crate::earth::fix_list_model::Fixes;
     use crate::event;
     use crate::glib::Propagation;
-    use crate::event::Event;
+    use crate::event::EventType;
     use crate::model::fix::Fix;
     use crate::model::fix_object::FixObject;
     use crate::model::location::Location;
@@ -102,12 +102,10 @@ mod imp {
             self.fix_list.set_model(Some(&selection_model));
             self.fix_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener() {
+            if let Some(rx) = event::manager().register_listener(EventType::FixesLoaded) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(ev) = rx.recv().await {
-                        if let Event::FixesLoaded = ev {
-                            view.fix_search.set_sensitive(true);
-                        }
+                    while let Ok(_) = rx.recv().await {
+                        view.fix_search.set_sensitive(true);
                     }
                 }));
             }
