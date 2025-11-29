@@ -89,8 +89,24 @@ impl EventManager {
                 .entry(event_type)
                 .or_insert_with(Vec::new)
                 .push(tx);
-            rx
-        })
+        });
+        Some(rx)
+    }
+
+    // Registers a listener for multiple `event_types`.
+    // Returns a receiver that will receive copies of those events when notified.
+    pub fn register_listeners(&self, event_types: &[EventType]) -> Option<Receiver<Event>> {
+        let (tx, rx) = async_channel::unbounded::<Event>();
+
+            for event_type in event_types.iter().cloned() {
+                self.listeners.write().ok().map(|mut listeners| {
+                    listeners
+                        .entry(event_type)
+                        .or_insert_with(Vec::new)
+                        .push(tx.clone());
+                });
+            }
+        Some(rx)
     }
 
     /// Notify only listeners registered for the specific `ev`.
