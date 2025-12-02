@@ -99,7 +99,7 @@ mod imp {
         pub fn initialise(&self) {
             self.zoom_level.replace(1.0);
 
-            if let Some(rx) = event::manager().register_listeners(
+            if let Some(rx) = event::manager().register_listener(
                 &[EventType::PlanChanged, EventType::AirportsLoaded, EventType::NavaidsLoaded]) {
 
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {

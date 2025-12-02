@@ -256,7 +256,7 @@ mod imp {
         }
 
         pub fn initialise(&self) {
-            if let Some(rx) = event::manager().register_listener(EventType::PreferencesChanged) {
+            if let Some(rx) = event::manager().register_listener(&[EventType::PreferencesChanged]) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                     while let Ok(_) = rx.recv().await {
                         view.refresh(None);

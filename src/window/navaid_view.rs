@@ -107,7 +107,7 @@ mod imp {
             self.navaid_list.set_model(Some(&selection_model));
             self.navaid_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener(EventType::NavaidsLoaded) {
+            if let Some(rx) = event::manager().register_listener(&[EventType::NavaidsLoaded]) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                     while let Ok(_) = rx.recv().await {
                        view.navaid_search.set_sensitive(true);

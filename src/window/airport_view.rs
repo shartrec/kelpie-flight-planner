@@ -105,7 +105,7 @@ mod imp {
             self.airport_list.set_model(Some(&selection_model));
             self.airport_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener(EventType::AirportsLoaded) {
+            if let Some(rx) = event::manager().register_listener(&[EventType::AirportsLoaded]) {
                 MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
                     while let Ok(_) = rx.recv().await {
                         view.airport_search.set_sensitive(true);

@@ -79,23 +79,9 @@ pub struct EventManager {
 }
 
 impl EventManager {
-    /// Register a listener for a specific `event_type`.
-    /// Returns a receiver that will receive copies of that event when notified.
-    pub fn register_listener(&self, event_type: EventType) -> Option<Receiver<Event>> {
-        let (tx, rx) = async_channel::unbounded::<Event>();
-
-        self.listeners.write().ok().map(|mut listeners| {
-            listeners
-                .entry(event_type)
-                .or_insert_with(Vec::new)
-                .push(tx);
-        });
-        Some(rx)
-    }
-
     // Registers a listener for multiple `event_types`.
     // Returns a receiver that will receive copies of those events when notified.
-    pub fn register_listeners(&self, event_types: &[EventType]) -> Option<Receiver<Event>> {
+    pub fn register_listener(&self, event_types: &[EventType]) -> Option<Receiver<Event>> {
         let (tx, rx) = async_channel::unbounded::<Event>();
 
             for event_type in event_types.iter().cloned() {
