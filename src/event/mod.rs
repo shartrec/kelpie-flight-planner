@@ -84,15 +84,17 @@ impl EventManager {
     pub fn register_listener(&self, event_types: &[EventType]) -> Option<Receiver<Event>> {
         let (tx, rx) = async_channel::unbounded::<Event>();
 
+        if let Ok(mut listeners) = self.listeners.write() {
             for event_type in event_types.iter().cloned() {
-                self.listeners.write().ok().map(|mut listeners| {
-                    listeners
-                        .entry(event_type)
-                        .or_insert_with(Vec::new)
-                        .push(tx.clone());
-                });
+                listeners
+                    .entry(event_type)
+                    .or_insert_with(Vec::new)
+                    .push(tx.clone());
             }
-        Some(rx)
+            Some(rx)
+        } else {
+            None
+        }
     }
 
     /// Notify only listeners registered for the specific `ev`.
