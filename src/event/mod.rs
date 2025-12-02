@@ -133,7 +133,7 @@ mod tests {
             listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver = manager.register_listener(EventType::AirportsLoaded);
+        let receiver = manager.register_listener(&[EventType::AirportsLoaded]);
         assert!(receiver.is_some());
     }
 
@@ -143,7 +143,7 @@ mod tests {
             listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver = manager.register_listener(EventType::AirportsLoaded).unwrap();
+        let receiver = manager.register_listener(&[EventType::AirportsLoaded]).unwrap();
         manager.notify_listeners(Event::AirportsLoaded);
 
         match receiver.try_recv() {
@@ -158,8 +158,8 @@ mod tests {
             listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver1 = manager.register_listener(EventType::NavaidsLoaded).unwrap();
-        let receiver2 = manager.register_listener(EventType::NavaidsLoaded).unwrap();
+        let receiver1 = manager.register_listener(&[EventType::NavaidsLoaded]).unwrap();
+        let receiver2 = manager.register_listener(&[EventType::NavaidsLoaded]).unwrap();
         manager.notify_listeners(Event::NavaidsLoaded);
 
         match receiver1.try_recv() {
@@ -174,12 +174,33 @@ mod tests {
     }
 
     #[test]
+    fn test_notify_multiple_events() {
+        let manager = EventManager {
+            listeners: RwLock::new(HashMap::new()),
+        };
+
+        let receiver1 = manager.register_listener(&[EventType::NavaidsLoaded, EventType::PreferencesChanged]).unwrap();
+        manager.notify_listeners(Event::NavaidsLoaded);
+
+        match receiver1.try_recv() {
+            Ok(event) => assert_eq!(event, Event::NavaidsLoaded),
+            Err(_) => panic!("Expected event not received by listener"),
+        }
+
+        manager.notify_listeners(Event::PreferencesChanged);
+        match receiver1.try_recv() {
+            Ok(event) => assert_eq!(event, Event::PreferencesChanged),
+            Err(_) => panic!("Expected event not received by listener"),
+        }
+    }
+
+    #[test]
     fn test_listener_channel_closed() {
         let manager = EventManager {
             listeners: RwLock::new(HashMap::new()),
         };
 
-        let receiver = manager.register_listener(EventType::FixesLoaded).unwrap();
+        let receiver = manager.register_listener(&[EventType::FixesLoaded]).unwrap();
         drop(receiver); // Close the receiver
 
         manager.notify_listeners(Event::FixesLoaded);
@@ -226,7 +247,7 @@ mod tests {
             listeners: RwLock::new(HashMap::new()),
         };
 
-        let rx = manager.register_listener(EventType::StatusChange).unwrap();
+        let rx = manager.register_listener(&[EventType::StatusChange]).unwrap();
         manager.notify_listeners(Event::StatusChange("hello".to_string()));
 
         match rx.try_recv() {
