@@ -124,6 +124,20 @@ impl EventManager {
     }
 }
 
+
+#[macro_export]
+macro_rules! listen_events {
+    ($self:ident, $events:expr, $rename_to:ident,  $ev_ident:ident, $body:block) => {
+        if let Some(rx) = crate::event::manager().register_listener($events) {
+            gtk::glib::MainContext::default().spawn_local(gtk::glib::clone!(#[weak(rename_to = $rename_to)] $self, async move {
+                while let Ok($ev_ident) = rx.recv().await {
+                    $body
+                }
+            }));
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

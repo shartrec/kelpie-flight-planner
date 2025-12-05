@@ -58,7 +58,7 @@ mod imp {
     use crate::util::fg_link::AircraftPositionInfo;
     use crate::window::render_gl::Renderer;
     use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
-    use crate::{earth, event};
+    use crate::{earth, listen_events};
 
     use super::*;
 
@@ -99,34 +99,31 @@ mod imp {
         pub fn initialise(&self) {
             self.zoom_level.replace(1.0);
 
-            if let Some(rx) = event::manager().register_listener(
-                &[EventType::PlanChanged, EventType::AirportsLoaded, EventType::NavaidsLoaded]) {
+            listen_events!(self, &[EventType::PlanChanged, EventType::AirportsLoaded, EventType::NavaidsLoaded], view, ev, {
 
-                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(ev) = rx.recv().await {
-                        match ev {
-                            Event::PlanChanged => {
+                match ev {
+                    Event::PlanChanged => {
                         if let Some(renderer) = view.renderer.borrow().as_ref() {
                             renderer.plan_changed();
                             view.gl_area.queue_draw();
                         }
                     }
-                            Event::AirportsLoaded => {
+                    Event::AirportsLoaded => {
                         if let Some(renderer) = view.renderer.borrow().as_ref() {
                             renderer.airports_loaded();
                             view.gl_area.queue_draw();
                         }
                     }
-                            Event::NavaidsLoaded => {
+                    Event::NavaidsLoaded => {
                         if let Some(renderer) = view.renderer.borrow().as_ref() {
                             renderer.navaids_loaded();
                             view.gl_area.queue_draw();
                         }
                     }
-                        _ => {}}
-                    }
-                }));
-            }
+                    _ => {}
+                }
+            });
+
             // Set up the scheduled tasks to query the aircraft position
             let (tx, rx) = async_channel::unbounded::<Option<AircraftPositionInfo>>();
             MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {

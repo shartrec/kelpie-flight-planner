@@ -30,11 +30,11 @@ use glib::Propagation;
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned};
 use gtk::gio::{Cancellable, File};
-use gtk::glib::{clone, MainContext};
+use gtk::glib::clone;
 use adw::prelude::*;
 use adw::subclass::prelude::*;
 use gettextrs::gettext;
-use crate::event;
+use crate::{event, listen_events};
 use crate::event::{Event, EventType};
 use crate::util::{get_plan_file_filter, plan_writer_route_manager, plan_writer_xml};
 use crate::util::plan_reader::read_plan;
@@ -326,35 +326,31 @@ impl ObjectImpl for Window {
 
         // self.layout_panels();
 
-        // Listen for setup required message
-        if let Some(rx) = event::manager().register_listener(&[EventType::SetupRequired, EventType::StatusChange]) {
-            MainContext::default().spawn_local(clone!(#[weak(rename_to = window)] self, async move {
-                while let Ok(ev) = rx.recv().await {
-                    match ev {
-                        Event::SetupRequired => {
-                            let buttons = vec![gettext("Ok")];
-                            let alert = AlertDialog::builder()
-                                .modal(true)
-                                .message(gettext("Please set paths to flightgear Airport and Navaid files"))
-                                .buttons(buttons)
-                                .build();
+        // Listen for setup required message and status changes
+        listen_events!(self, &[EventType::SetupRequired, EventType::StatusChange], window, ev, {
+            match ev {
+                Event::SetupRequired => {
+                    let buttons = vec![gettext("Ok")];
+                    let alert = AlertDialog::builder()
+                        .modal(true)
+                        .message(gettext("Please set paths to flightgear Airport and Navaid files"))
+                        .buttons(buttons)
+                        .build();
 
-                            let win = window.get_window_handle();
-                            let win_clone = win.clone();
-                            alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
-                                let pref_dialog = PreferenceDialog::new();
-                                pref_dialog.set_transient_for(win_clone.as_ref());
-                                pref_dialog.set_visible(true);
-                            });
-                        }
-                        Event::StatusChange(s) => {
-                            window.status_bar.set_label(s.as_str());
-                        }
-                        _ => {}
-                    }
+                    let win = window.get_window_handle();
+                    let win_clone = win.clone();
+                    alert.choose(win.as_ref(), Some(&Cancellable::default()), move |_| {
+                        let pref_dialog = PreferenceDialog::new();
+                        pref_dialog.set_transient_for(win_clone.as_ref());
+                        pref_dialog.set_visible(true);
+                    });
                 }
-            }));
-        }
+                Event::StatusChange(s) => {
+                    window.status_bar.set_label(s.as_str());
+                }
+                _ => {}
+            }
+        });
 
         self.plan_tab_view.connect_close_page(clone!(#[weak(rename_to = window)] self, #[upgrade_or] Propagation::Proceed, move |view, page|  {
 

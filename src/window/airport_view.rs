@@ -34,12 +34,12 @@ mod imp {
     use gtk::{Builder, Button, ColumnView, ColumnViewColumn, CustomFilter, CustomSorter, Entry, FilterChange, FilterListModel, Label, Ordering, PopoverMenu, ScrolledWindow, SingleSelection, SortListModel};
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext};
+    use gtk::glib::clone;
     use log::error;
 
     use crate::earth::airport_list_model::Airports;
     use crate::earth::coordinate::Coordinate;
-    use crate::event;
+    use crate::listen_events;
     use crate::event::EventType;
     use crate::glib::Propagation;
     use crate::model::airport::Airport;
@@ -105,13 +105,9 @@ mod imp {
             self.airport_list.set_model(Some(&selection_model));
             self.airport_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener(&[EventType::AirportsLoaded]) {
-                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(_) = rx.recv().await {
+            listen_events!(self, &[EventType::AirportsLoaded], view, _ev, {
                         view.airport_search.set_sensitive(true);
-                    }
-                }));
-            }
+            });
         }
 
         pub fn search(&self) {

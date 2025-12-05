@@ -35,12 +35,12 @@ mod imp {
               SingleSelection, SortListModel};
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext};
+    use gtk::glib::clone;
     use log::error;
 
     use crate::earth::coordinate::Coordinate;
     use crate::earth::navaid_list_model::Navaids;
-    use crate::event;
+    use crate::listen_events;
     use crate::event::EventType;
     use crate::glib::Propagation;
     use crate::model::location::Location;
@@ -107,13 +107,9 @@ mod imp {
             self.navaid_list.set_model(Some(&selection_model));
             self.navaid_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener(&[EventType::NavaidsLoaded]) {
-                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(_) = rx.recv().await {
-                       view.navaid_search.set_sensitive(true);
-                    }
-                }));
-            }
+            listen_events!(self, &[EventType::NavaidsLoaded], view, _ev, {
+               view.navaid_search.set_sensitive(true);
+            });
         }
 
         pub fn search(&self) {

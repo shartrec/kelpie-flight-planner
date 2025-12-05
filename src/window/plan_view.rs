@@ -32,7 +32,7 @@ mod imp {
     use glib::subclass::InitializingObject;
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext, Propagation};
+    use gtk::glib::{clone, Propagation};
     use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
     use log::error;
     use std::cell::RefCell;
@@ -55,7 +55,7 @@ mod imp {
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
     use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path, expand_tree};
-    use crate::{earth, event};
+    use crate::{earth, event, listen_events};
     use super::*;
 
     #[derive(Default, CompositeTemplate)]
@@ -256,13 +256,9 @@ mod imp {
         }
 
         pub fn initialise(&self) {
-            if let Some(rx) = event::manager().register_listener(&[EventType::PreferencesChanged]) {
-                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(_) = rx.recv().await {
-                        view.refresh(None);
-                    }
-                }));
-            }
+            listen_events!(self, &[EventType::PreferencesChanged], view, _ev, {
+                view.refresh(None);
+            });
         }
 
         pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {

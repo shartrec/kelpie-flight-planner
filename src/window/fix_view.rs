@@ -35,12 +35,12 @@ mod imp {
               SingleSelection, SortListModel};
     use gtk::gdk::{Key, ModifierType, Rectangle};
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, MainContext};
+    use gtk::glib::clone;
     use log::error;
 
     use crate::earth::coordinate::Coordinate;
     use crate::earth::fix_list_model::Fixes;
-    use crate::event;
+    use crate::listen_events;
     use crate::glib::Propagation;
     use crate::event::EventType;
     use crate::model::fix::Fix;
@@ -102,13 +102,9 @@ mod imp {
             self.fix_list.set_model(Some(&selection_model));
             self.fix_list.set_single_click_activate(false);
 
-            if let Some(rx) = event::manager().register_listener(&[EventType::FixesLoaded]) {
-                MainContext::default().spawn_local(clone!(#[weak(rename_to = view)] self, async move {
-                    while let Ok(_) = rx.recv().await {
+            listen_events!(self, &[EventType::FixesLoaded], view, _ev, {
                         view.fix_search.set_sensitive(true);
-                    }
-                }));
-            }
+            });
         }
 
         pub fn search(&self) {
