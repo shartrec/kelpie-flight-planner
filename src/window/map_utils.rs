@@ -25,6 +25,7 @@
 
 use log::error;
 use crate::earth::spherical_projector::SphericalProjector;
+use std::collections::HashMap;
 
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -98,6 +99,7 @@ impl GLSphereBuilder {
     pub fn draw_sphere(&mut self, radius: f32) -> (Vec<Vertex2>, Vec<u32>) {
         let mut vertices: Vec<Vertex2> = Vec::with_capacity(1000);
         let mut indeces: Vec<u32> = Vec::with_capacity(1000);
+        let mut edge_cache: HashMap<(usize, usize), usize> = HashMap::with_capacity(2000);
 
         // We really draw a polyhedron starting with a regular icosahedron and
         // subdividing its faces iteratively to get the smooth sphere we require
@@ -121,18 +123,16 @@ impl GLSphereBuilder {
                 i1,
                 i2,
                 i3,
-                4,
+                3,
                 &radius,
+                &mut edge_cache,
             );
         }
 
         (vertices, indeces)
     }
     //noinspection RsExternalLinter
-    fn subdivide(&mut self, vertices: &mut Vec<Vertex2>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32) {
-        let mut p12: [f32; 3] = [0.0; 3];
-        let mut p23: [f32; 3] = [0.0; 3];
-        let mut p31: [f32; 3] = [0.0; 3];
+    fn subdivide(&mut self, vertices: &mut Vec<Vertex2>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32, edge_cache: &mut HashMap<(usize, usize), usize>) {
 
         let p1 = vertices.get(i1).unwrap().position.clone();
         let p2 = vertices.get(i2).unwrap().position.clone();
@@ -181,35 +181,41 @@ impl GLSphereBuilder {
             return;
         }
 
-        for i in 0..3 {
-            p12[i] = p1[i] + p2[i];
-            p23[i] = p2[i] + p3[i];
-            p31[i] = p3[i] + p1[i];
+        // Use edge midpoint cache so each edge midpoint is created only once
+        let i12 = self.get_midpoint(i1, i2, *radius, vertices, edge_cache);
+        let i23 = self.get_midpoint(i2, i3, *radius, vertices, edge_cache);
+        let i31 = self.get_midpoint(i3, i1, *radius, vertices, edge_cache);
+
+        self.subdivide(vertices, indices, i1, i12, i31, depth - 1, radius, edge_cache);
+        self.subdivide(vertices, indices, i2, i23, i12, depth - 1, radius, edge_cache);
+        self.subdivide(vertices, indices, i3, i31, i23, depth - 1, radius, edge_cache);
+        self.subdivide(vertices, indices, i12, i23, i31, depth - 1, radius, edge_cache);
+    }
+
+    // Returns the index of the midpoint vertex between iA and iB, creating it if needed.
+    fn get_midpoint(
+        &mut self,
+        i_a: usize,
+        i_b: usize,
+        radius: f32,
+        vertices: &mut Vec<Vertex2>,
+        edge_cache: &mut HashMap<(usize, usize), usize>,
+    ) -> usize {
+        let key = if i_a < i_b { (i_a, i_b) } else { (i_b, i_a) };
+        if let Some(&idx) = edge_cache.get(&key) {
+            return idx;
         }
-        self.normalize(&mut p12);
-        self.normalize(&mut p23);
-        self.normalize(&mut p31);
 
-        let pos =  self.scale(&p12, &radius);
-        let uv= self.vertex_to_uv(&pos);
-        let vertex = Vertex2 { position: pos, uv };
-        vertices.push(vertex);
-        let i12 = vertices.len() - 1;
-        let pos =  self.scale(&p23, &radius);
-        let uv= self.vertex_to_uv(&pos);
-        let vertex = Vertex2 { position: pos, uv };
-        vertices.push(vertex);
-        let i23 = vertices.len() - 1;
-        let pos =  self.scale(&p31, &radius);
-        let uv= self.vertex_to_uv(&pos);
-        let vertex = Vertex2 { position: pos, uv };
-        vertices.push(vertex);
-        let i31 = vertices.len() - 1;
-
-        self.subdivide(vertices, indices, i1, i12, i31, depth - 1, radius);
-        self.subdivide(vertices, indices, i2, i23, i12, depth - 1, radius);
-        self.subdivide(vertices, indices, i3, i31, i23, depth - 1, radius);
-        self.subdivide(vertices, indices, i12, i23, i31, depth - 1, radius);
+        let a = vertices[i_a].position;
+        let b = vertices[i_b].position;
+        let mut m = [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+        self.normalize(&mut m);
+        let pos = self.scale(&m, &radius);
+        let uv = self.vertex_to_uv(&pos);
+        let idx = vertices.len();
+        vertices.push(Vertex2 { position: pos, uv });
+        edge_cache.insert(key, idx);
+        idx
     }
 
     fn normalize(&self, v: &mut [f32; 3]) {
