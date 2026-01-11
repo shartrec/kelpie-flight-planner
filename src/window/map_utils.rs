@@ -123,7 +123,7 @@ impl GLSphereBuilder {
                 i1,
                 i2,
                 i3,
-                3,
+                4,
                 &radius,
                 &mut edge_cache,
             );
