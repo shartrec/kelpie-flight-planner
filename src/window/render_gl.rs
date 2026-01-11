@@ -329,7 +329,7 @@ impl Renderer {
             let c = gl::GetUniformLocation(self.map_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform3fv(self.map_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
 
-            let shadow_strength = 0.25f32;
+            let shadow_strength = 0.5f32;
             let c = gl::GetUniformLocation(self.map_program.id(), b"shadow_strength\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(self.map_program.id(), c, shadow_strength);
         }
