@@ -43,7 +43,6 @@ use crate::window::aircraft_renderer::AircraftRenderer;
 use crate::window::airport_renderer::AirportRenderer;
 use crate::window::navaid_renderer::NavaidRenderer;
 use crate::window::plan_renderer::PlanRenderer;
-use crate::window::shoreline_renderer::ShorelineRenderer;
 use crate::window::sphere_renderer::SphereRenderer;
 
 pub struct Program {
@@ -183,12 +182,8 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
 
 pub struct Renderer {
     shader_program: Program,
-    shadow_program: Program,
+    map_program: Program,
     sphere_renderer: SphereRenderer,
-    world_renderer: ShorelineRenderer,
-    lake_renderer: ShorelineRenderer,
-    island_renderer: ShorelineRenderer,
-    antarctic_renderer: ShorelineRenderer,
     airport_renderer: RefCell<AirportRenderer>,
     navaid_renderer: RefCell<NavaidRenderer>,
     plan_renderer: RefCell<Option<PlanRenderer>>,
@@ -211,34 +206,30 @@ impl Renderer {
         ).unwrap();
 
         let shader_program = Program::from_shaders(
-            &[vert_shader.clone(), frag_shader]
+            &[vert_shader, frag_shader]
         ).unwrap();
 
         let frag_shader = Shader::from_frag_source(
-            &CString::new(include_str!("shadow_program.frag")).unwrap()
+            &CString::new(include_str!("program_map.frag")).unwrap()
         ).unwrap();
 
-        let shadow_program = Program::from_shaders(
+        let vert_shader = Shader::from_vert_source(
+            &CString::new(include_str!("program_map.vert")).unwrap()
+        ).unwrap();
+
+        let map_program = Program::from_shaders(
             &[vert_shader, frag_shader]
         ).unwrap();
 
         let sphere_renderer = SphereRenderer::new();
-        let world_renderer = ShorelineRenderer::new("GSHHS_l_L1.shp");
-        let lake_renderer = ShorelineRenderer::new("GSHHS_l_L2.shp");
-        let island_renderer = ShorelineRenderer::new("GSHHS_l_L3.shp");
-        let antarctic_renderer = ShorelineRenderer::new("GSHHS_l_L6.shp");
         let airport_renderer = AirportRenderer::new();
         let navaid_renderer = NavaidRenderer::new();
         let aircraft_renderer = AircraftRenderer::new();
 
         Renderer {
             shader_program,
-            shadow_program,
+            map_program,
             sphere_renderer,
-            world_renderer,
-            lake_renderer,
-            island_renderer,
-            antarctic_renderer,
             airport_renderer: RefCell::new(airport_renderer),
             navaid_renderer: RefCell::new(navaid_renderer),
             plan_renderer: RefCell::new(None),
@@ -325,61 +316,32 @@ impl Renderer {
         let true_centre = self.increment_to_centre();
         let trans = self.build_matrix(aspect_ratio, zoom);
 
-        self.shadow_program.gl_use();
+        self.map_program.gl_use();
 
         let point_size = 1.0f32;
         unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform1f(self.shadow_program.id(), c, point_size);
+            let c = gl::GetUniformLocation(self.map_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(self.map_program.id(), c, point_size);
 
-            let mat = gl::GetUniformLocation(self.shadow_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniformMatrix4fv(self.shadow_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
+            let mat = gl::GetUniformLocation(self.map_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniformMatrix4fv(self.map_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
 
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
+            let c = gl::GetUniformLocation(self.map_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.map_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
 
             let shadow_strength = 0.25f32;
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"shadow_strength\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform1f(self.shadow_program.id(), c, shadow_strength);
+            let c = gl::GetUniformLocation(self.map_program.id(), b"shadow_strength\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform1f(self.map_program.id(), c, shadow_strength);
         }
 
         let color = [0.00, 0.5, 1.0f32];
         unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            let c = gl::GetUniformLocation(self.map_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform3fv(self.map_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
         }
         self.sphere_renderer.draw(area);
 
-        let color = [0.652, 0.697, 0.138f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.world_renderer.draw(area);
-
-        let color = [0.3, 0.65, 1.0f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.lake_renderer.draw(area);
-
-        let color = [0.652, 0.697, 0.138f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.island_renderer.draw(area);
-
-        let color = [0.95, 0.95, 0.95f32];
-        unsafe {
-            let c = gl::GetUniformLocation(self.shadow_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shadow_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
-        }
-        self.antarctic_renderer.draw(area);
-
         self.shader_program.gl_use();
-
         unsafe {
             let c = gl::GetUniformLocation(self.shader_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(self.shader_program.id(), c, point_size);
@@ -407,7 +369,7 @@ impl Renderer {
         }
 
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
-            let color = [0.0, 0.0, 0.0f32];
+            let color = [0.7, 0.7, 1.0f32];
             unsafe {
                 let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
@@ -452,13 +414,9 @@ impl Renderer {
     pub fn drop_buffers(&self) {
         unsafe {
             gl::DeleteProgram(self.shader_program.id);
-            gl::DeleteProgram(self.shadow_program.id);
+            gl::DeleteProgram(self.map_program.id);
         }
         self.sphere_renderer.drop_buffers();
-        self.world_renderer.drop_buffers();
-        self.lake_renderer.drop_buffers();
-        self.lake_renderer.drop_buffers();
-        self.antarctic_renderer.drop_buffers();
         self.airport_renderer.borrow().drop_buffers();
         self.navaid_renderer.borrow().drop_buffers();
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {

@@ -35,6 +35,8 @@
     <file>images/plus.png</file>
     <file>images/return.png</file>
     <file>images/up.png</file>
+    <!-- World map image -->
+    <file>images/world.200406.3x5400x2700.jpg</file>
 
     <!--CSS-->
     <file compressed="true">style.css</file>

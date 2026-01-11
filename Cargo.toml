@@ -15,7 +15,6 @@ rolling-file = "0.2.0"
 gettext-rs = { version = "0.7", features = ["gettext-system"]}
 preferences = "2.0.0"
 regex-lite = "0.1.5"
-shapefile = { version = "0.6.0", features = ["geo-types"] }
 simplelog = "0.12.2"
 yaml-rust = "0.4.5"
 libloading = "0.8.5"
@@ -32,7 +31,6 @@ home = "0.5.9"
 async-channel = "2.3.1"
 async-std = "1.13.0"
 geo = { version = "0.29.3"}
-earcutr = "0.4.3"
 
 [profile.release]
 opt-level = 3

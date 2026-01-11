@@ -23,24 +23,32 @@
  */
 #![forbid(unsafe_code)]
 
-use shapefile::{Polygon, Point};
-use earcutr::earcut;
-
+use log::error;
 use crate::earth::spherical_projector::SphericalProjector;
 
+#[repr(C)]
 #[derive(Copy, Clone)]
 pub(super) struct Vertex {
     pub(crate) position: [f32; 3],
+}
+
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub(super) struct Vertex2 {
+    pub(crate) position: [f32; 3],
+    // u & v are traditional names for texture coordinates
+    pub(crate) uv: [f32; 2],
 }
 
 
 pub(super) struct GLSphereBuilder {
     vdata: [[f32; 3]; 12],
     tindices: [[usize; 3]; 20],
+    projector: SphericalProjector,
 }
 
-// This helper draws a sphere of unit radius. For GL optimisation it creates each Vertex only once and generates an index "buffer" vector
-// to describe the triangles. This reduces the Vertex count by 1/3rd.
+// This helper draws a sphere of unit radius. For GL optimisation it creates each Vertex2 only once and generates an index "buffer" vector
+// to describe the triangles. This reduces the Vertex2 count by 1/3rd.
 impl GLSphereBuilder {
     pub fn new() -> Self {
         let x = 0.525_731_1;
@@ -83,27 +91,30 @@ impl GLSphereBuilder {
                 [9, 2, 5],
                 [7, 2, 11],
             ],
+            projector: SphericalProjector::new(1.0),
         }
     }
 
-    pub fn draw_sphere(&mut self, radius: f32) -> (Vec<Vertex>, Vec<u32>) {
-        let mut vertices: Vec<Vertex> = Vec::with_capacity(1000);
+    pub fn draw_sphere(&mut self, radius: f32) -> (Vec<Vertex2>, Vec<u32>) {
+        let mut vertices: Vec<Vertex2> = Vec::with_capacity(1000);
         let mut indeces: Vec<u32> = Vec::with_capacity(1000);
 
         // We really draw a polyhedron starting with a regular icosahedron and
         // subdividing its faces iteratively to get the smooth sphere we require
-        for i in 0..20 {
+        for i in 0..12 {
             // push the vertex into the vector
-            let v1 = self.vdata[self.tindices[i][0]];
-            let v2 = self.vdata[self.tindices[i][1]];
-            let v3 = self.vdata[self.tindices[i][2]];
-            vertices.push(Vertex { position: self.scale(&v1, &radius) });
-            let i1 = vertices.len() - 1;
-            vertices.push(Vertex { position: self.scale(&v2, &radius) });
-            let i2 = vertices.len() - 1;
-            vertices.push(Vertex { position: self.scale(&v3, &radius) });
-            let i3 = vertices.len() - 1;
+            let v1 = self.vdata[i];
+            let pos =  self.scale(&v1, &radius);
+            let uv= self.vertex_to_uv(&pos);
+            let vertex = Vertex2 { position: pos, uv };
+            vertices.push(vertex);
 
+        }
+        for i in 0..20 {
+            // subdivide the triangles
+            let i1 = self.tindices[i][0];
+            let i2 = self.tindices[i][1];
+            let i3 = self.tindices[i][2];
             self.subdivide(
                 &mut vertices,
                 &mut indeces,
@@ -118,33 +129,81 @@ impl GLSphereBuilder {
         (vertices, indeces)
     }
     //noinspection RsExternalLinter
-    fn subdivide(&mut self, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32) {
-        let mut v12: [f32; 3] = [0.0; 3];
-        let mut v23: [f32; 3] = [0.0; 3];
-        let mut v31: [f32; 3] = [0.0; 3];
+    fn subdivide(&mut self, vertices: &mut Vec<Vertex2>, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize, depth: i32, radius: &f32) {
+        let mut p12: [f32; 3] = [0.0; 3];
+        let mut p23: [f32; 3] = [0.0; 3];
+        let mut p31: [f32; 3] = [0.0; 3];
+
+        let p1 = vertices.get(i1).unwrap().position.clone();
+        let p2 = vertices.get(i2).unwrap().position.clone();
+        let p3 = vertices.get(i3).unwrap().position.clone();
 
         if depth == 0 {
+            let mut uv1 = vertices.get(i1).unwrap().uv.clone();
+            let mut uv2 = vertices.get(i2).unwrap().uv.clone();
+            let mut uv3 = vertices.get(i3).unwrap().uv.clone();
+
+            let u1 = uv1[0];
+            let u2 = uv2[0];
+            let u3 = uv3[0];
+
+            let mut i1 = i1;
+            let mut i2 = i2;
+            let mut i3 = i3;
+            // Check if the triangle crosses the 180 degree longitude (0.0 / 1.0 UV seam)
+            // We check if the difference between any two U coords is larger than 0.5
+            let cross_seam = ((u1 - u2).abs() > 0.5) || ((u1 - u3).abs() > 0.5) || ((u2 - u3).abs() > 0.5);
+
+            if cross_seam {
+                // Find the "outlier" vertices and shift them
+                // If a vertex is near 0.0, but others are near 1.0,
+                // we treat the 0.0 vertex as 1.0+ for this triangle only.
+                if u1 < 0.5 {
+                    uv1[0] += 1.0;
+                    vertices.push(Vertex2 {position: p1, uv: uv1});
+                    i1 = vertices.len() - 1;
+                }
+                if u2 < 0.5 {
+                    uv2[0] += 1.0;
+                    vertices.push(Vertex2 {position: p2, uv: uv2});
+                    i2 = vertices.len() - 1;
+                }
+                if u3 < 0.5 {
+                    uv3[0] += 1.0;
+                    vertices.push(Vertex2 {position: p3, uv: uv3});
+                    i3 = vertices.len() - 1;
+                }
+
+                // Note: This requires your OpenGL texture wrapping mode
+                // to be set to GL_REPEAT so that a U of 1.1 wraps back to 0.1 correctly.
+            }
             self.draw_triangle(indices, i1, i2, i3);
             return;
         }
-        let v1 = &vertices.get(i1).unwrap().position;
-        let v2 = &vertices.get(i2).unwrap().position;
-        let v3 = &vertices.get(i3).unwrap().position;
 
         for i in 0..3 {
-            v12[i] = v1[i] + v2[i];
-            v23[i] = v2[i] + v3[i];
-            v31[i] = v3[i] + v1[i];
+            p12[i] = p1[i] + p2[i];
+            p23[i] = p2[i] + p3[i];
+            p31[i] = p3[i] + p1[i];
         }
-        self.normalize(&mut v12);
-        self.normalize(&mut v23);
-        self.normalize(&mut v31);
+        self.normalize(&mut p12);
+        self.normalize(&mut p23);
+        self.normalize(&mut p31);
 
-        vertices.push(Vertex { position: self.scale(&v12, radius) });
+        let pos =  self.scale(&p12, &radius);
+        let uv= self.vertex_to_uv(&pos);
+        let vertex = Vertex2 { position: pos, uv };
+        vertices.push(vertex);
         let i12 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v23, radius) });
+        let pos =  self.scale(&p23, &radius);
+        let uv= self.vertex_to_uv(&pos);
+        let vertex = Vertex2 { position: pos, uv };
+        vertices.push(vertex);
         let i23 = vertices.len() - 1;
-        vertices.push(Vertex { position: self.scale(&v31, radius) });
+        let pos =  self.scale(&p31, &radius);
+        let uv= self.vertex_to_uv(&pos);
+        let vertex = Vertex2 { position: pos, uv };
+        vertices.push(vertex);
         let i31 = vertices.len() - 1;
 
         self.subdivide(vertices, indices, i1, i12, i31, depth - 1, radius);
@@ -172,120 +231,17 @@ impl GLSphereBuilder {
         [v[0] * radius, v[1] * radius, v[2] * radius]
     }
 
-}
+    // Maps texture coordinates onto a sphere's vertices
+    fn vertex_to_uv(&self, pos: &[f32; 3]) -> [f32; 2] {
 
-pub(super) struct GLShorelineBuilder {
-    shoreline: Option<Vec<Polygon>>,
-    projector: SphericalProjector,
-    radius: f32,
-}
-
-impl GLShorelineBuilder {
-
-    pub fn new(shape_data: &str, radius: f32) -> Self {
-        Self {
-            shoreline: crate::earth::shapefile::read_shapes(shape_data),
-            projector: SphericalProjector::new(radius),
-            radius
-        }
-    }
-
-    pub fn draw_shoreline(&mut self) ->  (Vec<Vertex>, Vec<u32>) {
-        let mut vertices: Vec<Vertex> = Vec::with_capacity(1000);
-        let mut indeces: Vec<u32> = Vec::with_capacity(1000);
-
-        if let Some(polygons) = &self.shoreline {
-            for poly in polygons {
-                for ring in poly.rings() {
-                    let base = vertices.len();
-                    // Build a vertex to match each ring point
-                    for points in ring.points() {
-                        let v = self.projector.project(points.y, points.x);
-                        vertices.push(Vertex { position: v });
-                    }
-                    // Make a vector of our points
-                    let geo_ring: Vec<_> = ring.points().iter().flat_map(|p| vec![p.x, p.y]).collect();
-                    // Use ear-cut algorithm to produce triangles from the polygon ring.
-                    // This algorithm produces triangles as indeces into the ring points.
-                    if let Ok(triangles) = earcut(&geo_ring, &[], 2) {
-
-                        for t in triangles.chunks(3) {
-                            let i1 = base + t[0];
-                            let i2 = base + t[1];
-                            let i3 = base + t[2];
-
-                            self.subdivide(
-                                &mut vertices,
-                                &mut indeces,
-                                (i1, &ring.points()[t[0]]),
-                                (i2, &ring.points()[t[1]]),
-                                (i3, &ring.points()[t[2]]),
-                                &self.radius,
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        (vertices, indeces)
-    }
-    //noinspection RsExternalLinter
-    /// We use this rather basic trianlge division method, because the
-    /// triangles from the ear cutting algorithm are very irregular in shape
-    /// and this method produces the fewest vertices.
-    fn subdivide(&self, vertices: &mut Vec<Vertex>, indices: &mut Vec<u32>,
-                 p1: (usize, &Point), p2: (usize, &Point), p3: (usize, &Point),
-                 radius: &f32) {
-        let v1 = p1.1;
-        let v2 = p2.1;
-        let v3 = p3.1;
-
-        let i1 = p1.0;
-        let i2 = p2.0;
-        let i3 = p3.0;
-
-        // Really only want to divide sides of triangle longer than 5.0 pseudo degrees
-        let d12 = self.distance(v1, v2);
-        let d23 = self.distance(v2, v3);
-        let d31 = self.distance(v3, v1);
-
-        if d12.max(d23).max(d31) < 5.0 {
-            self.draw_triangle(indices, i1, i2, i3);
+        if let Ok(coord) = &self.projector.un_project(pos[0], pos[1], pos[2]) {
+            let u = (coord[1] + 180.0) / 360.0;
+            let v = (coord[0] + 90.0) / 180.0;
+            [u, 1.0 - v]
         } else {
-            // only divide the triangle in 2 along the longest side
-            let (apex, left, right, mid) =
-                if (d12 > d23) && (d12 > d31) {
-                    let mid_p = Point::new((v1.x + v2.x) / 2.0, (v1.y + v2.y) / 2.0);
-                    (p3, p2, p1, mid_p)
-                } else if (d23 > d12) && (d23 > d31) {
-                    let mid_p = Point::new((v2.x + v3.x) / 2.0, (v2.y + v3.y) / 2.0);
-                    (p1, p2, p3, mid_p)
-                } else {
-                    let mid_p = Point::new((v3.x + v1.x) / 2.0, (v3.y + v1.y) / 2.0);
-                    (p2, p1, p3, mid_p)
-                };
-
-            let v = self.projector.project(mid.y, mid.x);
-            vertices.push(Vertex { position: self.scale(&v, radius) });
-            let mid_i = vertices.len() - 1;
-
-            self.subdivide(vertices, indices, apex, left, (mid_i, &mid), radius);
-            self.subdivide(vertices, indices, apex, right, (mid_i, &mid), radius);
+            error!("Failed to project sphere vertex to UV coordinates");
+            [0., 0.]
         }
     }
 
-    fn draw_triangle(&self, indices: &mut Vec<u32>, i1: usize, i2: usize, i3: usize) {
-        indices.push(i1 as u32);
-        indices.push(i2 as u32);
-        indices.push(i3 as u32);
-    }
-
-    fn scale(&self, v: &[f32; 3], radius: &f32) -> [f32; 3] {
-        [v[0] * radius, v[1] * radius, v[2] * radius]
-    }
-
-    fn distance(&self, v1: &Point, v2: &Point) -> f64 {
-        ((v1.x - v2.x).powi(2) + (v1.y - v2.y).powi(2)).sqrt()
-    }
 }

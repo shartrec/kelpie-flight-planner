@@ -38,7 +38,6 @@ mod world_map_view;
 pub(crate) mod map_utils;
 pub(crate) mod render_gl;
 mod sphere_renderer;
-mod shoreline_renderer;
 mod airport_renderer;
 mod navaid_renderer;
 mod plan_renderer;

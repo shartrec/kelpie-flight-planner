@@ -23,17 +23,20 @@
  */
 #![allow(unsafe_code)]
 
+use crate::window::map_utils;
+use crate::window::map_utils::Vertex2;
+use adw::gdk::gdk_pixbuf::Pixbuf;
 use gl::types::GLuint;
 use gtk::GLArea;
 use log::info;
-use crate::window::map_utils;
-use crate::window::map_utils::Vertex;
+use std::ffi::c_void;
 
 pub struct SphereRenderer {
     sphere_vertex_buffer: GLuint,
     sphere_index_buffer: GLuint,
     sphere_vertex_array: GLuint,
     sphere_triangles: usize,
+    texture: u32,
 }
 
 impl SphereRenderer {
@@ -41,12 +44,47 @@ impl SphereRenderer {
         let mut sphere_builder = map_utils::GLSphereBuilder::new();
         let (vertices, indices) = sphere_builder.draw_sphere(1.0);
 
-        info!("Sphere vertices: {}", vertices.len());
-
         let mut sphere_vertex_buffer: GLuint = 0;
         let mut sphere_vertex_array: GLuint = 0;
         let mut sphere_index_buffer: GLuint = 0;
-        unsafe {
+        let mut texture = 0;
+
+        let img = Pixbuf::from_resource("/com/shartrec/kelpie_planner/images/world.200406.3x5400x2700.jpg").expect("Failed to load texture image");
+
+        // Load texture image
+        let tex_width = img.width();
+        let tex_height = img.height();
+
+        // let vertices = map_texture_to_sphere(vertices);
+
+            unsafe {
+            gl::GenTextures(1, &mut texture);
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+            // gl::Uniform1i(uTexture, 0);
+            // set the texture wrapping parameters
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32); // set texture wrapping to gl::REPEAT (default wrapping method)
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            // set texture filtering parameters
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::LINEAR as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::LINEAR as i32);
+            // load image, create texture and generate mipmaps
+
+            let data = img.pixels();
+            gl::TexImage2D(gl::TEXTURE_2D,
+                           0,
+                           gl::RGB as i32,
+                           tex_width as i32,
+                           tex_height as i32,
+                           0,
+                           gl::RGB,
+                           gl::UNSIGNED_BYTE,
+                           &data[0] as *const u8 as *const c_void);
+
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+
+                info!("Sphere vertices: {}", vertices.len());
+
             gl::GenVertexArrays(1, &mut sphere_vertex_array);
             gl::BindVertexArray(sphere_vertex_array);
 
@@ -54,7 +92,7 @@ impl SphereRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, sphere_vertex_buffer);
             gl::BufferData(
                 gl::ARRAY_BUFFER, // target
-                (vertices.len() * size_of::<Vertex>()) as gl::types::GLsizeiptr, // size of data in bytes
+                (vertices.len() * size_of::<Vertex2>()) as gl::types::GLsizeiptr, // size of data in bytes
                 vertices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::STATIC_DRAW, // usage
             );
@@ -74,8 +112,17 @@ impl SphereRenderer {
                 3, // the number of components per generic vertex attribute
                 gl::FLOAT, // data type
                 gl::FALSE, // normalized (int-to-float conversion)
-                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (5 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
                 std::ptr::null(), // offset of the first component
+            );
+            gl::EnableVertexAttribArray(1); // this is "layout (location = 1)" in vertex shader
+            gl::VertexAttribPointer(
+                1, // index of the generic vertex attribute ("layout (location = 1)")
+                2, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (5 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (3 * size_of::<f32>()) as *const c_void, // offset of the first component
             );
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -88,23 +135,37 @@ impl SphereRenderer {
             sphere_index_buffer,
             sphere_vertex_array,
             sphere_triangles: indices.len(),
+            texture,
         }
     }
 
     pub fn draw(&self, _area: &GLArea) {
         unsafe {
+            gl::ActiveTexture(gl::TEXTURE0);
+            gl::BindTexture(gl::TEXTURE_2D, self.texture); // all upcoming GL_TEXTURE_2D operations now have effect on this texture object
+
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
             gl::BindVertexArray(self.sphere_vertex_array);
             gl::BindBuffer(gl::ARRAY_BUFFER, self.sphere_vertex_buffer); //Bind GL_ARRAY_BUFFER to our handle
 
 
+            gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
             gl::VertexAttribPointer(
                 0, // index of the generic vertex attribute ("layout (location = 0)")
                 3, // the number of components per generic vertex attribute
                 gl::FLOAT, // data type
                 gl::FALSE, // normalized (int-to-float conversion)
-                (3 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (5 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
                 std::ptr::null(), // offset of the first component
+            );
+            gl::EnableVertexAttribArray(1); // this is "layout (location = 1)" in vertex shader
+            gl::VertexAttribPointer(
+                1, // index of the generic vertex attribute ("layout (location = 1)")
+                2, // the number of components per generic vertex attribute
+                gl::FLOAT, // data type
+                gl::FALSE, // normalized (int-to-float conversion)
+                (5 * size_of::<f32>()) as gl::types::GLint, // stride (byte offset between consecutive attributes)
+                (3 * size_of::<f32>()) as *const c_void, // offset of the first component
             );
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.sphere_index_buffer);
@@ -126,6 +187,8 @@ impl SphereRenderer {
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
             gl::BindVertexArray(0);  // Index buffer
+            gl::BindTexture(gl::TEXTURE_2D, 0);  // Index buffer
         }
     }
 }
+
