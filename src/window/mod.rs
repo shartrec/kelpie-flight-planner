@@ -43,6 +43,7 @@ mod navaid_renderer;
 mod plan_renderer;
 pub mod preferences;
 mod aircraft_renderer;
+mod starfield_renderer;
 
 glib::wrapper! {
     pub struct Window(ObjectSubclass<imp::Window>)
