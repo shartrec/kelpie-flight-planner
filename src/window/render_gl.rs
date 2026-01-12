@@ -44,6 +44,7 @@ use crate::window::airport_renderer::AirportRenderer;
 use crate::window::navaid_renderer::NavaidRenderer;
 use crate::window::plan_renderer::PlanRenderer;
 use crate::window::sphere_renderer::SphereRenderer;
+use crate::window::starfield_renderer::StarfieldRenderer;
 
 pub struct Program {
     id: gl::types::GLuint,
@@ -183,6 +184,8 @@ fn create_whitespace_cstring_with_len(len: usize) -> CString {
 pub struct Renderer {
     shader_program: Program,
     map_program: Program,
+    starfield_program: Program,
+    starfield_renderer: StarfieldRenderer,
     sphere_renderer: SphereRenderer,
     airport_renderer: RefCell<AirportRenderer>,
     navaid_renderer: RefCell<NavaidRenderer>,
@@ -221,6 +224,19 @@ impl Renderer {
             &[vert_shader, frag_shader]
         ).unwrap();
 
+        let frag_shader = Shader::from_frag_source(
+            &CString::new(include_str!("program_starfield.frag")).unwrap()
+        ).unwrap();
+
+        let vert_shader = Shader::from_vert_source(
+            &CString::new(include_str!("program_starfield.vert")).unwrap()
+        ).unwrap();
+
+        let starfield_program = Program::from_shaders(
+            &[vert_shader, frag_shader]
+        ).unwrap();
+
+        let starfield_renderer = StarfieldRenderer::new();
         let sphere_renderer = SphereRenderer::new();
         let airport_renderer = AirportRenderer::new();
         let navaid_renderer = NavaidRenderer::new();
@@ -229,6 +245,8 @@ impl Renderer {
         Renderer {
             shader_program,
             map_program,
+            starfield_program,
+            starfield_renderer,
             sphere_renderer,
             airport_renderer: RefCell::new(airport_renderer),
             navaid_renderer: RefCell::new(navaid_renderer),
@@ -315,6 +333,18 @@ impl Renderer {
 
         let true_centre = self.increment_to_centre();
         let trans = self.build_matrix(aspect_ratio, zoom);
+        let u_rot_matrix = self.build_vrot_matrix();
+
+        unsafe {
+            let resolution = [width as f32, height as f32];
+            let c = gl::GetUniformLocation(self.starfield_program.id(), b"uResolution\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniform2fv(self.starfield_program.id(), c, 1, resolution.as_ptr() as *const gl::types::GLfloat);
+            let mat = gl::GetUniformLocation(self.starfield_program.id(), b"uInvViewRot\0".as_ptr() as *const gl::types::GLchar);
+            gl::ProgramUniformMatrix3fv(self.starfield_program.id(), mat, 1, false as gl::types::GLboolean, u_rot_matrix.as_ptr() as *const gl::types::GLfloat);
+        }
+        self.starfield_program.gl_use();
+
+        self.starfield_renderer.draw(area);
 
         self.map_program.gl_use();
 
@@ -410,12 +440,26 @@ impl Renderer {
         model = rotate(&model, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
         model
     }
+    fn build_vrot_matrix(&self) -> TMat3<f32> {
+        // Create the model matrix (handling scaling, rotation, and translation)
+        let mut model = mat4(1.0, 0.0, 0.0, 0.0,
+                             0.0, 1.0, 0.0, 0.0,
+                             0.0, 0.0, 1.0, 0.0,
+                             0.0, 0.0, 0.0, 1.0);
+
+        model = rotate(&model, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
+        model = rotate(&model, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
+        // Reduce to 3x3 matrix
+        let rot_t: TMat3<f32> = model.fixed_view::<3, 3>(0, 0).into();
+        rot_t
+    }
 
     pub fn drop_buffers(&self) {
         unsafe {
             gl::DeleteProgram(self.shader_program.id);
             gl::DeleteProgram(self.map_program.id);
         }
+        self.starfield_renderer.drop_buffers();
         self.sphere_renderer.drop_buffers();
         self.airport_renderer.borrow().drop_buffers();
         self.navaid_renderer.borrow().drop_buffers();
