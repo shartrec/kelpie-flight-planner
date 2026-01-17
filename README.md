@@ -1,6 +1,9 @@
 # kelpie-flight-planner
 Kelpie flight planner for FlightGear v2.0 - the Rust version
 
+**This branch repreresents the final version using the GSHHS shoreline database to draw the globe. Later versions 
+use the NASA Blue Marble images for the globe rendering.**
+
 This Gui flight planner uses the airport and navaid databases of the Flightgear, allowing the user to search for airports and navigation aids and plan flights between them.
 
 This project is a still a work in progress. An older fully featured and 
