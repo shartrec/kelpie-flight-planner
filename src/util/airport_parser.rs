@@ -51,6 +51,19 @@ use crate::model::location::Location;
 
 pub struct AirportParserFG850 {}
 
+#[derive(Clone)]
+struct ParsedRunway {
+    number: String,
+    rtype: RunwayType,
+    center_lat: f64,
+    center_long: f64,
+    length_ft: i32,
+    width_ft: i32,
+    heading_deg: f64,
+    surface: String,
+    edge_lights: String,
+}
+
 impl AirportParserFG850 {
     pub fn new() -> Self {
         Self {}
@@ -142,97 +155,14 @@ impl AirportParserFG850 {
                     latitude = 0.0;
                     longitude = 0.0;
 
-                } else if r_type == "100" {
-                    tokenizer.next(); //width
-                    tokenizer.next(); //surface type
-                    tokenizer.next(); //shoulder surface
-                    tokenizer.next(); //smoothness
-                    tokenizer.next(); //centre lights
-                    tokenizer.next(); //edge lights
-                    tokenizer.next(); //auto gen dist remaining signs
-
-                    let _number = tokenizer.next();
-                    let r_lat = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
-                    let r_long = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
-                    tokenizer.next(); // Length displaced threshold
-                    tokenizer.next(); // Length overrun
-                    tokenizer.next(); // markings
-                    tokenizer.next(); // approach lights
-                    tokenizer.next(); // TDZ flag
-                    tokenizer.next(); // REIL flag
-
-                    // Now the other end.  needed to get the length
-                    let _number = tokenizer.next();
-                    let r1_lat = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
-                    let r1_long = tokenizer
-                        .next()
-                        .unwrap_or("0.0")
-                        .parse::<f64>()
-                        .unwrap_or(0.0);
-                    tokenizer.next(); // Length displaced threshold
-                    tokenizer.next(); // Length overrun
-                    tokenizer.next(); // markings
-                    tokenizer.next(); // approach lights
-                    tokenizer.next(); // TDZ flag
-                    tokenizer.next(); // REIL flag
-
-                    let c1 = Coordinate::new(r_lat, r_long);
-                    let c2 = Coordinate::new(r1_lat, r1_long);
-                    let r_length = c1.distance_to(&c2) * 6076.0;
-                    if r_length > max_length {
-                        max_length = r_length;
-                        latitude = (r_lat + r1_lat) / 2.0;
-                        longitude = (r_long + r1_long) / 2.0;
-                    }
-                } else if r_type == "101" {
-                    // let r_width = token_f64(tokens.next()) * 3.28;
-                    // let r_surface = tokens.next().unwrap_or("");
-                    let _width = token_f64(tokenizer.next()) * 3.28;
-                    let _buoys = token_f64(tokenizer.next());
-                    let _number = tokenizer.next().unwrap_or("");
-                    let r_lat = token_f64(tokenizer.next());
-                    let r_long = token_f64(tokenizer.next());
-                    let _1_number = tokenizer.next().unwrap_or("");
-                    let r1_lat = token_f64(tokenizer.next());
-                    let r1_long = token_f64(tokenizer.next());
-                    let c1 = Coordinate::new(r_lat, r_long);
-                    let c2 = Coordinate::new(r1_lat, r1_long);
-                    let r_length = c1.distance_to(&c2) * 6076.0;
-                    if r_length > max_length {
-                        max_length = r_length;
-                        latitude = (r_lat + r1_lat) / 2.0;
-                        longitude = (r_long + r1_long) / 2.0;
-                    }
-                } else if r_type == "102" {
-                    // let r_width = token_f64(tokens.next()) * 3.28;
-                    // let r_surface = tokens.next().unwrap_or("");
-                    let _number = tokenizer.next().unwrap_or("");
-                    let r_lat = token_f64(tokenizer.next());
-                    let r_long = token_f64(tokenizer.next());
-                    let _hdg = token_f64(tokenizer.next()); //Orientation
-                    let r_length = token_f64(tokenizer.next()) * 3.28;
-                    let _width = token_f64(tokenizer.next()) * 3.28;
-                    let _surface = tokenizer.next().unwrap_or(""); // Surface
-                    tokenizer.next(); // Markings
-                    tokenizer.next(); // Shoulder
-                    tokenizer.next(); // Smoothness
-                    let _edge_lights = tokenizer.next().unwrap_or(""); //edge lights
-                    if r_length > max_length {
-                        max_length = r_length;
-                        latitude = r_lat;
-                        longitude = r_long;
+                } else if r_type == "100" || r_type == "101" || r_type == "102" {
+                    if let Some(parsed) = self.parse_runway_record(r_type, &mut tokenizer) {
+                        let r_length = parsed.length_ft as f64;
+                        if r_length > max_length {
+                            max_length = r_length;
+                            latitude = parsed.center_lat;
+                            longitude = parsed.center_long;
+                        }
                     }
                 }
             }
@@ -245,6 +175,118 @@ impl AirportParserFG850 {
             airports.push(Arc::new(airport.clone()));
         }
         Ok(())
+    }
+
+    // Parse a runway/helipad record (types 100, 101, 102) into a common structure
+    // Returns None for unsupported types or parse issues.
+    fn parse_runway_record<'a>(
+        &self,
+        r_type: &str,
+        tokenizer: &mut std::str::SplitWhitespace<'a>,
+    ) -> Option<ParsedRunway> {
+        match r_type {
+            // Hard runway with two ends
+            "100" => {
+                let r_width = token_f64(tokenizer.next()) * 3.28;
+                let r_surface = tokenizer.next().unwrap_or("").to_string();
+                tokenizer.next(); // Shoulder surface
+                tokenizer.next(); // Smoothness
+                tokenizer.next(); // Centre lights
+                let r_edge_lights = tokenizer.next().unwrap_or("").to_string();
+                tokenizer.next(); //auto gen dist remaining signs
+
+                let r_number = tokenizer.next().unwrap_or("").to_string();
+                let r_lat = token_f64(tokenizer.next());
+                let r_long = token_f64(tokenizer.next());
+                tokenizer.next(); // Length displaced threshold
+                tokenizer.next(); // Length overrun
+                let _markings = tokenizer.next().unwrap_or("");
+                tokenizer.next(); // Approach lights
+                tokenizer.next(); // TDZ flag
+                tokenizer.next(); // REIL flag
+
+                // Other end
+                let _number = tokenizer.next().unwrap_or("");
+                let r1_lat = token_f64(tokenizer.next());
+                let r1_long = token_f64(tokenizer.next());
+
+                let c1 = Coordinate::new(r_lat, r_long);
+                let c2 = Coordinate::new(r1_lat, r1_long);
+                let length_ft = (c1.distance_to(&c2) * 6076.0).round() as i32;
+                let heading = c1.bearing_to(&c2).to_degrees();
+                let center_lat = (r_lat + r1_lat) / 2.0;
+                let center_long = (r_long + r1_long) / 2.0;
+
+                Some(ParsedRunway {
+                    number: r_number,
+                    rtype: RunwayType::Runway,
+                    center_lat,
+                    center_long,
+                    length_ft,
+                    width_ft: r_width as i32,
+                    heading_deg: heading,
+                    surface: r_surface,
+                    edge_lights: r_edge_lights,
+                })
+            }
+            // Water runway (101) with two ends
+            "101" => {
+                let r_width = token_f64(tokenizer.next()) * 3.28;
+                let _r_buoys = token_f64(tokenizer.next());
+                let r_number = tokenizer.next().unwrap_or("").to_string();
+                let r_lat = token_f64(tokenizer.next());
+                let r_long = token_f64(tokenizer.next());
+                let _other_number = tokenizer.next().unwrap_or("");
+                let r1_lat = token_f64(tokenizer.next());
+                let r1_long = token_f64(tokenizer.next());
+
+                let c1 = Coordinate::new(r_lat, r_long);
+                let c2 = Coordinate::new(r1_lat, r1_long);
+                let length_ft = (c1.distance_to(&c2) * 6076.0).round() as i32;
+                let heading = c1.bearing_to(&c2).to_degrees();
+                let center_lat = (r_lat + r1_lat) / 2.0;
+                let center_long = (r_long + r1_long) / 2.0;
+
+                Some(ParsedRunway {
+                    number: r_number,
+                    rtype: RunwayType::Runway,
+                    center_lat,
+                    center_long,
+                    length_ft,
+                    width_ft: r_width as i32,
+                    heading_deg: heading,
+                    surface: String::new(),
+                    edge_lights: String::new(),
+                })
+            }
+            // Helipad (102)
+            "102" => {
+                let r_number = tokenizer.next().unwrap_or("").to_string();
+                let r_lat = token_f64(tokenizer.next());
+                let r_long = token_f64(tokenizer.next());
+                let r_hdg = token_f64(tokenizer.next()); // Orientation
+                let r_length = token_f64(tokenizer.next()) * 3.28;
+                let r_width = token_f64(tokenizer.next()) * 3.28;
+                let r_surface = tokenizer.next().unwrap_or("").to_string();
+                tokenizer.next(); // Markings
+                tokenizer.next(); // Shoulder
+                tokenizer.next(); // Smoothness
+                let r_edge_lights = tokenizer.next().unwrap_or("").to_string();
+
+                Some(ParsedRunway {
+                    number: r_number,
+                    rtype: RunwayType::Helipad,
+                    center_lat: r_lat,
+                    center_long: r_long,
+                    length_ft: r_length as i32,
+                    width_ft: r_width as i32,
+                    heading_deg: r_hdg,
+                    surface: r_surface,
+                    edge_lights: r_edge_lights,
+                })
+            }
+            _ => None,
+        }
     }
 
     fn bytes_to_utf8(byte_buf: &[u8]) -> Cow<'_, str> {
@@ -360,115 +402,24 @@ impl AirportParserFG850 {
                 }
             }
 
-            if r_type == "100" {
-                let r_width = token_f64(tokenizer.next()) * 3.28;
-                let r_surface = tokenizer.next().unwrap_or("");
-                tokenizer.next(); // Shoulder surface
-                tokenizer.next(); // Smoothness
-                tokenizer.next(); // Centre lights
-                let r_edge_lights = tokenizer.next().unwrap_or(""); //edge lights
-                tokenizer.next(); //auto gen dist remaining signs
-                let r_number = tokenizer.next().unwrap_or("");
-                let r_lat = token_f64(tokenizer.next());
-                let r_long = token_f64(tokenizer.next());
-                tokenizer.next(); // Length displaced threshold
-                tokenizer.next(); // Length overrun
-                let _markings = tokenizer.next().unwrap_or(""); //edge lights
-                tokenizer.next(); // Approach lights
-                tokenizer.next(); // TDZ flag
-                tokenizer.next(); // REIL flag
-
-                // Now the other end. needed to get the length
-                let _number = tokenizer.next().unwrap_or("");
-                let r1_lat = token_f64(tokenizer.next());
-                let r1_long = token_f64(tokenizer.next());
-
-                let c1 = Coordinate::new(r_lat, r_long);
-                let c2 = Coordinate::new(r1_lat, r1_long);
-
-                let r_length = (c1.distance_to(&c2) * 6076.0) as i32;
-                let r_hdg = c1.bearing_to(&c2).to_degrees();
-
-                let lat = (r_lat + r1_lat) / 2.0;
-                let long = (r_long + r1_long) / 2.0;
-
-                let runway = Runway::new(
-                    r_number.to_string(),
-                    Some(RunwayType::Runway),
-                    lat,
-                    long,
-                    r_length,
-                    r_width as i32,
-                    r_hdg,
-                    false,
-                    r_surface.to_string(),
-                    r_edge_lights.to_string(),
-                );
-                airport.add_runway(runway);
-            } else if r_type == "101" {
-                // let r_width = token_f64(tokens.next()) * 3.28;
-                // let r_surface = tokens.next().unwrap_or("");
-                let r_width = token_f64(tokenizer.next()) * 3.28;
-                let _r_buoys = token_f64(tokenizer.next());
-                let r_number = tokenizer.next().unwrap_or("");
-                let r_lat = token_f64(tokenizer.next());
-                let r_long = token_f64(tokenizer.next());
-                let _1_number = tokenizer.next().unwrap_or("");
-                let r1_lat = token_f64(tokenizer.next());
-                let r1_long = token_f64(tokenizer.next());
-                let c1 = Coordinate::new(r_lat, r_long);
-                let c2 = Coordinate::new(r1_lat, r1_long);
-                let r_length = (c1.distance_to(&c2) * 6076.0)  as i32;
-                let r_hdg = c1.bearing_to(&c2).to_degrees();
-                let lat = (r_lat + r1_lat) / 2.0;
-                let long = (r_long + r1_long) / 2.0;
-                let runway = Runway::new(
-                    r_number.to_string(),
-                    Some(RunwayType::Runway),
-                    lat,
-                    long,
-                    r_length,
-                    r_width as i32,
-                    r_hdg,
-                    false,
-                    "".to_string(),
-                    "".to_string(),
-                );
-                airport.add_runway(runway);
-
-            } else if r_type == "102" {
-                // let r_width = crate::util::airport_parser::token_f64(tokens.next()) * 3.28;
-                // let r_surface = tokens.next().unwrap_or("");
-                let r_number = tokenizer.next().unwrap_or("");
-                let r_lat = token_f64(tokenizer.next());
-                let r_long = token_f64(tokenizer.next());
-                let r_hdg = token_f64(tokenizer.next()); //Orientation
-                let r_length = token_f64(tokenizer.next()) * 3.28;
-                let r_width = token_f64(tokenizer.next()) * 3.28;
-                let r_surface = tokenizer.next().unwrap_or(""); // Surface
-                tokenizer.next(); // Markings
-                tokenizer.next(); // Shoulder
-                tokenizer.next(); // Smoothness
-                let r_edge_lights = tokenizer.next().unwrap_or(""); //edge lights
-
-
-                let runway = Runway::new(
-                    r_number.to_string(),
-                    Some(RunwayType::Helipad),
-                    r_lat,
-                    r_long,
-                    r_length as i32,
-                    r_width as i32,
-                    r_hdg,
-                    false,
-                    r_surface.to_string(),
-                    r_edge_lights.to_string(),
-                );
-                airport.add_runway(runway);
-
+            if r_type == "100" || r_type == "101" || r_type == "102" {
+                if let Some(parsed) = self.parse_runway_record(r_type, &mut tokenizer) {
+                    let runway = Runway::new(
+                        parsed.number,
+                        Some(parsed.rtype),
+                        parsed.center_lat,
+                        parsed.center_long,
+                        parsed.length_ft,
+                        parsed.width_ft,
+                        parsed.heading_deg,
+                        false,
+                        parsed.surface,
+                        parsed.edge_lights,
+                    );
+                    airport.add_runway(runway);
+                }
             } else if r_type == "110" {
-                // Taxiway processing
-                // We don't care about anything but the nodes that we use to draw it.
+                // Taxiway processing: start collecting nodes
                 do_taxi = true;
             } else if (r_type == "111" || r_type == "113" || r_type == "115") && do_taxi {
                 let r1_lat = token_f64(tokenizer.next());
