@@ -49,7 +49,7 @@ pub(super) struct GLSphereBuilder {
 }
 
 // This helper draws a sphere of unit radius. For GL optimisation it creates each Vertex2 only once and generates an index "buffer" vector
-// to describe the triangles. This reduces the Vertex2 count by 1/3rd.
+// to describe the triangles. This reduces the Vertex2 count by 2/3rd.
 impl GLSphereBuilder {
     pub fn new() -> Self {
         let x = 0.525_731_1;
