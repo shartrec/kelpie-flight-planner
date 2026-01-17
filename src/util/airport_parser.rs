@@ -416,6 +416,7 @@ impl AirportParserFG850 {
                 let r_number = tokenizer.next().unwrap_or("");
                 let r_lat = token_f64(tokenizer.next());
                 let r_long = token_f64(tokenizer.next());
+                let _1_number = tokenizer.next().unwrap_or("");
                 let r1_lat = token_f64(tokenizer.next());
                 let r1_long = token_f64(tokenizer.next());
                 let c1 = Coordinate::new(r_lat, r_long);
