@@ -1,12 +1,12 @@
 # kelpie-flight-planner
-Kelpie flight planner for FlightGear v2.0 - the Rust version
+**Kelpie flight planner for FlightGear v2.0 - the Rust version**
 
 This Gui flight planner uses the airport and navaid databases of the Flightgear, allowing the user to search for airports and navigation aids and plan flights between them.
 
 This project is a still a work in progress. An older fully featured and 
-fuctioning Java based project is available at https://sourceforge.net/projects/fgflightplanner/
+functioning Java based project is available at https://sourceforge.net/projects/fgflightplanner/
 
-Currently all development is taking place on Linux and this is the best supported platform.
+Currently, all development is taking place on Linux and this is the best supported platform.
 
 Both Windows and Linux binaries are provided in the alpha release.
 
