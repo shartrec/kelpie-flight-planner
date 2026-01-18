@@ -319,7 +319,6 @@ fn get_string(map: &Hash, key: &str) -> String {
         .to_string()
 }
 
-#[allow(dead_code)]
 pub fn save_hangar() {
     if let Some(path) = get_hangar_path() {
         let hangar = get_hangar().imp().get_all();
@@ -371,17 +370,14 @@ pub fn save_hangar() {
     }
 }
 
-#[allow(dead_code)]
 fn put_bool(map: &mut Hash, key: &str, v: &bool) {
     map.insert(Yaml::String(key.to_string()), Yaml::Boolean(*v));
 }
 
-#[allow(dead_code)]
 fn put_i32(map: &mut Hash, key: &str, v: &i32) {
     map.insert(Yaml::String(key.to_string()), Yaml::Integer(*v as i64));
 }
 
-#[allow(dead_code)]
 fn put_string(map: &mut Hash, key: &str, v: &str) {
     map.insert(Yaml::String(key.to_string()), Yaml::String(v.to_string()));
 }
