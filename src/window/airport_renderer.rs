@@ -37,9 +37,7 @@ use crate::window::map_utils::Vertex;
 pub struct AirportRenderer {
     airport_vertex_buffer: GLuint,
     airport_vertex_arrays: GLuint,
-    airport_large_index_buffer: GLuint,
-    airport_medium_index_buffer: GLuint,
-    airport_small_index_buffer: GLuint,
+    airport_index_buffers: [u32; 3],
     airport_large: usize,
     airport_medium: usize,
     airport_small: usize,
@@ -52,9 +50,7 @@ impl AirportRenderer {
         let (vertices, indices_large, indices_medium, indices_small) = Self::build_airport_vertices(airports);
         let mut airport_vertex_buffer: GLuint = 0;
         let mut airport_vertex_arrays: GLuint = 0;
-        let mut airport_large_index_buffer: GLuint = 0;
-        let mut airport_medium_index_buffer: GLuint = 0;
-        let mut airport_small_index_buffer: GLuint = 0;
+        let mut airport_index_buffers = [0u32; 3];
 
         unsafe {
             gl::GenVertexArrays(1, &mut airport_vertex_arrays);
@@ -69,8 +65,8 @@ impl AirportRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
-            gl::GenBuffers(1, &mut airport_large_index_buffer);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, airport_large_index_buffer);
+            gl::GenBuffers(3, airport_index_buffers.as_mut_ptr());
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, airport_index_buffers[0]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices_large.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
@@ -78,8 +74,7 @@ impl AirportRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
-            gl::GenBuffers(1, &mut airport_medium_index_buffer);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, airport_medium_index_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, airport_index_buffers[1]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices_medium.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
@@ -87,8 +82,7 @@ impl AirportRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
-            gl::GenBuffers(1, &mut airport_small_index_buffer);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, airport_small_index_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, airport_index_buffers[2]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices_small.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
@@ -114,9 +108,7 @@ impl AirportRenderer {
         AirportRenderer {
             airport_vertex_buffer,
             airport_vertex_arrays,
-            airport_large_index_buffer,
-            airport_medium_index_buffer,
-            airport_small_index_buffer,
+            airport_index_buffers,
             airport_large: indices_large.len(),
             airport_medium: indices_medium.len(),
             airport_small: indices_small.len(),
@@ -143,7 +135,7 @@ impl AirportRenderer {
                 let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform1f(shader_program_id, c, point_size);
 
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_small_index_buffer);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_index_buffers[2]);
                 gl::DrawElements(
                     gl::POINTS, // mode
                     self.airport_small as gl::types::GLsizei,
@@ -157,7 +149,7 @@ impl AirportRenderer {
                 let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform1f(shader_program_id, c, point_size);
 
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_medium_index_buffer);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_index_buffers[1]);
                 gl::DrawElements(
                     gl::POINTS, // mode
                     self.airport_medium as gl::types::GLsizei,
@@ -170,7 +162,7 @@ impl AirportRenderer {
             let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(shader_program_id, c, point_size);
 
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_large_index_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.airport_index_buffers[0]);
             gl::DrawElements(
                 gl::POINTS, // mode
                 self.airport_large as gl::types::GLsizei,
@@ -185,10 +177,8 @@ impl AirportRenderer {
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DeleteBuffers(1, &self.airport_vertex_buffer.clone());
-            gl::DeleteBuffers(1, &self.airport_large_index_buffer.clone());
-            gl::DeleteBuffers(1, &self.airport_medium_index_buffer.clone());
-            gl::DeleteBuffers(1, &self.airport_small_index_buffer.clone());
+            gl::DeleteBuffers(1, &self.airport_vertex_buffer);
+            gl::DeleteBuffers(3, self.airport_index_buffers.as_ptr());
             gl::DeleteVertexArrays(1, &self.airport_vertex_arrays);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer

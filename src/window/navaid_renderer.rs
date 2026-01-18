@@ -37,8 +37,7 @@ use crate::window::map_utils::Vertex;
 pub struct NavaidRenderer {
     navaid_vertex_buffer: GLuint,
     navaid_vertex_arrays: GLuint,
-    navaid_vor_index_buffer: GLuint,
-    navaid_ndb_index_buffer: GLuint,
+    navaid_index_buffers: [u32; 2],
     navaid_vor: usize,
     navaid_ndb: usize,
 }
@@ -50,8 +49,7 @@ impl NavaidRenderer {
         let (vertices, indices_vor, indices_ndb) = Self::build_navaid_vertices(navaids);
         let mut navaid_vertex_buffer: GLuint = 0;
         let mut navaid_vertex_arrays: GLuint = 0;
-        let mut navaid_vor_index_buffer: GLuint = 0;
-        let mut navaid_ndb_index_buffer: GLuint = 0;
+        let mut navaid_index_buffers = [0u32; 2];
         unsafe {
             gl::GenVertexArrays(1, &mut navaid_vertex_arrays);
             gl::BindVertexArray(navaid_vertex_arrays);
@@ -65,8 +63,8 @@ impl NavaidRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
-            gl::GenBuffers(1, &mut navaid_vor_index_buffer);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_vor_index_buffer);
+            gl::GenBuffers(2, navaid_index_buffers.as_mut_ptr());
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_index_buffers[0]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices_vor.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
@@ -74,8 +72,7 @@ impl NavaidRenderer {
                 gl::STATIC_DRAW, // usage
             );
 
-            gl::GenBuffers(1, &mut navaid_ndb_index_buffer);
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_ndb_index_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, navaid_index_buffers[1]);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
                 (indices_ndb.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
@@ -100,8 +97,7 @@ impl NavaidRenderer {
         NavaidRenderer {
             navaid_vertex_buffer,
             navaid_vertex_arrays,
-            navaid_vor_index_buffer,
-            navaid_ndb_index_buffer,
+            navaid_index_buffers,
             navaid_vor: indices_vor.len(),
             navaid_ndb: indices_ndb.len(),
         }
@@ -127,20 +123,20 @@ impl NavaidRenderer {
                 let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
                 gl::ProgramUniform1f(shader_program_id, c, point_size);
 
-                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_ndb_index_buffer);
+                gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_index_buffers[1]);
                 gl::DrawElements(
                     gl::POINTS, // mode
                     self.navaid_ndb as gl::types::GLsizei,
                     gl::UNSIGNED_INT,
                     std::ptr::null(),
                 );
-                point_size *= 2.0;
+                point_size += 2.0;
             }
 
             let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
             gl::ProgramUniform1f(shader_program_id, c, point_size);
 
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_vor_index_buffer);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_index_buffers[0]);
             gl::DrawElements(
                 gl::POINTS, // mode
                 self.navaid_vor as gl::types::GLsizei,
@@ -152,9 +148,8 @@ impl NavaidRenderer {
 
     pub fn drop_buffers(&self) {
         unsafe {
-            gl::DeleteBuffers(1, &self.navaid_vertex_buffer.clone());
-            gl::DeleteBuffers(1, &self.navaid_vor_index_buffer.clone());
-            gl::DeleteBuffers(1, &self.navaid_ndb_index_buffer.clone());
+            gl::DeleteBuffers(1, &self.navaid_vertex_buffer);
+            gl::DeleteBuffers(2, self.navaid_index_buffers.as_ptr());
             gl::DeleteVertexArrays(1, &self.navaid_vertex_arrays);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);  // Vertex buffer
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);  // Index buffer
