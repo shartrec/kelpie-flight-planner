@@ -448,8 +448,9 @@ impl Renderer {
                              0.0, 0.0, 0.0, 1.0);
 
         model = translate(&model, &vec3(0., 0., 1.0));
-        model = rotate(&model, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
-        model = rotate(&model, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
+        // Rotation here is opposite to that in build_matrix, because we are inside the sphere of the galaxy
+        model = rotate(&model, self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
+        model = rotate(&model, -self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
         // Reduce to 3x3 matrix
         let rot_t: TMat3<f32> = model.fixed_view::<3, 3>(0, 0).into();
         rot_t
