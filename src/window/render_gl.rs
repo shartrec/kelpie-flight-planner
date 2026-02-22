@@ -423,34 +423,36 @@ impl Renderer {
         }
     }
 
+    fn apply_scaling(&self, model: &TMat4<f32>, aspect_ratio: [f32; 2], zoom: f32) -> TMat4<f32> {
+        let mut model = scale(model, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
+        model = scale(&model, &vec3(zoom, zoom, 1.0));
+        model
+    }
+
+    fn apply_rotation(&self, model: &TMat4<f32>) -> TMat4<f32> {
+        let mut model = rotate(model, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
+        model = rotate(&model, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
+        model
+    }
+
     fn build_matrix(&self, aspect_ratio: [f32; 2], zoom: f32) -> TMat4<f32> {
         // Create the model matrix (handling scaling, rotation, and translation)
-        let mut model = mat4(1.0, 0.0, 0.0, 0.0,
-                             0.0, 1.0, 0.0, 0.0,
-                             0.0, 0.0, 1.0, 0.0,
-                             0.0, 0.0, 0.0, 1.0);
+        let mut model = identity();
 
         // The translation is not strictly necessary, but as all the points with z > 0.0
         // are on the far side of the earth, this pushes the model back and the points can
         // be ignored by the renderer.
         model = translate(&model, &vec3(0., 0., 1.0));
-        model = scale(&model, &vec3(aspect_ratio[0], aspect_ratio[1], 1.0));
-        model = scale(&model, &vec3(zoom, zoom, 1.0));
-        model = rotate(&model, -self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
-        model = rotate(&model, self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
+        model = self.apply_scaling(&model, aspect_ratio, zoom);
+        model = self.apply_rotation(&model);
         model
     }
     fn build_vrot_matrix(&self) -> TMat3<f32> {
         // Create the model matrix (handling scaling, rotation, and translation)
-        let mut model = mat4(1.0, 0.0, 0.0, 0.0,
-                             0.0, 1.0, 0.0, 0.0,
-                             0.0, 0.0, 1.0, 0.0,
-                             0.0, 0.0, 0.0, 1.0);
+        let mut model = identity();
 
         model = translate(&model, &vec3(0., 0., 1.0));
-        // Rotation here is opposite to that in build_matrix, because we are inside the sphere of the galaxy
-        model = rotate(&model, self.last_map_centre.borrow().get_latitude().to_radians() as f32, &vec3(1.0, 0.0, 0.0));
-        model = rotate(&model, -self.last_map_centre.borrow().get_longitude().to_radians() as f32, &vec3(0.0, 1.0, 0.0));
+        model = self.apply_rotation(&model);
         // Reduce to 3x3 matrix
         let rot_t: TMat3<f32> = model.fixed_view::<3, 3>(0, 0).into();
         rot_t
