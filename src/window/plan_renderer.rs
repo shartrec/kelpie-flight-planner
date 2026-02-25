@@ -30,6 +30,7 @@ use std::rc::Rc;
 use gl::types::{GLint, GLuint};
 use gtk::GLArea;
 
+use crate::gl_str;
 use crate::earth::spherical_projector::SphericalProjector;
 use crate::model::plan::Plan;
 use crate::window::map_utils::Vertex;
@@ -128,7 +129,7 @@ impl PlanRenderer {
 
             gl::LineWidth(2.0);
 
-            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            let c = gl::GetUniformLocation(shader_program_id, gl_str!("pointSize"));
             gl::ProgramUniform1f(shader_program_id, c, 4.0);
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.plan_index_buffer);
@@ -143,7 +144,7 @@ impl PlanRenderer {
                 gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, self.waypoints.get() as GLint);
             }
 
-            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            let c = gl::GetUniformLocation(shader_program_id, gl_str!("pointSize"));
             gl::ProgramUniform1f(shader_program_id, c, 1.0);
 
             gl::LineWidth(1.0);

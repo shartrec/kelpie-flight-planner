@@ -46,6 +46,20 @@ use crate::window::plan_renderer::PlanRenderer;
 use crate::window::sphere_renderer::SphereRenderer;
 use crate::window::starfield_renderer::StarfieldRenderer;
 
+#[macro_export]
+macro_rules! gl_str {
+    ($s:expr) => {
+        concat!($s, "\0").as_ptr() as *const gl::types::GLchar
+    };
+}
+
+#[macro_export]
+macro_rules! gl_ptr_float {
+    ($v:expr) => {
+        $v.as_ptr() as *const gl::types::GLfloat
+    };
+}
+
 pub struct Program {
     id: gl::types::GLuint,
 }
@@ -337,10 +351,10 @@ impl Renderer {
 
         unsafe {
             let resolution = [width as f32, height as f32];
-            let c = gl::GetUniformLocation(self.starfield_program.id(), b"uResolution\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform2fv(self.starfield_program.id(), c, 1, resolution.as_ptr() as *const gl::types::GLfloat);
-            let mat = gl::GetUniformLocation(self.starfield_program.id(), b"uInvViewRot\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniformMatrix3fv(self.starfield_program.id(), mat, 1, false as gl::types::GLboolean, u_rot_matrix.as_ptr() as *const gl::types::GLfloat);
+            let c = gl::GetUniformLocation(self.starfield_program.id(), gl_str!("uResolution"));
+            gl::ProgramUniform2fv(self.starfield_program.id(), c, 1, gl_ptr_float!(resolution));
+            let mat = gl::GetUniformLocation(self.starfield_program.id(), gl_str!("uInvViewRot"));
+            gl::ProgramUniformMatrix3fv(self.starfield_program.id(), mat, 1, false as gl::types::GLboolean, gl_ptr_float!(u_rot_matrix));
         }
         self.starfield_program.gl_use();
 
@@ -350,41 +364,41 @@ impl Renderer {
 
         let point_size = 1.0f32;
         unsafe {
-            let c = gl::GetUniformLocation(self.map_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            let c = gl::GetUniformLocation(self.map_program.id(), gl_str!("pointSize"));
             gl::ProgramUniform1f(self.map_program.id(), c, point_size);
 
-            let mat = gl::GetUniformLocation(self.map_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniformMatrix4fv(self.map_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
+            let mat = gl::GetUniformLocation(self.map_program.id(), gl_str!("matrix"));
+            gl::ProgramUniformMatrix4fv(self.map_program.id(), mat, 1, false as gl::types::GLboolean, gl_ptr_float!(trans));
 
-            let c = gl::GetUniformLocation(self.map_program.id(), b"sun_direction\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.map_program.id(), c, 1, self.sun_direction.as_ptr() as *const gl::types::GLfloat);
+            let c = gl::GetUniformLocation(self.map_program.id(), gl_str!("sun_direction"));
+            gl::ProgramUniform3fv(self.map_program.id(), c, 1, gl_ptr_float!(self.sun_direction));
 
             let shadow_strength = 0.5f32;
-            let c = gl::GetUniformLocation(self.map_program.id(), b"shadow_strength\0".as_ptr() as *const gl::types::GLchar);
+            let c = gl::GetUniformLocation(self.map_program.id(), gl_str!("shadow_strength"));
             gl::ProgramUniform1f(self.map_program.id(), c, shadow_strength);
         }
 
         let color = [0.00, 0.5, 1.0f32];
         unsafe {
-            let c = gl::GetUniformLocation(self.map_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.map_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            let c = gl::GetUniformLocation(self.map_program.id(), gl_str!("color"));
+            gl::ProgramUniform3fv(self.map_program.id(), c, 1, gl_ptr_float!(color));
         }
         self.sphere_renderer.draw(area);
 
         self.shader_program.gl_use();
         unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            let c = gl::GetUniformLocation(self.shader_program.id(), gl_str!("pointSize"));
             gl::ProgramUniform1f(self.shader_program.id(), c, point_size);
 
-            let mat = gl::GetUniformLocation(self.shader_program.id(), b"matrix\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, trans.as_ptr() as *const gl::types::GLfloat);
+            let mat = gl::GetUniformLocation(self.shader_program.id(), gl_str!("matrix"));
+            gl::ProgramUniformMatrix4fv(self.shader_program.id(), mat, 1, false as gl::types::GLboolean, gl_ptr_float!(trans));
         }
 
         if with_navaids {
             let color = [0.2, 0.2, 1.0f32];
             unsafe {
-                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+                let c = gl::GetUniformLocation(self.shader_program.id(), gl_str!("color"));
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, gl_ptr_float!(color));
             }
             self.navaid_renderer.borrow().draw(area, zoom > 3.0, self.shader_program.id());
         }
@@ -392,8 +406,8 @@ impl Renderer {
         if with_airports {
             let color = [0.64, 0.0, 0.0f32];
             unsafe {
-                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+                let c = gl::GetUniformLocation(self.shader_program.id(), gl_str!("color"));
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, gl_ptr_float!(color));
             }
             self.airport_renderer.borrow().draw(area, zoom > 3.0, zoom > 6.0, self.shader_program.id());
         }
@@ -401,16 +415,16 @@ impl Renderer {
         if let Some(plan_renderer) = self.plan_renderer.borrow().as_ref() {
             let color = [0.7, 0.7, 1.0f32];
             unsafe {
-                let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+                let c = gl::GetUniformLocation(self.shader_program.id(), gl_str!("color"));
+                gl::ProgramUniform3fv(self.shader_program.id(), c, 1, gl_ptr_float!(color));
             }
             plan_renderer.draw(area, self.shader_program.id());
         }
 
         let color = [1.0, 0.1, 0.1f32];
         unsafe {
-            let c = gl::GetUniformLocation(self.shader_program.id(), b"color\0".as_ptr() as *const gl::types::GLchar);
-            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, color.as_ptr() as *const gl::types::GLfloat);
+            let c = gl::GetUniformLocation(self.shader_program.id(), gl_str!("color"));
+            gl::ProgramUniform3fv(self.shader_program.id(), c, 1, gl_ptr_float!(color));
         }
         self.aircraft_renderer.borrow().draw(area);
 

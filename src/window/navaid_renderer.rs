@@ -28,6 +28,7 @@ use std::sync::{Arc, RwLockReadGuard};
 use gl::types::GLuint;
 use gtk::GLArea;
 
+use crate::gl_str;
 use crate::earth;
 use crate::earth::spherical_projector::SphericalProjector;
 use crate::model::location::Location;
@@ -120,7 +121,7 @@ impl NavaidRenderer {
 
             let mut point_size = 2.0;
             if ndb {
-                let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+                let c = gl::GetUniformLocation(shader_program_id, gl_str!("pointSize"));
                 gl::ProgramUniform1f(shader_program_id, c, point_size);
 
                 gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_index_buffers[1]);
@@ -133,7 +134,7 @@ impl NavaidRenderer {
                 point_size += 2.0;
             }
 
-            let c = gl::GetUniformLocation(shader_program_id, b"pointSize\0".as_ptr() as *const gl::types::GLchar);
+            let c = gl::GetUniformLocation(shader_program_id, gl_str!("pointSize"));
             gl::ProgramUniform1f(shader_program_id, c, point_size);
 
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.navaid_index_buffers[0]);
