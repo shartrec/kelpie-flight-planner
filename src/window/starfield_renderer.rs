@@ -38,6 +38,8 @@ impl StarfieldRenderer {
         let mut starfield_vertex_buffer: GLuint = 0;
         let mut starfield_vertex_array: GLuint = 0;
 
+        // THis is a simple square that covers the entire screen, which we will use to render the starfield background.
+        // The vertex shader will then use the vertex positions to determine the direction of the stars and render them accordingly.
         let mut vertices: Vec<Vertex> = Vec::new();
         vertices.push(Vertex{position: [-1.0, -1.0, 0.0]});
         vertices.push(Vertex{position: [1.0, -1.0, 0.0]});

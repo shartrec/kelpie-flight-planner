@@ -188,11 +188,9 @@ fn shader_from_source(
 
 fn create_whitespace_cstring_with_len(len: usize) -> CString {
     // allocate buffer of correct size
-    let mut buffer: Vec<u8> = Vec::with_capacity(len + 1);
-    // fill it with len spaces
-    buffer.extend([b' '].iter().cycle().take(len));
+    let spaces = std::iter::repeat(b' ' ).take(len).collect();
     // convert buffer to CString
-    unsafe { CString::from_vec_unchecked(buffer) }
+    unsafe { CString::from_vec_unchecked(spaces) }
 }
 
 pub struct Renderer {
