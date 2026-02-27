@@ -25,7 +25,7 @@
 
 use adw::{TabPage, TabView};
 use adw::subclass::prelude::AdwApplicationWindowImpl;
-use async_std::task;
+use smol;
 use glib::Propagation;
 use glib::subclass::InitializingObject;
 use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned};
@@ -203,11 +203,11 @@ impl Window {
 
     pub(crate) fn reload(&self) {
         // Spawn a new task to perform the initialization asynchronously
-        task::spawn(async move {
+        smol::spawn(async move {
             if crate::earth::initialise().is_err() {
                 event::manager().notify_listeners(Event::SetupRequired);
             }
-        });
+        }).detach();
     }
 
 
@@ -378,11 +378,11 @@ impl ObjectImpl for Window {
         }));
 
         // Spawn a new task to perform the initialization asynchronously
-        task::spawn(async move {
+        smol::spawn(async move {
             if crate::earth::initialise().is_err() {
                 event::manager().notify_listeners(Event::SetupRequired);
             }
-        });
+        }).detach();
     }
 }
 

@@ -24,16 +24,27 @@
 
 #![forbid(unsafe_code)]
 
-use async_channel::Sender;
+use crate::earth::solar::subsolar_point;
+use crate::util::fg_link::get_aircraft_position;
 use chrono::Utc;
 use gtk::{self, glib, CompositeTemplate};
-use crate::earth::solar::subsolar_point;
-use crate::util::fg_link::{get_aircraft_position, AircraftPositionInfo};
 
 mod imp {
+    use crate::earth::coordinate::Coordinate;
+    use crate::event::{Event, EventType};
+    use crate::model::airport::{Airport, AirportType};
+    use crate::model::location::Location;
+    use crate::model::navaid::{Navaid, NavaidType};
+    use crate::model::plan::Plan;
+    use crate::model::waypoint::Waypoint;
+    use crate::util::fg_link::AircraftPositionInfo;
+    use crate::window::render_gl::Renderer;
+    use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
+    use crate::{earth, listen_events};
     use adw::gdk::ModifierType;
     use adw::prelude::*;
     use adw::subclass::prelude::*;
+    use gettextrs::gettext;
     use gtk::gdk::Rectangle;
     use gtk::gio::{Menu, MenuItem, SimpleAction, SimpleActionGroup};
     use gtk::glib::subclass::InitializingObject;
@@ -47,18 +58,6 @@ mod imp {
     use std::ops::Deref;
     use std::rc::Rc;
     use std::sync::Arc;
-    use gettextrs::gettext;
-    use crate::earth::coordinate::Coordinate;
-    use crate::event::{Event, EventType};
-    use crate::model::airport::{Airport, AirportType};
-    use crate::model::location::Location;
-    use crate::model::navaid::{Navaid, NavaidType};
-    use crate::model::plan::Plan;
-    use crate::model::waypoint::Waypoint;
-    use crate::util::fg_link::AircraftPositionInfo;
-    use crate::window::render_gl::Renderer;
-    use crate::window::util::{get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_plan_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view};
-    use crate::{earth, listen_events};
 
     use super::*;
 
@@ -142,7 +141,10 @@ mod imp {
             let recurring_handle = scheduling::Scheduler::delayed_recurring(
                 std::time::Duration::from_secs(2),
                 std::time::Duration::from_secs(5),
-                move || get_aircraft_position_task(tx.clone()),
+                move || {
+                    let ap = get_aircraft_position();
+                    let _ = tx.try_send(ap);
+                },
             )
                 .start();
             self.scheduler_handle_ap.replace(Some(recurring_handle));
@@ -163,7 +165,10 @@ mod imp {
             let recurring_handle = scheduling::Scheduler::delayed_recurring(
                 std::time::Duration::from_secs(0),
                 std::time::Duration::from_secs(240),
-                move || get_subsolar_point(tx.clone()),
+                move || {
+                    let ap = subsolar_point(Utc::now());
+                    let _ = tx.try_send(ap);
+                },
             )
                 .start();
             self.scheduler_handle_ssp.replace(Some(recurring_handle));
@@ -670,16 +675,4 @@ impl Default for WorldMapView {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn get_aircraft_position_task(tx: Sender<Option<AircraftPositionInfo>>) {
-    // Your task implementation goes here
-    let ap = get_aircraft_position();
-    let _ = tx.try_send(ap);
-}
-
-fn get_subsolar_point(tx: Sender<(f64, f64)>) {
-    // Your task implementation goes here
-    let ap = subsolar_point(Utc::now());
-    let _ = tx.try_send(ap);
 }
