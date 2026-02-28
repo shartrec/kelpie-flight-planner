@@ -187,6 +187,68 @@ impl Filter for RangeFilter {
         }
     }
 }
+pub struct InverseRangeFilter {
+    this: Coordinate,
+    range: f64,
+}
+
+impl InverseRangeFilter {
+    pub fn new(this: Coordinate, range: f64) -> Self {
+        Self {
+            this,
+            range,
+        }
+    }
+}
+
+impl Filter for InverseRangeFilter {
+    // returns true if the coordinate passes the filter
+    fn filter(&self, location: &dyn Location) -> bool {
+        let other = location.get_loc();
+        self.this.distance_to(other) >= self.range
+    }
+}
+
+pub struct DeviationFilter {
+    from: Coordinate,
+    to: Coordinate,
+    max_deviation: f64,
+    heading_from: f64,
+    heading_to: f64,
+}
+
+impl DeviationFilter {
+    pub fn new(from: Coordinate, to: Coordinate, heading_from: f64, heading_to: f64,max_deviation: f64) -> Self {
+        Self {
+            from,
+            to,
+            max_deviation,
+            heading_from,
+            heading_to,
+        }
+    }
+
+    fn get_deviation(&self, heading_from: f64, bearing_to_deg: f64) -> f64 {
+        let mut raw_deviation = (bearing_to_deg - heading_from).abs();
+        if raw_deviation > 180.0 {
+            raw_deviation = 360.0 - raw_deviation;
+        }
+        raw_deviation
+    }
+}
+
+impl Filter for DeviationFilter {
+    // returns true if the coordinate passes the filter
+    fn filter(&self, location: &dyn Location) -> bool {
+        let deviation_to =
+            self.get_deviation(self.heading_from, self.from.bearing_to_deg(location.get_loc()));
+        let deviation_from =
+            self.get_deviation(self.heading_to, location.get_loc().bearing_to_deg(&self.to));
+
+        deviation_to < self.max_deviation && deviation_from < self.max_deviation
+    }
+}
+
 
 pub struct VorFilter {}
 
