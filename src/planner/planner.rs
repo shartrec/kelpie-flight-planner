@@ -142,7 +142,7 @@ impl Planner<'_> {
                 // Only consider navaids somewhat near the direct path to keep it efficient
                 let d1 = from.get_loc().distance_to(n.get_loc());
                 let d2 = to.get_loc().distance_to(n.get_loc());
-                d1 + d2 < total_dist * 1.5 || (d1 < self.max_leg_distance * 2.0) || (d2 < self.max_leg_distance * 2.0)
+                d1 + d2 < total_dist * 1.1 || (d1 < self.max_leg_distance * 2.0) || (d2 < self.max_leg_distance * 2.0)
             })
             .cloned()
             .collect();
