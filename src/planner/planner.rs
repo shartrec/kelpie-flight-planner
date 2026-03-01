@@ -26,7 +26,7 @@ use std::cell::Cell;
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
-use log::info;
+use log::debug;
 use crate::earth;
 use crate::earth::coordinate::Coordinate;
 use crate::model::aircraft::Aircraft;
@@ -126,7 +126,7 @@ impl Planner<'_> {
                 }
             }
         }
-        info!("Planning took {} ms", timer.elapsed().as_millis());
+        debug!("Planning took {} ms", timer.elapsed().as_millis());
         plan
     }
 
@@ -138,7 +138,7 @@ impl Planner<'_> {
 
         let mut relevant_navaids = self.get_relevant_navaids(from.get_loc(), to.get_loc());
 
-        info!("Found {} relevant navaids for leg from {:?} to {:?}", relevant_navaids.len(), from.get_loc(), to.get_loc());
+        debug!("Found {} relevant navaids for leg from {:?} to {:?}", relevant_navaids.len(), from.get_loc(), to.get_loc());
         // sort by distance to from
         relevant_navaids.sort_by(|a, b| {
             from.get_loc()
@@ -563,58 +563,58 @@ impl Planner<'_> {
     }
 
 
-    pub fn recalc_plan_elevations(&self, plan: &mut Plan) {
-        let aircraft = plan.get_aircraft().clone();
-        let altitude = plan.get_plan_altitude();
-
-        for sector in plan.get_sectors_mut() {
-            if sector.borrow().get_start().is_none() || sector.borrow().get_end().is_none() {
-                continue;
-            }
-            let start_wp = &sector.borrow().get_start().unwrap();
-            let end_wp = &sector.borrow().get_end().unwrap();
-
-            // Remove the previous top of climb and beginning of descent
-            let mut ref_mut = sector.borrow_mut();
-            let waypoints = ref_mut.get_waypoints_mut();
-            waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
-
-
-            let max_alt = calc_max_altitude(
-                &aircraft,
-                altitude,
-                start_wp,
-                end_wp,
-                waypoints,
-            );
-
-            add_toc(
-                &aircraft,
-                start_wp,
-                end_wp,
-                waypoints,
-                max_alt,
-            );
-
-            add_bod(
-                &aircraft,
-                start_wp,
-                end_wp,
-                waypoints,
-                max_alt,
-            );
-
-            set_elevations(
-                &aircraft,
-                start_wp,
-                end_wp,
-                waypoints,
-                max_alt,
-            );
-        }
-    }
 }
 
+pub fn recalc_plan_elevations(plan: &mut Plan) {
+    let aircraft = plan.get_aircraft().clone();
+    let altitude = plan.get_plan_altitude();
+
+    for sector in plan.get_sectors_mut() {
+        if sector.borrow().get_start().is_none() || sector.borrow().get_end().is_none() {
+            continue;
+        }
+        let start_wp = &sector.borrow().get_start().unwrap();
+        let end_wp = &sector.borrow().get_end().unwrap();
+
+        // Remove the previous top of climb and beginning of descent
+        let mut ref_mut = sector.borrow_mut();
+        let waypoints = ref_mut.get_waypoints_mut();
+        waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
+
+
+        let max_alt = calc_max_altitude(
+            &aircraft,
+            altitude,
+            start_wp,
+            end_wp,
+            waypoints,
+        );
+
+        add_toc(
+            &aircraft,
+            start_wp,
+            end_wp,
+            waypoints,
+            max_alt,
+        );
+
+        add_bod(
+            &aircraft,
+            start_wp,
+            end_wp,
+            waypoints,
+            max_alt,
+        );
+
+        set_elevations(
+            &aircraft,
+            start_wp,
+            end_wp,
+            waypoints,
+            max_alt,
+        );
+    }
+}
 pub fn add_bod(
     aircraft: &Option<Arc<Aircraft>>,
     from: &Waypoint,

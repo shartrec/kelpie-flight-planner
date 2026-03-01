@@ -56,6 +56,7 @@ mod imp {
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
     use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path, expand_tree};
     use crate::{earth, event, listen_events};
+    use crate::planner::planner;
     use super::*;
 
     #[derive(Default, CompositeTemplate)]
@@ -235,24 +236,78 @@ mod imp {
         }
 
         fn make_plan(&self) {
-            let planner = Planner::new();
             let mut plan = self.plan.borrow_mut();
+            //todo create an async_channel to communicate between processes
+            let (tx, rx) = async_channel::bounded::<Vec<Vec<Waypoint>>>(plan.get_sectors().len());
+            // Collect the sectors to replan and spawn a thread to do the replanning, sending the new waypoints back through the channel when done.  This allows the UI to remain responsive while replanning is happening.
+            let sectors = plan.get_sectors().iter().map(|s| {
+                let binding = s.borrow();
+                let binding = binding.deref();
+                binding.clone()
+            }).collect::<Vec<_>>();
+
             let mut loc = None;
             for sector in plan.get_sectors_mut().iter_mut() {
-                let waypoints = planner.make_plan(sector.borrow().deref());
                 sector.borrow_mut().remove_all_waypoints();
-                sector.borrow_mut().add_all_waypoint(waypoints);
                 loc = sector.borrow().get_start();
             }
-            planner.recalc_plan_elevations(plan.deref_mut());
+            planner::recalc_plan_elevations(plan.deref_mut());
             drop(plan);
+            self.refresh(None);
             if let Some(map_view) = get_world_map_view(self.plan_window.deref()) {
                 if let Some(wp) = loc {
                     map_view.imp().set_plan(self.plan.clone());
                     map_view.imp().center_map(wp.get_loc().clone());
                 }
             }
-            event::manager().notify_listeners(Event::PlanChanged);
+
+            smol::spawn(async move {
+                let planner = Planner::new();
+                let waypoints = sectors.into_iter().map(|sector| {
+                    if sector.get_start().is_none() || sector.get_end().is_none() {
+                        return Vec::new();
+                    }
+                    let binding = sector.get_start().unwrap();
+                    let id1 = binding.get_id();
+                    let binding = sector.get_end().unwrap();
+                    let id2 = binding.get_id();
+                    let status = gettext("Generating Plan from : {0} to : {1}")
+                        .replace("{0}", id1)
+                        .replace("{1}", id2)
+                    ;
+                    event::manager().notify_listeners(Event::StatusChange(status));
+
+                    planner.make_plan(&sector)
+                }).collect();
+                if let Err(e) = tx.send(waypoints).await {
+                    error!("Failed to send waypoints through channel: {}", e);
+                }
+                event::manager().notify_listeners(Event::StatusChange("".to_string()));
+                tx.close();
+            }).detach();
+
+            gtk::glib::MainContext::default().spawn_local(gtk::glib::clone!(#[weak(rename_to = view)] self, async move {
+                if let Ok(new_sectors) = rx.recv().await {
+                    // Check the sector count still matches
+                    let mut plan = view.plan.borrow_mut();
+                    if plan.get_sectors().len() != new_sectors.len() {
+                        error!("Sector count mismatch when receiving new waypoints from planner");
+                        return;
+                    }
+                    for (sector, new_waypoints) in plan.get_sectors_mut().iter_mut().zip(new_sectors.into_iter()) {
+                        sector.borrow_mut().remove_all_waypoints();
+                        sector.borrow_mut().add_all_waypoint(new_waypoints);
+                    }
+                    planner::recalc_plan_elevations(plan.deref_mut());
+                    drop(plan);
+                    if let Some(map_view) = get_world_map_view(view.plan_window.deref()) {
+                        map_view.imp().set_plan(view.plan.clone());
+                    }
+                    event::manager().notify_listeners(Event::PlanChanged);
+                    view.refresh(None);
+                }
+            }));
+
         }
 
         pub fn initialise(&self) {
@@ -316,8 +371,7 @@ mod imp {
                 }
             }
 
-            let planner = Planner::new();
-            planner.recalc_plan_elevations(plan.deref_mut());
+            planner::recalc_plan_elevations(plan.deref_mut());
             drop(plan);
             self.refresh(None);
             event::manager().notify_listeners(Event::PlanChanged);
