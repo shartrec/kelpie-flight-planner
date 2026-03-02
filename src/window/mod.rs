@@ -24,8 +24,9 @@
 
 use adw::Application;
 use glib::Object;
-use gtk::{gio, glib};
+use gtk::{gio, glib, Orientation};
 use adw::prelude::GtkWindowExt;
+use gtk::prelude::WidgetExt;
 
 mod airport_map_view;
 mod airport_view;
@@ -61,7 +62,7 @@ impl Window {
     fn setup_actions(&self) {}
     pub fn save_window_size(&self) -> Result<(), glib::BoolError> {
         // Get the size of the window
-        let size = self.default_size();
+        let size = (self.size(Orientation::Horizontal), self.size(Orientation::Vertical));
 
         // Set the window state in `settings`
         let pref = crate::preference::manager();

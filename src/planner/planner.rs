@@ -23,7 +23,10 @@
  */
 
 use std::cell::Cell;
+use std::collections::BinaryHeap;
+use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
+use log::debug;
 use crate::earth;
 use crate::earth::coordinate::Coordinate;
 use crate::model::aircraft::Aircraft;
@@ -37,6 +40,8 @@ use crate::preference::*;
 use crate::util::location_filter::{AndFilter, DeviationFilter, Filter, InverseRangeFilter, RangeFilter, VorFilter};
 
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
+
+// DijkstraNode is no longer used, replaced by PqItem
 
 pub struct Planner<'a> {
     max_leg_distance: f64,
@@ -72,6 +77,7 @@ impl Planner<'_> {
     }
     pub(crate) fn make_plan(&self, sector: &Sector) -> Vec<Waypoint> {
 
+        let timer = std::time::Instant::now();
         let mut plan: Vec<Waypoint> = Vec::new();
 
         let from = sector.get_start();
@@ -85,17 +91,17 @@ impl Planner<'_> {
                     let old_wps = sector.get_waypoints();
                     for wp in old_wps.iter() {
                         if *wp.is_locked() {
-                            self.add_navaids_between(&prev_wp, &wp.clone(), &mut plan);
+                            plan.extend(self.dijkstra_navaids(&prev_wp, &wp.clone()));
                             plan.push(wp.clone());
                             prev_wp = wp.clone();
                         }
                     }
 
                     if let Some(wp) = self.get_arrival_beacon(&to) {
-                        self.add_navaids_between(&prev_wp, &wp, &mut plan);
+                        plan.extend(self.dijkstra_navaids(&prev_wp, &wp));
                         plan.push(wp);
                     } else {
-                        self.add_navaids_between(&prev_wp, &to.clone(), &mut plan);
+                        plan.extend(self.dijkstra_navaids(&prev_wp, &to.clone()));
                     }
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
@@ -106,12 +112,12 @@ impl Planner<'_> {
                     let old_wps = sector.get_waypoints();
                     for wp in old_wps.iter() {
                         if *wp.is_locked() {
-                            self.add_fixes_between(&prev_wp, &wp.clone(), &mut plan);
+                            plan.extend(self.dijkstra_fixes(&prev_wp, &wp.clone()));
                             plan.push(wp.clone());
                             prev_wp = wp.clone();
                         }
                     }
-                    self.add_fixes_between(&prev_wp, &to, &mut plan);
+                    plan.extend(self.dijkstra_fixes(&prev_wp, &to.clone()));
                     if self.add_gps_waypoints {
                         self.add_waypoints(&from, &to, &mut plan);
                     }
@@ -120,7 +126,218 @@ impl Planner<'_> {
                 }
             }
         }
+        debug!("Planning took {} ms", timer.elapsed().as_millis());
         plan
+    }
+
+    fn dijkstra_navaids(&self, from: &Waypoint, to: &Waypoint) -> Vec<Waypoint> {
+        let total_dist = from.get_loc().distance_to(to.get_loc());
+        if total_dist < self.max_leg_distance {
+            return Vec::new();
+        }
+
+        let mut relevant_navaids = self.get_relevant_navaids(from.get_loc(), to.get_loc());
+
+        debug!("Found {} relevant navaids for leg from {:?} to {:?}", relevant_navaids.len(), from.get_loc(), to.get_loc());
+        // sort by distance to from
+        relevant_navaids.sort_by(|a, b| {
+            from.get_loc()
+                .distance_to(a.get_loc())
+                .partial_cmp(&from.get_loc().distance_to(b.get_loc()))
+                .unwrap_or(Ordering::Equal)
+        });
+
+        let mut nodes = Vec::new();
+        nodes.push(from.clone());
+        for n in relevant_navaids {
+            nodes.push(Waypoint::Navaid {
+                navaid: n,
+                elevation: Cell::new(0),
+                locked: false,
+            });
+        }
+        nodes.push(to.clone());
+
+        let start_idx = 0;
+        let end_idx = nodes.len() - 1;
+
+        let mut dists = vec![f64::INFINITY; nodes.len()];
+        let mut parents = vec![None; nodes.len()];
+
+        dists[start_idx] = 0.0;
+
+        // Map waypoint ID (if any) or coordinate to index might be slow, 
+        // using index in pq instead might be better but we need the index.
+        #[derive(Clone)]
+        struct PqItem {
+            idx: usize,
+            cost: f64,
+        }
+        impl PartialEq for PqItem {
+            fn eq(&self, other: &Self) -> bool { self.cost == other.cost }
+        }
+        impl Eq for PqItem {}
+        impl PartialOrd for PqItem {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+        }
+        impl Ord for PqItem {
+            fn cmp(&self, other: &Self) -> Ordering { other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal) }
+        }
+
+        let mut pq = BinaryHeap::new();
+        pq.push(PqItem { idx: start_idx, cost: 0.0 });
+
+        while let Some(PqItem { idx, cost }) = pq.pop() {
+            if cost > dists[idx] {
+                continue;
+            }
+            if idx == end_idx {
+                break;
+            }
+
+            let u_loc = nodes[idx].get_loc();
+
+            // To avoid O(N^2) we only look at "nearby" nodes.
+            // Since they are sorted by distance from start, it doesn't help much for edges between navaids.
+            for (v_idx, v_node) in nodes.iter().enumerate() {
+                if idx == v_idx { continue; }
+                
+                let v_loc = v_node.get_loc();
+                let d = u_loc.distance_to(v_loc);
+                
+                // Max leg distance is a hint.
+                let mut edge_weight = d;
+                if d > self.max_leg_distance {
+                    // Penalize legs longer than max_leg_distance but don't forbid them.
+                    // This encourages staying within radio beacon range when possible.
+                    edge_weight += (d - self.max_leg_distance) * 2.0;
+                }
+                
+                // Also prefer VORs if requested
+                if self.vor_preferred {
+                    if let Waypoint::Navaid { navaid, .. } = v_node {
+                        if navaid.get_type() == NavaidType::Vor {
+                            edge_weight *= 0.9; // Slight preference
+                        }
+                    }
+                }
+
+                if dists[idx] + edge_weight < dists[v_idx] {
+                    dists[v_idx] = dists[idx] + edge_weight;
+                    parents[v_idx] = Some(idx);
+                    pq.push(PqItem { idx: v_idx, cost: dists[v_idx] });
+                }
+            }
+        }
+
+        let mut path = Vec::new();
+        let mut curr = parents[end_idx];
+        while let Some(idx) = curr {
+            if idx == start_idx {
+                break;
+            }
+            path.push(nodes[idx].clone());
+            curr = parents[idx];
+        }
+        path.reverse();
+        path
+    }
+
+    fn dijkstra_fixes(&self, from: &Waypoint, to: &Waypoint) -> Vec<Waypoint> {
+        let total_dist = from.get_loc().distance_to(to.get_loc());
+        if total_dist < self.max_leg_distance {
+            return Vec::new();
+        }
+
+        let mut relevant_fixes = self.get_relevant_fixes(from.get_loc(), to.get_loc());
+        // sort by distance to from
+        relevant_fixes.sort_by(|a, b| {
+            from.get_loc()
+                .distance_to(a.get_loc())
+                .partial_cmp(&from.get_loc().distance_to(b.get_loc()))
+                .unwrap_or(Ordering::Equal)
+        });
+
+        let mut nodes = Vec::new();
+        nodes.push(from.clone());
+        for f in relevant_fixes {
+            nodes.push(Waypoint::Fix {
+                fix: f,
+                elevation: Cell::new(0),
+                locked: false,
+            });
+        }
+        nodes.push(to.clone());
+
+        let start_idx = 0;
+        let end_idx = nodes.len() - 1;
+
+        let mut dists = vec![f64::INFINITY; nodes.len()];
+        let mut parents = vec![None; nodes.len()];
+
+        dists[start_idx] = 0.0;
+
+        #[derive(Clone)]
+        struct PqItem {
+            idx: usize,
+            cost: f64,
+        }
+        impl PartialEq for PqItem {
+            fn eq(&self, other: &Self) -> bool { self.cost == other.cost }
+        }
+        impl Eq for PqItem {}
+        impl PartialOrd for PqItem {
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+        }
+        impl Ord for PqItem {
+            fn cmp(&self, other: &Self) -> Ordering { other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal) }
+        }
+
+        let mut pq = BinaryHeap::new();
+        pq.push(PqItem { idx: start_idx, cost: 0.0 });
+
+        while let Some(PqItem { idx, cost }) = pq.pop() {
+            if cost > dists[idx] {
+                continue;
+            }
+            if idx == end_idx {
+                break;
+            }
+
+            let u_loc = nodes[idx].get_loc();
+
+            for (v_idx, v_node) in nodes.iter().enumerate() {
+                if idx == v_idx { continue; }
+                
+                let v_loc = v_node.get_loc();
+                let d = u_loc.distance_to(v_loc);
+                
+                // Max leg distance is a hint.
+                let mut edge_weight = d;
+                if d > self.max_leg_distance {
+                    // Penalize legs longer than max_leg_distance but don't forbid them.
+                    edge_weight += (d - self.max_leg_distance) * 2.0;
+                }
+                
+                if dists[idx] + edge_weight < dists[v_idx] {
+                    dists[v_idx] = dists[idx] + edge_weight;
+                    parents[v_idx] = Some(idx);
+                    pq.push(PqItem { idx: v_idx, cost: dists[v_idx] });
+                }
+            }
+        }
+
+        let mut path = Vec::new();
+        let mut curr = parents[end_idx];
+        while let Some(idx) = curr {
+            if idx == start_idx {
+                break;
+            }
+            path.push(nodes[idx].clone());
+            curr = parents[idx];
+        }
+        path.reverse();
+        path
     }
 
     fn get_arrival_beacon(&self, to: &Waypoint) -> Option<Waypoint> {
@@ -133,86 +350,47 @@ impl Planner<'_> {
         })
     }
 
-    fn add_navaids_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
-        let distance = from.get_loc().distance_to(to.get_loc());
+    fn get_relevant_navaids(&self, from: &Coordinate, to: &Coordinate) -> Vec<Arc<Navaid>> {
 
-        if distance < self.max_leg_distance {
-            return;
+        let mut relevant_navaids: Vec<Arc<Navaid>> = Vec::new();
+
+        let distance = from.distance_to(to);
+
+        if distance >= self.max_leg_distance {
+            let midpoint = Coordinate::midpoint(from, to);
+
+            let leg_distance = from.distance_to(to);
+            let heading_from = from.bearing_to_deg(&midpoint);
+            let heading_to = midpoint.bearing_to_deg(to);
+
+            let range = leg_distance / 2.0; // - _min_leg_distance;
+
+
+            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
+            let rf = RangeFilter::new(midpoint.clone(), range);
+            let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
+            let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
+
+            // Add the filters, putting the most discriminating ones first
+            let mut filter = AndFilter::new();
+            filter.add(Box::new(rf));
+            filter.add(Box::new(df));
+            filter.add(Box::new(irf1));
+            filter.add(Box::new(irf2));
+            if self.vor_only {
+                let vf = VorFilter::new();
+                filter.add(Box::new(vf));
+            }
+
+            let binding = self.navaids
+                .read()
+                .unwrap();
+            let near_aids = binding
+                .iter()
+                .filter(|loc| filter.filter(&***loc));
+            relevant_navaids.extend(near_aids.map(|n| n.clone()));
         }
-
-        let midpoint = Coordinate::midpoint(from.get_loc(), to.get_loc());
-
-        if let Some(mid_nav_aid) =
-            self.get_navaid_nearest_midpoint(from.get_loc(), to.get_loc(), &midpoint)
-        {
-            let wp = Waypoint::Navaid {
-                navaid: mid_nav_aid,
-                elevation: Cell::new(0),
-                locked: false,
-            };
-            let save_wp = wp.clone();
-
-            self.add_navaids_between(from, &wp, plan);
-            plan.push(wp);
-            self.add_navaids_between(&save_wp, to, plan);
-        }
-    }
-
-    fn add_fixes_between(&self, from: &Waypoint, to: &Waypoint, plan: &mut Vec<Waypoint>) {
-        let distance = from.get_loc().distance_to(to.get_loc());
-
-        if distance < self.max_leg_distance {
-            return;
-        }
-
-        let midpoint = Coordinate::midpoint(from.get_loc(), to.get_loc());
-
-        if let Some(mid_fix_aid) =
-            self.get_fix_nearest_midpoint(from.get_loc(), to.get_loc(), &midpoint)
-        {
-            let wp = Waypoint::Fix {
-                fix: mid_fix_aid,
-                elevation: Cell::new(0),
-                locked: false,
-            };
-            let save_wp = wp.clone();
-            self.add_fixes_between(from, &wp, plan);
-            plan.push(wp);
-
-            self.add_fixes_between(&save_wp, to, plan);
-        }
-    }
-
-    fn get_navaid_nearest_midpoint(
-        &self,
-        from: &Coordinate,
-        to: &Coordinate,
-        midpoint: &Coordinate,
-    ) -> Option<Arc<Navaid>> {
-        let leg_distance = from.distance_to(to);
-        let heading_from = from.bearing_to_deg(midpoint);
-        let heading_to = midpoint.bearing_to_deg(to);
-
-        let range = leg_distance / 2.0; // - _min_leg_distance;
-
-
-        let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
-        let rf = RangeFilter::new(midpoint.clone(), range);
-        let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
-        let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
-
-        // Add the filters, putting the most discriminating ones first
-        let mut filter = AndFilter::new();
-        filter.add(Box::new(rf));
-        filter.add(Box::new(df));
-        filter.add(Box::new(irf1));
-        filter.add(Box::new(irf2));
-        if self.vor_only {
-            let vf = VorFilter::new();
-            filter.add(Box::new(vf));
-        }
-
-        self.get_nearest_navaids_with_filter(midpoint, Box::new(filter))
+        relevant_navaids
     }
 
     fn get_navaid_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Navaid>> {
@@ -255,59 +433,48 @@ impl Planner<'_> {
         best_vor.or(best_loc)
     }
 
-    fn get_fix_nearest_midpoint(
-        &self,
-        from: &Coordinate,
-        to: &Coordinate,
-        midpoint: &Coordinate,
-    ) -> Option<Arc<Fix>> {
-        let leg_distance = from.distance_to(to);
-        let heading_from = from.bearing_to_deg(midpoint);
-        let heading_to = midpoint.bearing_to_deg(to);
-
-        let range = leg_distance / 2.0; // - _min_leg_distance;
-
-        let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
-        let rf = RangeFilter::new(midpoint.clone(), range);
-        let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
-        let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
-
-        let mut filter = AndFilter::new();
-        filter.add(Box::new(rf));
-        filter.add(Box::new(df));
-        filter.add(Box::new(irf1));
-        filter.add(Box::new(irf2));
-
-        self.get_fix_nearest_with_filter(midpoint, Box::new(filter))
-    }
-
     #[allow(dead_code)]
-    fn get_fix_nearest(&self, coord: &Coordinate, max_range: f64) -> Option<Arc<Fix>> {
+    fn get_relevant_fixes(&self, from: &Coordinate, to: &Coordinate) -> Vec<Arc<Fix>> {
 
-        let filter = RangeFilter::new(coord.clone(), max_range);
+        let mut relevant_fixes: Vec<Arc<Fix>> = Vec::new();
 
-        self.get_fix_nearest_with_filter(coord, Box::new(filter))
-    }
+        let distance = from.distance_to(to);
 
-    fn get_fix_nearest_with_filter(&self, coord: &Coordinate, f: Box<dyn Filter>) -> Option<Arc<Fix>> {
-        let binding = self.fixes
-            .read()
-            .unwrap();
-        let near_aids = binding
-            .iter()
-            .filter(|loc| f.filter(&***loc));
+        if distance >= self.max_leg_distance {
+            let midpoint = Coordinate::midpoint(from, to);
 
-        let mut best_loc: Option<Arc<Fix>> = None;
-        let mut nearest = 100000.0;
+            let leg_distance = from.distance_to(to);
+            let heading_from = from.bearing_to_deg(&midpoint);
+            let heading_to = midpoint.bearing_to_deg(to);
 
-        for fix in near_aids {
-            let distance = coord.distance_to(fix.get_loc());
-            if distance < nearest {
-                best_loc = Some(fix.clone());
-                nearest = distance;
+            let range = leg_distance / 2.0; // - _min_leg_distance;
+
+
+            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
+            let rf = RangeFilter::new(midpoint.clone(), range);
+            let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
+            let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
+
+            // Add the filters, putting the most discriminating ones first
+            let mut filter = AndFilter::new();
+            filter.add(Box::new(rf));
+            filter.add(Box::new(df));
+            filter.add(Box::new(irf1));
+            filter.add(Box::new(irf2));
+            if self.vor_only {
+                let vf = VorFilter::new();
+                filter.add(Box::new(vf));
             }
+
+            let binding = self.fixes
+                .read()
+                .unwrap();
+            let near_aids = binding
+                .iter()
+                .filter(|loc| filter.filter(&***loc));
+            relevant_fixes.extend(near_aids.map(|n| n.clone()));
         }
-        best_loc
+        relevant_fixes
     }
 
     #[allow(dead_code)]
@@ -396,58 +563,58 @@ impl Planner<'_> {
     }
 
 
-    pub fn recalc_plan_elevations(&self, plan: &mut Plan) {
-        let aircraft = plan.get_aircraft().clone();
-        let altitude = plan.get_plan_altitude();
-
-        for sector in plan.get_sectors_mut() {
-            if sector.borrow().get_start().is_none() || sector.borrow().get_end().is_none() {
-                continue;
-            }
-            let start_wp = &sector.borrow().get_start().unwrap();
-            let end_wp = &sector.borrow().get_end().unwrap();
-
-            // Remove the previous top of climb and beginning of descent
-            let mut ref_mut = sector.borrow_mut();
-            let waypoints = ref_mut.get_waypoints_mut();
-            waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
-
-
-            let max_alt = calc_max_altitude(
-                &aircraft,
-                altitude,
-                start_wp,
-                end_wp,
-                waypoints,
-            );
-
-            add_toc(
-                &aircraft,
-                start_wp,
-                end_wp,
-                waypoints,
-                max_alt,
-            );
-
-            add_bod(
-                &aircraft,
-                start_wp,
-                end_wp,
-                waypoints,
-                max_alt,
-            );
-
-            set_elevations(
-                &aircraft,
-                start_wp,
-                end_wp,
-                waypoints,
-                max_alt,
-            );
-        }
-    }
 }
 
+pub fn recalc_plan_elevations(plan: &mut Plan) {
+    let aircraft = plan.get_aircraft().clone();
+    let altitude = plan.get_plan_altitude();
+
+    for sector in plan.get_sectors_mut() {
+        if sector.borrow().get_start().is_none() || sector.borrow().get_end().is_none() {
+            continue;
+        }
+        let start_wp = &sector.borrow().get_start().unwrap();
+        let end_wp = &sector.borrow().get_end().unwrap();
+
+        // Remove the previous top of climb and beginning of descent
+        let mut ref_mut = sector.borrow_mut();
+        let waypoints = ref_mut.get_waypoints_mut();
+        waypoints.retain(|wp| !matches!(wp, Waypoint::Toc { .. } | Waypoint::Bod { .. }));
+
+
+        let max_alt = calc_max_altitude(
+            &aircraft,
+            altitude,
+            start_wp,
+            end_wp,
+            waypoints,
+        );
+
+        add_toc(
+            &aircraft,
+            start_wp,
+            end_wp,
+            waypoints,
+            max_alt,
+        );
+
+        add_bod(
+            &aircraft,
+            start_wp,
+            end_wp,
+            waypoints,
+            max_alt,
+        );
+
+        set_elevations(
+            &aircraft,
+            start_wp,
+            end_wp,
+            waypoints,
+            max_alt,
+        );
+    }
+}
 pub fn add_bod(
     aircraft: &Option<Arc<Aircraft>>,
     from: &Waypoint,

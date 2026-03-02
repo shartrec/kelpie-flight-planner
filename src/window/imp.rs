@@ -28,7 +28,7 @@ use adw::subclass::prelude::AdwApplicationWindowImpl;
 use smol;
 use glib::Propagation;
 use glib::subclass::InitializingObject;
-use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned};
+use gtk::{AlertDialog, CompositeTemplate, FileDialog, glib, Label, Notebook, Paned, Orientation};
 use gtk::gio::{Cancellable, File};
 use gtk::glib::clone;
 use adw::prelude::*;
@@ -227,7 +227,8 @@ impl Window {
         let pref = crate::preference::manager();
 
         // Set the size of the window
-        let (w, h) = self.obj().default_size();
+        let w = self.obj().size(Orientation::Horizontal);
+        let h = self.obj().size(Orientation::Vertical);
         if let Some(p) = pref.get::<f32>("vertical-split-pos") {
             let v_split = (w as f32 * p).round() as i32;
             self.pane_1v.set_position(v_split);
@@ -241,7 +242,8 @@ impl Window {
     fn save_panel_layout(&self) {
         let pref = crate::preference::manager();
 
-        let (w, h) = self.obj().default_size();
+        let w = self.obj().size(Orientation::Horizontal);
+        let h = self.obj().size(Orientation::Vertical);
         let v_split  = self.pane_1v.position() as f32 / w as f32;
         let h_split  = self.pane_1h.position() as f32 / h as f32;
 
