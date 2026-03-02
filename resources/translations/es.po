@@ -1,5 +1,5 @@
 # This file is part of Kelpie Flight Planner.
-# Copyright (c) 2003-2023. Trevor Campbell and others.
+# Copyright (c) 2003-2026. Trevor Campbell and others.
 # Kelpie Flight Planner is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or
