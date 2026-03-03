@@ -37,7 +37,7 @@ use crate::model::plan::Plan;
 use crate::model::sector::Sector;
 use crate::model::waypoint::Waypoint;
 use crate::preference::*;
-use crate::util::location_filter::{AndFilter, DeviationFilter, Filter, InverseRangeFilter, RangeFilter, VorFilter};
+use crate::util::location_filter::{AndFilter, DeviationFilter, Filter, RangeFilter, VorFilter};
 
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
@@ -45,7 +45,7 @@ pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
 pub struct Planner<'a> {
     max_leg_distance: f64,
-    min_leg_distance: f64,
+    _min_leg_distance: f64,
     max_deviation: f64,
     vor_only: bool,
     vor_preferred: bool,
@@ -62,7 +62,7 @@ impl Planner<'_> {
 
         Self {
             max_leg_distance: pref.get::<f64>(MAX_LEG_LENGTH).unwrap_or(100.0),
-            min_leg_distance: pref.get::<f64>(MIN_LEG_LENGTH).unwrap_or(25.0),
+            _min_leg_distance: pref.get::<f64>(MIN_LEG_LENGTH).unwrap_or(25.0),
             max_deviation: pref.get::<f64>(MAX_DEVIATION).unwrap_or(10.0),
             vor_only: pref.get::<bool>(VOR_ONLY).unwrap_or(false),
             vor_preferred: pref.get::<bool>(VOR_PREFFERED).unwrap_or(true),
@@ -361,22 +361,18 @@ impl Planner<'_> {
 
             let leg_distance = from.distance_to(to);
             let heading_from = from.bearing_to_deg(&midpoint);
-            let heading_to = midpoint.bearing_to_deg(to);
+            let heading_to = to.bearing_to_deg(&midpoint);
 
             let range = leg_distance / 2.0; // - _min_leg_distance;
 
 
-            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
             let rf = RangeFilter::new(midpoint.clone(), range);
-            let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
-            let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
+            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
 
             // Add the filters, putting the most discriminating ones first
             let mut filter = AndFilter::new();
             filter.add(Box::new(rf));
             filter.add(Box::new(df));
-            filter.add(Box::new(irf1));
-            filter.add(Box::new(irf2));
             if self.vor_only {
                 let vf = VorFilter::new();
                 filter.add(Box::new(vf));
@@ -445,34 +441,26 @@ impl Planner<'_> {
 
             let leg_distance = from.distance_to(to);
             let heading_from = from.bearing_to_deg(&midpoint);
-            let heading_to = midpoint.bearing_to_deg(to);
+            let heading_to = to.bearing_to_deg(&midpoint);
 
             let range = leg_distance / 2.0; // - _min_leg_distance;
 
 
-            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
             let rf = RangeFilter::new(midpoint.clone(), range);
-            let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
-            let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
+            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
 
             // Add the filters, putting the most discriminating ones first
             let mut filter = AndFilter::new();
             filter.add(Box::new(rf));
             filter.add(Box::new(df));
-            filter.add(Box::new(irf1));
-            filter.add(Box::new(irf2));
-            if self.vor_only {
-                let vf = VorFilter::new();
-                filter.add(Box::new(vf));
-            }
 
             let binding = self.fixes
                 .read()
                 .unwrap();
-            let near_aids = binding
+            let fixes = binding
                 .iter()
                 .filter(|loc| filter.filter(&***loc));
-            relevant_fixes.extend(near_aids.map(|n| n.clone()));
+            relevant_fixes.extend(fixes.map(|n| n.clone()));
         }
         relevant_fixes
     }
@@ -876,7 +864,7 @@ mod tests {
     fn test_with_gps() {
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -916,7 +904,7 @@ mod tests {
 
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -950,7 +938,7 @@ mod tests {
 
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -977,7 +965,7 @@ mod tests {
     fn make_plan_with_no_waypoints() {
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -1003,7 +991,7 @@ mod tests {
     fn make_plan_with_locked_waypoints() {
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,

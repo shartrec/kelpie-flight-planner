@@ -187,44 +187,23 @@ impl Filter for RangeFilter {
         }
     }
 }
-pub struct InverseRangeFilter {
-    this: Coordinate,
-    range: f64,
-}
-
-impl InverseRangeFilter {
-    pub fn new(this: Coordinate, range: f64) -> Self {
-        Self {
-            this,
-            range,
-        }
-    }
-}
-
-impl Filter for InverseRangeFilter {
-    // returns true if the coordinate passes the filter
-    fn filter(&self, location: &dyn Location) -> bool {
-        let other = location.get_loc();
-        self.this.distance_to(other) >= self.range
-    }
-}
 
 pub struct DeviationFilter {
     from: Coordinate,
     to: Coordinate,
     max_deviation: f64,
-    heading_from: f64,
-    heading_to: f64,
+    heading_from_mid: f64,
+    heading_to_mid: f64,
 }
 
 impl DeviationFilter {
-    pub fn new(from: Coordinate, to: Coordinate, heading_from: f64, heading_to: f64,max_deviation: f64) -> Self {
+    pub fn new(from: Coordinate, to: Coordinate, heading_from_mid: f64, heading_to_mid: f64, max_deviation: f64) -> Self {
         Self {
             from,
             to,
             max_deviation,
-            heading_from,
-            heading_to,
+            heading_from_mid: heading_from_mid,
+            heading_to_mid: heading_to_mid,
         }
     }
 
@@ -240,12 +219,18 @@ impl DeviationFilter {
 impl Filter for DeviationFilter {
     // returns true if the coordinate passes the filter
     fn filter(&self, location: &dyn Location) -> bool {
-        let deviation_to =
-            self.get_deviation(self.heading_from, self.from.bearing_to_deg(location.get_loc()));
-        let deviation_from =
-            self.get_deviation(self.heading_to, location.get_loc().bearing_to_deg(&self.to));
-
-        deviation_to < self.max_deviation && deviation_from < self.max_deviation
+        // see if close to the 'from or 'to' point and if the deviation is within the max deviation'
+        let loc = &location.get_loc();
+        let dist_to_from = self.from.distance_to(loc);
+        let dist_to_to = self.to.distance_to(loc);
+        let deviation = if dist_to_from < dist_to_to {
+            let hdg = self.from.bearing_to_deg(location.get_loc());
+            self.get_deviation(self.heading_from_mid, hdg)
+        } else {
+            let hdg = self.to.bearing_to_deg(location.get_loc());
+            self.get_deviation(self.heading_to_mid, hdg)
+        };
+        deviation < self.max_deviation
     }
 }
 
