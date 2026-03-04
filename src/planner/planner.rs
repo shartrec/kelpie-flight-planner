@@ -37,16 +37,36 @@ use crate::model::plan::Plan;
 use crate::model::sector::Sector;
 use crate::model::waypoint::Waypoint;
 use crate::preference::*;
-use crate::util::location_filter::{AndFilter, DeviationFilter, Filter, InverseRangeFilter, RangeFilter, VorFilter};
-
+use crate::util::location_filter::{AndFilter, Filter, RangeFilter, VorFilter};
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
-// DijkstraNode is no longer used, replaced by PqItem
+struct CigarFilter {
+    from: Coordinate,
+    to: Coordinate,
+    distance: f64,
+}
+impl CigarFilter {
+    fn new(from: Coordinate, to: Coordinate) -> Self {
+        let distance = from.distance_to(&to) * 1.2;
+        Self {
+            from,
+            to,
+            distance,
+        }
+    }
+}
+impl Filter for CigarFilter {
+    fn filter(&self, loc: &dyn Location) -> bool {
+        let d1 = pythagorean_distance(&self.from, loc.get_loc());
+        let d2 = pythagorean_distance(&self.to, loc.get_loc());
+        d1 + d2 < self.distance
+    }
+}
 
 pub struct Planner<'a> {
     max_leg_distance: f64,
     min_leg_distance: f64,
-    max_deviation: f64,
+    _max_deviation: f64,
     vor_only: bool,
     vor_preferred: bool,
     plan_type: String,
@@ -63,7 +83,7 @@ impl Planner<'_> {
         Self {
             max_leg_distance: pref.get::<f64>(MAX_LEG_LENGTH).unwrap_or(100.0),
             min_leg_distance: pref.get::<f64>(MIN_LEG_LENGTH).unwrap_or(25.0),
-            max_deviation: pref.get::<f64>(MAX_DEVIATION).unwrap_or(10.0),
+            _max_deviation: pref.get::<f64>(MAX_DEVIATION).unwrap_or(10.0),
             vor_only: pref.get::<bool>(VOR_ONLY).unwrap_or(false),
             vor_preferred: pref.get::<bool>(VOR_PREFFERED).unwrap_or(true),
             add_gps_waypoints: pref.get::<bool>(ADD_WAYPOINTS).unwrap_or(false),
@@ -315,7 +335,7 @@ impl Planner<'_> {
                 if idx == v_idx { continue; }
                 
                 let v_loc = v_node.get_loc();
-                let d = u_loc.distance_to(v_loc);
+                let d = pythagorean_distance(u_loc, v_loc);
                 
                 // Max leg distance is a hint.
                 let mut edge_weight = d;
@@ -358,28 +378,6 @@ impl Planner<'_> {
     fn get_relevant_navaids(&self, from: &Coordinate, to: &Coordinate) -> Vec<Arc<Navaid>> {
 
 
-        struct CigarFilter {
-            from: Coordinate,
-            to: Coordinate,
-            distance: f64,
-        }
-        impl CigarFilter {
-          fn new(from: Coordinate, to: Coordinate) -> Self {
-                let distance = from.distance_to(&to) * 1.2;
-                Self {
-                    from,
-                    to,
-                    distance,
-                }
-            }
-        }
-        impl Filter for CigarFilter {
-            fn filter(&self, loc: &dyn Location) -> bool {
-                let d1 = pythagorean_distance(&self.from, loc.get_loc());
-                let d2 = pythagorean_distance(&self.to, loc.get_loc());
-                d1 + d2 < self.distance
-            }
-        }
         let mut relevant_navaids: Vec<Arc<Navaid>> = Vec::new();
 
         let distance = from.distance_to(to);
@@ -454,30 +452,7 @@ impl Planner<'_> {
         let distance = from.distance_to(to);
 
         if distance >= self.max_leg_distance {
-            let midpoint = Coordinate::midpoint(from, to);
-
-            let leg_distance = from.distance_to(to);
-            let heading_from = from.bearing_to_deg(&midpoint);
-            let heading_to = midpoint.bearing_to_deg(to);
-
-            let range = leg_distance / 2.0; // - _min_leg_distance;
-
-
-            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
-            let rf = RangeFilter::new(midpoint.clone(), range);
-            let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
-            let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
-
-            // Add the filters, putting the most discriminating ones first
-            let mut filter = AndFilter::new();
-            filter.add(Box::new(rf));
-            filter.add(Box::new(df));
-            filter.add(Box::new(irf1));
-            filter.add(Box::new(irf2));
-            if self.vor_only {
-                let vf = VorFilter::new();
-                filter.add(Box::new(vf));
-            }
+            let filter = CigarFilter::new(from.clone(), to.clone());
 
             let binding = self.fixes
                 .read()
