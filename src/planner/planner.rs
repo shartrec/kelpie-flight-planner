@@ -203,16 +203,21 @@ impl Planner<'_> {
                 if idx == v_idx { continue; }
                 
                 let v_loc = v_node.get_loc();
-                let d = u_loc.distance_to(v_loc);
-                
+                // let d = u_loc.distance_to(v_loc);
+                let d = pythagorean_distance(u_loc, v_loc);
+
                 // Max leg distance is a hint.
                 let mut edge_weight = d;
                 if d > self.max_leg_distance {
                     // Penalize legs longer than max_leg_distance but don't forbid them.
                     // This encourages staying within radio beacon range when possible.
-                    edge_weight += (d - self.max_leg_distance) * 2.0;
+                    edge_weight += (d - self.max_leg_distance) * 0.5;
                 }
-                
+                if d < self.min_leg_distance {
+                    // Strongly penalize any leg shorter than min
+                    edge_weight += (self.min_leg_distance - d) * 20.0;
+                }
+
                 // Also prefer VORs if requested
                 if self.vor_preferred {
                     if let Waypoint::Navaid { navaid, .. } = v_node {
@@ -352,31 +357,39 @@ impl Planner<'_> {
 
     fn get_relevant_navaids(&self, from: &Coordinate, to: &Coordinate) -> Vec<Arc<Navaid>> {
 
+
+        struct CigarFilter {
+            from: Coordinate,
+            to: Coordinate,
+            distance: f64,
+        }
+        impl CigarFilter {
+          fn new(from: Coordinate, to: Coordinate) -> Self {
+                let distance = from.distance_to(&to) * 1.2;
+                Self {
+                    from,
+                    to,
+                    distance,
+                }
+            }
+        }
+        impl Filter for CigarFilter {
+            fn filter(&self, loc: &dyn Location) -> bool {
+                let d1 = pythagorean_distance(&self.from, loc.get_loc());
+                let d2 = pythagorean_distance(&self.to, loc.get_loc());
+                d1 + d2 < self.distance
+            }
+        }
         let mut relevant_navaids: Vec<Arc<Navaid>> = Vec::new();
 
         let distance = from.distance_to(to);
 
         if distance >= self.max_leg_distance {
-            let midpoint = Coordinate::midpoint(from, to);
-
-            let leg_distance = from.distance_to(to);
-            let heading_from = from.bearing_to_deg(&midpoint);
-            let heading_to = midpoint.bearing_to_deg(to);
-
-            let range = leg_distance / 2.0; // - _min_leg_distance;
-
-
-            let df = DeviationFilter::new(from.clone(), to.clone(), heading_from, heading_to, self.max_deviation);
-            let rf = RangeFilter::new(midpoint.clone(), range);
-            let irf1 = InverseRangeFilter::new(from.clone(), self.min_leg_distance);
-            let irf2 = InverseRangeFilter::new(to.clone(), self.min_leg_distance);
+            let rf = CigarFilter::new(from.clone(), to.clone());
 
             // Add the filters, putting the most discriminating ones first
             let mut filter = AndFilter::new();
             filter.add(Box::new(rf));
-            filter.add(Box::new(df));
-            filter.add(Box::new(irf1));
-            filter.add(Box::new(irf2));
             if self.vor_only {
                 let vf = VorFilter::new();
                 filter.add(Box::new(vf));
@@ -856,6 +869,28 @@ fn calc_climb_sink_distance(aircraft: &Option<Arc<Aircraft>>, from: &Waypoint, t
     let dist_to_bod = time_to_bod * sink_speed;
 
     dist_to_toc + dist_to_bod
+}
+
+fn pythagorean_distance(a: &Coordinate, b: &Coordinate) -> f64 {
+    let r = 3440.065; // Radius in Nautical Miles
+
+    let phi1 = a.get_latitude().to_radians();
+    let phi2 = b.get_latitude().to_radians();
+    let lam1 = a.get_longitude().to_radians();
+    let lam2 = b.get_longitude().to_radians();
+
+    // 2. Handle the Anti-Meridian crossing
+    // This ensures we always take the shortest path across the 180/-180 line
+    let mut d_lam = lam2 - lam1;
+    if d_lam > std::f64::consts::PI {
+        d_lam -= 2.0 * std::f64::consts::PI;
+    } else if d_lam < -std::f64::consts::PI {
+        d_lam += 2.0 * std::f64::consts::PI;
+    }
+    let x = d_lam * ((phi1 + phi2) / 2.0).cos();
+    let y = phi2 - phi1;
+
+    r * (x * x + y * y).sqrt()
 }
 
 #[cfg(test)]
