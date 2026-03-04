@@ -237,6 +237,9 @@ mod imp {
 
         fn make_plan(&self) {
             let mut plan = self.plan.borrow_mut();
+            if plan.get_sectors().len() < 1 {
+                return;
+            }
             //todo create an async_channel to communicate between processes
             let (tx, rx) = async_channel::bounded::<Vec<Vec<Waypoint>>>(plan.get_sectors().len());
             // Collect the sectors to replan and spawn a thread to do the replanning, sending the new waypoints back through the channel when done.  This allows the UI to remain responsive while replanning is happening.
