@@ -188,53 +188,6 @@ impl Filter for RangeFilter {
     }
 }
 
-pub struct DeviationFilter {
-    from: Coordinate,
-    to: Coordinate,
-    max_deviation: f64,
-    heading_from_mid: f64,
-    heading_to_mid: f64,
-}
-
-impl DeviationFilter {
-    pub fn new(from: Coordinate, to: Coordinate, heading_from_mid: f64, heading_to_mid: f64, max_deviation: f64) -> Self {
-        Self {
-            from,
-            to,
-            max_deviation,
-            heading_from_mid: heading_from_mid,
-            heading_to_mid: heading_to_mid,
-        }
-    }
-
-    fn get_deviation(&self, heading_from: f64, bearing_to_deg: f64) -> f64 {
-        let mut raw_deviation = (bearing_to_deg - heading_from).abs();
-        if raw_deviation > 180.0 {
-            raw_deviation = 360.0 - raw_deviation;
-        }
-        raw_deviation
-    }
-}
-
-impl Filter for DeviationFilter {
-    // returns true if the coordinate passes the filter
-    fn filter(&self, location: &dyn Location) -> bool {
-        // see if close to the 'from or 'to' point and if the deviation is within the max deviation'
-        let loc = &location.get_loc();
-        let dist_to_from = self.from.distance_to(loc);
-        let dist_to_to = self.to.distance_to(loc);
-        let deviation = if dist_to_from < dist_to_to {
-            let hdg = self.from.bearing_to_deg(location.get_loc());
-            self.get_deviation(self.heading_from_mid, hdg)
-        } else {
-            let hdg = self.to.bearing_to_deg(location.get_loc());
-            self.get_deviation(self.heading_to_mid, hdg)
-        };
-        deviation < self.max_deviation
-    }
-}
-
-
 pub struct VorFilter {}
 
 impl VorFilter {

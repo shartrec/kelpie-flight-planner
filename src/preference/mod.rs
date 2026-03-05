@@ -119,6 +119,15 @@ impl PreferenceManager {
         event::manager().notify_listeners(Event::PreferencesChanged);
     }
 
+    pub fn put_no_store<T: ToString>(&self, key: &str, value: T) {
+        {
+            let mut prefs = self.preferences.write().unwrap();
+            prefs.insert(key.to_string(), value.to_string());
+        }
+        self.store();
+        event::manager().notify_listeners(Event::PreferencesChanged);
+    }
+
     pub fn remove(&self, key: &str) {
         {
             let mut prefs = self.preferences.write().unwrap();
@@ -135,7 +144,7 @@ impl PreferenceManager {
         self.store();
     }
 
-    fn store(&self) {
+    pub fn store(&self) {
         let prefs = self.preferences.read().unwrap();
         let _ = prefs.save(&APP_INFO, self.path);
     }
