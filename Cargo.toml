@@ -1,8 +1,8 @@
 [package]
 name = "kelpie_rust_planner"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2024"
-
+description = "A Rust-based flight planner for Flightgear and other flight simulators."
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html 
 
 [dependencies]

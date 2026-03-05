@@ -38,6 +38,7 @@ use crate::model::sector::Sector;
 use crate::model::waypoint::Waypoint;
 use crate::preference::*;
 use crate::util::location_filter::{AndFilter, Filter, RangeFilter, VorFilter};
+
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
 struct CigarFilter {
@@ -457,10 +458,10 @@ impl Planner<'_> {
             let binding = self.fixes
                 .read()
                 .unwrap();
-            let near_aids = binding
+            let fixes = binding
                 .iter()
                 .filter(|loc| filter.filter(&***loc));
-            relevant_fixes.extend(near_aids.map(|n| n.clone()));
+            relevant_fixes.extend(fixes.map(|n| n.clone()));
         }
         relevant_fixes
     }
@@ -886,7 +887,7 @@ mod tests {
     fn test_with_gps() {
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -926,7 +927,7 @@ mod tests {
 
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -960,7 +961,7 @@ mod tests {
 
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -987,7 +988,7 @@ mod tests {
     fn make_plan_with_no_waypoints() {
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
@@ -1013,7 +1014,7 @@ mod tests {
     fn make_plan_with_locked_waypoints() {
         let planner = Planner {
             max_leg_distance: 100.0,
-            min_leg_distance: 25.0,
+            _min_leg_distance: 25.0,
             max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,

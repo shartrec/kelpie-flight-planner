@@ -1195,7 +1195,7 @@ dependencies = [
 
 [[package]]
 name = "kelpie_rust_planner"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "async-channel",
  "chrono",
