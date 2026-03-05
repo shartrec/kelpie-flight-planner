@@ -38,6 +38,7 @@ use crate::model::sector::Sector;
 use crate::model::waypoint::Waypoint;
 use crate::preference::*;
 use crate::util::location_filter::{AndFilter, Filter, RangeFilter, VorFilter};
+
 pub const ARRIVAL_BEACON_RANGE: f64 = 10.0;
 
 struct CigarFilter {
@@ -457,10 +458,10 @@ impl Planner<'_> {
             let binding = self.fixes
                 .read()
                 .unwrap();
-            let near_aids = binding
+            let fixes = binding
                 .iter()
                 .filter(|loc| filter.filter(&***loc));
-            relevant_fixes.extend(near_aids.map(|n| n.clone()));
+            relevant_fixes.extend(fixes.map(|n| n.clone()));
         }
         relevant_fixes
     }
