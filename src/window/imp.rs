@@ -239,7 +239,7 @@ impl Window {
         }
     }
 
-    fn save_panel_layout(&self) {
+    fn save_window_layout(&self) {
         let pref = crate::preference::manager();
 
         let w = self.obj().size(Orientation::Horizontal);
@@ -248,11 +248,22 @@ impl Window {
         let h_split  = self.pane_1h.position() as f32 / h as f32;
 
         // Set the size of the window
-        pref.put("vertical-split-pos", v_split);
-        pref.put("horizontal-split-pos", h_split);
+        pref.put_no_store("vertical-split-pos", v_split);
+        pref.put_no_store("horizontal-split-pos", h_split);
     }
 
+    fn save_window_size(&self) -> Result<(), glib::BoolError> {
+        // Get the size of the window
+        let size = (self.obj().size(Orientation::Horizontal), self.obj().size(Orientation::Vertical));
 
+        // Set the window state in `settings`
+        let pref = crate::preference::manager();
+        pref.put_no_store("window-width", size.0);
+        pref.put_no_store("window-height", size.1);
+        pref.put_no_store("window-is-maximized", self.obj().is_maximized());
+
+        Ok(())
+    }
     fn is_dirty(&self, page: &TabPage) -> (bool, Option<String>) {
         if let Ok(view) = page.child().downcast::<PlanView>() {
             let rc = view.imp().get_plan();
@@ -418,12 +429,6 @@ impl WidgetImpl for Window {
 impl WindowImpl for Window {
     // Save window state right before the window will be closed
     fn close_request(&self) -> Propagation {
-        self.save_panel_layout();
-        // Save window size
-        self.obj()
-            .save_window_size()
-            .expect("Failed to save window state");
-
         let mut propagation = Propagation::Proceed;
         let n_pages = self.plan_tab_view.n_pages();
         for i in 0..n_pages {
@@ -451,6 +456,13 @@ impl WindowImpl for Window {
                     break;
                 }
             }
+        }
+        if propagation == Propagation::Proceed {
+            self.save_window_size()
+                .expect("Failed to save window state");
+            self.save_window_layout();
+            let pref = crate::preference::manager();
+            pref.store();
         }
         propagation
     }
