@@ -887,7 +887,7 @@ mod tests {
         let planner = Planner {
             max_leg_distance: 100.0,
             min_leg_distance: 25.0,
-            max_deviation: 10.0,
+            _max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
             add_gps_waypoints: true,
@@ -927,7 +927,7 @@ mod tests {
         let planner = Planner {
             max_leg_distance: 100.0,
             min_leg_distance: 25.0,
-            max_deviation: 10.0,
+            _max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
             add_gps_waypoints: false,
@@ -961,7 +961,7 @@ mod tests {
         let planner = Planner {
             max_leg_distance: 100.0,
             min_leg_distance: 25.0,
-            max_deviation: 10.0,
+            _max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
             add_gps_waypoints: false,
@@ -988,7 +988,7 @@ mod tests {
         let planner = Planner {
             max_leg_distance: 100.0,
             min_leg_distance: 25.0,
-            max_deviation: 10.0,
+            _max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
             add_gps_waypoints: false,
@@ -1014,7 +1014,7 @@ mod tests {
         let planner = Planner {
             max_leg_distance: 100.0,
             min_leg_distance: 25.0,
-            max_deviation: 10.0,
+            _max_deviation: 10.0,
             vor_only: false,
             vor_preferred: true,
             add_gps_waypoints: false,
