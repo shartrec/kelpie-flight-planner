@@ -27,19 +27,7 @@ use gtk::gio;
 use gtk::{self, glib, prelude::*, subclass::prelude::*, CompositeTemplate};
 
 mod imp {
-    use adw::gio::ListModel;
-    use adw::TabPage;
-    use glib::subclass::InitializingObject;
-    use gtk::gdk::{Key, ModifierType, Rectangle};
-    use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
-    use gtk::glib::{clone, Propagation};
-    use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
-    use log::error;
-    use std::cell::RefCell;
-    use std::ops::{Deref, DerefMut};
-    use std::rc::Rc;
-    use std::sync::Arc;
-    use gettextrs::gettext;
+    use super::*;
     use crate::earth::coordinate::Coordinate;
     use crate::event::{Event, EventType};
     use crate::hangar::hangar::get_hangar;
@@ -47,17 +35,29 @@ mod imp {
     use crate::model::location::Location;
     use crate::model::plan::Plan;
     use crate::model::plan_object::PlanObject;
+    use crate::model::runway_object::RunwayObject;
     use crate::model::sector::Sector;
     use crate::model::sector_object::SectorObject;
-    use crate::model::runway_object::RunwayObject;
     use crate::model::waypoint::Waypoint;
     use crate::model::waypoint_object::WaypointObject;
+    use crate::planner::planner;
     use crate::planner::planner::Planner;
     use crate::preference::{AUTO_PLAN, USE_MAGNETIC_HEADINGS};
-    use crate::window::util::{build_column_factory, build_tree_column_factory, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view, get_tree_path, expand_tree};
+    use crate::window::util::{build_column_factory, build_tree_column_factory, expand_tree, get_airport_map_view, get_airport_view, get_fix_view, get_navaid_view, get_tree_path, get_world_map_view, show_airport_map_view, show_airport_view, show_fix_view, show_navaid_view, show_world_map_view};
     use crate::{earth, event, listen_events};
-    use crate::planner::planner;
-    use super::*;
+    use adw::gio::ListModel;
+    use adw::TabPage;
+    use gettextrs::gettext;
+    use glib::subclass::InitializingObject;
+    use gtk::gdk::{Key, ModifierType, Rectangle};
+    use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
+    use gtk::glib::{clone, Propagation};
+    use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
+    use log::{error, info};
+    use std::cell::RefCell;
+    use std::ops::{Deref, DerefMut};
+    use std::rc::Rc;
+    use std::sync::Arc;
 
     #[derive(Default, CompositeTemplate)]
     #[template(resource = "/com/shartrec/kelpie_planner/plan_view.ui")]
@@ -240,8 +240,10 @@ mod imp {
             if plan.get_sectors().len() < 1 {
                 return;
             }
-            //todo create an async_channel to communicate between processes
-            let (tx, rx) = async_channel::bounded::<Vec<Vec<Waypoint>>>(plan.get_sectors().len());
+
+            let sector_count = plan.get_sectors().len();
+            let (tx, rx) = async_channel::bounded::<(usize, Vec<Waypoint>)>(sector_count);
+
             // Collect the sectors to replan and spawn a thread to do the replanning, sending the new waypoints back through the channel when done.  This allows the UI to remain responsive while replanning is happening.
             let sectors = plan.get_sectors().iter().map(|s| {
                 let binding = s.borrow();
@@ -264,11 +266,13 @@ mod imp {
                 }
             }
 
-            smol::spawn(async move {
-                let planner = Planner::new();
-                let waypoints = sectors.into_iter().map(|sector| {
+            for (i, sector) in sectors.iter().enumerate() {
+                let tx = tx.clone();
+                let sector = sector.clone();
+                smol::spawn(async move {
+                    let planner = Planner::new();
                     if sector.get_start().is_none() || sector.get_end().is_none() {
-                        return Vec::new();
+                        return;
                     }
                     let binding = sector.get_start().unwrap();
                     let id1 = binding.get_id();
@@ -277,30 +281,33 @@ mod imp {
                     let status = gettext("Generating Plan from : {0} to : {1}")
                         .replace("{0}", id1)
                         .replace("{1}", id2)
-                    ;
+                        ;
                     event::manager().notify_listeners(Event::StatusChange(status));
 
-                    planner.make_plan(&sector)
-                }).collect();
-                if let Err(e) = tx.send(waypoints).await {
-                    error!("Failed to send waypoints through channel: {}", e);
-                }
-                event::manager().notify_listeners(Event::StatusChange("".to_string()));
-                tx.close();
-            }).detach();
+                    let waypoints = planner.make_plan(&sector);
+                    if let Err(e) = tx.send((i, waypoints)).await {
+                        error!("Failed to send waypoints through channel: {}", e);
+                    }
+                    event::manager().notify_listeners(Event::StatusChange("".to_string()));
+                }).detach();
+            }
+            // Drop the original sender so the channel closes when all spawned tasks complete
+            drop(tx);
 
             gtk::glib::MainContext::default().spawn_local(gtk::glib::clone!(#[weak(rename_to = view)] self, async move {
-                if let Ok(new_sectors) = rx.recv().await {
+                let mut completed_count = 0;
+                while let Ok((i, new_sector)) = rx.recv().await {
                     // Check the sector count still matches
                     let mut plan = view.plan.borrow_mut();
-                    if plan.get_sectors().len() != new_sectors.len() {
+                    let sectors = plan.get_sectors_mut();
+                    if i >= sectors.len() {
                         error!("Sector count mismatch when receiving new waypoints from planner");
                         return;
                     }
-                    for (sector, new_waypoints) in plan.get_sectors_mut().iter_mut().zip(new_sectors.into_iter()) {
-                        sector.borrow_mut().remove_all_waypoints();
-                        sector.borrow_mut().add_all_waypoint(new_waypoints);
-                    }
+                    let sector = &sectors[i];
+                    sector.borrow_mut().remove_all_waypoints();
+                    sector.borrow_mut().add_all_waypoint(new_sector);
+
                     planner::recalc_plan_elevations(plan.deref_mut());
                     drop(plan);
                     if let Some(map_view) = get_world_map_view(view.plan_window.deref()) {
@@ -308,6 +315,14 @@ mod imp {
                     }
                     event::manager().notify_listeners(Event::PlanChanged);
                     view.refresh(None);
+
+                    completed_count += 1;
+                    if completed_count >= sector_count {
+                        // All sectors have been processed
+                        info!("All {} sectors have been planned successfully", sector_count);
+                        event::manager().notify_listeners(Event::StatusChange("Plan complete".to_string()));
+                        break;
+                    }
                 }
             }));
 

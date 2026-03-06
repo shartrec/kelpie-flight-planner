@@ -64,6 +64,24 @@ impl Filter for CigarFilter {
     }
 }
 
+// Map waypoint ID (if any) or coordinate to index might be slow,
+// using index in pq instead might be better but we need the index.
+#[derive(Clone)]
+struct PqItem {
+    idx: usize,
+    cost: f64,
+}
+impl PartialEq for PqItem {
+    fn eq(&self, other: &Self) -> bool { self.cost == other.cost }
+}
+impl Eq for PqItem {}
+impl PartialOrd for PqItem {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+impl Ord for PqItem {
+    fn cmp(&self, other: &Self) -> Ordering { other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal) }
+}
+
 pub struct Planner<'a> {
     max_leg_distance: f64,
     min_leg_distance: f64,
@@ -160,69 +178,53 @@ impl Planner<'_> {
         let mut relevant_navaids = self.get_relevant_navaids(from.get_loc(), to.get_loc());
 
         debug!("Found {} relevant navaids for leg from {:?} to {:?}", relevant_navaids.len(), from.get_loc(), to.get_loc());
-        // sort by distance to from
-        relevant_navaids.sort_by(|a, b| {
-            from.get_loc()
-                .distance_to(a.get_loc())
-                .partial_cmp(&from.get_loc().distance_to(b.get_loc()))
-                .unwrap_or(Ordering::Equal)
-        });
+        // sort by distance to from - cache distances to avoid recalculation
+        let from_loc = from.get_loc();
+        let mut navaids_with_dist: Vec<_> = relevant_navaids.iter()
+            .map(|n| (n.clone(), from_loc.distance_to(n.get_loc())))
+            .collect();
+        navaids_with_dist.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
+        relevant_navaids = navaids_with_dist.into_iter().map(|(n, _)| n).collect();
 
         let mut nodes = Vec::new();
-        nodes.push(from.clone());
+        nodes.push((from.clone(), false));  // (waypoint, is_vor)
         for n in relevant_navaids {
-            nodes.push(Waypoint::Navaid {
+            let is_vor = n.get_type() == NavaidType::Vor;
+            nodes.push((Waypoint::Navaid {
                 navaid: n,
                 elevation: Cell::new(0),
                 locked: false,
-            });
+            }, is_vor));
         }
-        nodes.push(to.clone());
+        nodes.push((to.clone(), false));
 
         let start_idx = 0;
         let end_idx = nodes.len() - 1;
 
         let mut dists = vec![f64::INFINITY; nodes.len()];
         let mut parents = vec![None; nodes.len()];
+        let mut visited = vec![false; nodes.len()];
 
         dists[start_idx] = 0.0;
-
-        // Map waypoint ID (if any) or coordinate to index might be slow, 
-        // using index in pq instead might be better but we need the index.
-        #[derive(Clone)]
-        struct PqItem {
-            idx: usize,
-            cost: f64,
-        }
-        impl PartialEq for PqItem {
-            fn eq(&self, other: &Self) -> bool { self.cost == other.cost }
-        }
-        impl Eq for PqItem {}
-        impl PartialOrd for PqItem {
-            fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
-        }
-        impl Ord for PqItem {
-            fn cmp(&self, other: &Self) -> Ordering { other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal) }
-        }
 
         let mut pq = BinaryHeap::new();
         pq.push(PqItem { idx: start_idx, cost: 0.0 });
 
-        while let Some(PqItem { idx, cost }) = pq.pop() {
-            if cost > dists[idx] {
+        while let Some(PqItem { idx, .. }) = pq.pop() {
+            if visited[idx] {
                 continue;
             }
             if idx == end_idx {
                 break;
             }
+            visited[idx] = true;
 
-            let u_loc = nodes[idx].get_loc();
+            let u_loc = nodes[idx].0.get_loc();
 
-            // To avoid O(N^2) we only look at "nearby" nodes.
-            // Since they are sorted by distance from start, it doesn't help much for edges between navaids.
-            for (v_idx, v_node) in nodes.iter().enumerate() {
-                if idx == v_idx { continue; }
-                
+            // Only check unvisited nodes to reduce redundant edge processing
+            for (v_idx, (v_node, is_vor)) in nodes.iter().enumerate() {
+                if idx == v_idx || visited[v_idx] { continue; }
+
                 let v_loc = v_node.get_loc();
                 // let d = u_loc.distance_to(v_loc);
                 let d = pythagorean_distance(u_loc, v_loc);
@@ -239,13 +241,9 @@ impl Planner<'_> {
                     edge_weight += (self.min_leg_distance - d) * 20.0;
                 }
 
-                // Also prefer VORs if requested
-                if self.vor_preferred {
-                    if let Waypoint::Navaid { navaid, .. } = v_node {
-                        if navaid.get_type() == NavaidType::Vor {
-                            edge_weight *= 0.9; // Slight preference
-                        }
-                    }
+                // Also prefer VORs if requested - use precomputed flag
+                if self.vor_preferred && *is_vor {
+                    edge_weight *= 0.9; // Slight preference
                 }
 
                 if dists[idx] + edge_weight < dists[v_idx] {
@@ -262,7 +260,7 @@ impl Planner<'_> {
             if idx == start_idx {
                 break;
             }
-            path.push(nodes[idx].clone());
+            path.push(nodes[idx].0.clone());
             curr = parents[idx];
         }
         path.reverse();
@@ -276,13 +274,13 @@ impl Planner<'_> {
         }
 
         let mut relevant_fixes = self.get_relevant_fixes(from.get_loc(), to.get_loc());
-        // sort by distance to from
-        relevant_fixes.sort_by(|a, b| {
-            from.get_loc()
-                .distance_to(a.get_loc())
-                .partial_cmp(&from.get_loc().distance_to(b.get_loc()))
-                .unwrap_or(Ordering::Equal)
-        });
+        // sort by distance to from - cache distances to avoid recalculation
+        let from_loc = from.get_loc();
+        let mut fixes_with_dist: Vec<_> = relevant_fixes.iter()
+            .map(|f| (f.clone(), from_loc.distance_to(f.get_loc())))
+            .collect();
+        fixes_with_dist.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
+        relevant_fixes = fixes_with_dist.into_iter().map(|(f, _)| f).collect();
 
         let mut nodes = Vec::new();
         nodes.push(from.clone());
@@ -300,41 +298,28 @@ impl Planner<'_> {
 
         let mut dists = vec![f64::INFINITY; nodes.len()];
         let mut parents = vec![None; nodes.len()];
+        let mut visited = vec![false; nodes.len()];
 
         dists[start_idx] = 0.0;
 
-        #[derive(Clone)]
-        struct PqItem {
-            idx: usize,
-            cost: f64,
-        }
-        impl PartialEq for PqItem {
-            fn eq(&self, other: &Self) -> bool { self.cost == other.cost }
-        }
-        impl Eq for PqItem {}
-        impl PartialOrd for PqItem {
-            fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
-        }
-        impl Ord for PqItem {
-            fn cmp(&self, other: &Self) -> Ordering { other.cost.partial_cmp(&self.cost).unwrap_or(Ordering::Equal) }
-        }
 
         let mut pq = BinaryHeap::new();
         pq.push(PqItem { idx: start_idx, cost: 0.0 });
 
-        while let Some(PqItem { idx, cost }) = pq.pop() {
-            if cost > dists[idx] {
+        while let Some(PqItem { idx, .. }) = pq.pop() {
+            if visited[idx] {
                 continue;
             }
             if idx == end_idx {
                 break;
             }
+            visited[idx] = true;
 
             let u_loc = nodes[idx].get_loc();
 
             for (v_idx, v_node) in nodes.iter().enumerate() {
-                if idx == v_idx { continue; }
-                
+                if idx == v_idx || visited[v_idx] { continue; }
+
                 let v_loc = v_node.get_loc();
                 let d = pythagorean_distance(u_loc, v_loc);
                 
