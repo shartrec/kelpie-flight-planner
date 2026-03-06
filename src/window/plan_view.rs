@@ -236,6 +236,8 @@ mod imp {
         }
 
         fn make_plan(&self) {
+            let timer = std::time::Instant::now();
+
             let mut plan = self.plan.borrow_mut();
             if plan.get_sectors().len() < 1 {
                 return;
@@ -251,18 +253,25 @@ mod imp {
                 binding.clone()
             }).collect::<Vec<_>>();
 
-            let mut loc = None;
+            let mut loc_s = None;
+            let mut loc_e = None;
             for sector in plan.get_sectors_mut().iter_mut() {
                 sector.borrow_mut().remove_all_waypoints();
-                loc = sector.borrow().get_start();
+                loc_s = loc_s.or_else(|| {sector.borrow().get_start()});
+                loc_e = sector.borrow().get_end();
             }
             planner::recalc_plan_elevations(plan.deref_mut());
             drop(plan);
             self.refresh(None);
             if let Some(map_view) = get_world_map_view(self.plan_window.deref()) {
-                if let Some(wp) = loc {
+                if let Some(wp) = loc_s {
                     map_view.imp().set_plan(self.plan.clone());
-                    map_view.imp().center_map(wp.get_loc().clone());
+                    let mid = if let Some(wp_e) = loc_e {
+                        Coordinate::midpoint(wp.get_loc(), wp_e.get_loc())
+                    } else {
+                        wp.get_loc().clone()
+                    };
+                    map_view.imp().center_map(mid);
                 }
             }
 
@@ -319,7 +328,7 @@ mod imp {
                     completed_count += 1;
                     if completed_count >= sector_count {
                         // All sectors have been processed
-                        info!("All {} sectors have been planned successfully", sector_count);
+                        info!("All {} sectors have been planned successfully in {}ms", sector_count, timer.elapsed().as_millis());
                         event::manager().notify_listeners(Event::StatusChange("Plan complete".to_string()));
                         break;
                     }
@@ -336,7 +345,14 @@ mod imp {
 
         pub fn add_airport_to_plan(&self, loc: Arc<Airport>) {
             let mut added = false;
+            // make sure we have 1 sector
+            let empty = self.plan.borrow().get_sectors().is_empty();
+            if empty {
+                self.new_sector();
+            }
+
             let mut plan = self.plan.borrow_mut();
+
             // See if a sector is selected
             let sector = match self.get_selected_path() {
                 Some((tree_path, _)) => {
@@ -346,6 +362,7 @@ mod imp {
                     plan.get_sectors_mut().last()
                 }
             };
+
             if let Some(sector) = sector {
                 if sector.borrow().get_start().is_none() {
                     sector.borrow_mut().set_start(Some(loc.clone()));
