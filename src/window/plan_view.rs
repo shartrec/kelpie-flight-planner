@@ -54,7 +54,7 @@ mod imp {
     use gtk::glib::{clone, Propagation};
     use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
     use log::{error, info};
-    use std::cell::RefCell;
+    use std::cell::{Ref, RefCell};
     use std::ops::{Deref, DerefMut};
     use std::rc::Rc;
     use std::sync::Arc;
@@ -253,24 +253,18 @@ mod imp {
                 binding.clone()
             }).collect::<Vec<_>>();
 
-            let mut loc_s = None;
-            let mut loc_e = None;
             for sector in plan.get_sectors_mut().iter_mut() {
                 sector.borrow_mut().remove_all_waypoints();
-                loc_s = loc_s.or_else(|| {sector.borrow().get_start()});
-                loc_e = sector.borrow().get_end();
             }
             planner::recalc_plan_elevations(plan.deref_mut());
+
             drop(plan);
             self.refresh(None);
+
             if let Some(map_view) = get_world_map_view(self.plan_window.deref()) {
-                if let Some(wp) = loc_s {
-                    map_view.imp().set_plan(self.plan.clone());
-                    let mid = if let Some(wp_e) = loc_e {
-                        Coordinate::midpoint(wp.get_loc(), wp_e.get_loc())
-                    } else {
-                        wp.get_loc().clone()
-                    };
+                map_view.imp().set_plan(self.plan.clone());
+                let plan = self.plan.borrow();
+                if let Some(mid) = Self::get_plan_centre(&plan) {
                     map_view.imp().center_map(mid);
                 }
             }
@@ -335,6 +329,48 @@ mod imp {
                 }
             }));
 
+        }
+
+        fn get_plan_centre(plan: &Ref<Plan>) -> Option<Coordinate> {
+            use std::f64::{INFINITY, NEG_INFINITY};
+
+            let mut min_lat = INFINITY;
+            let mut max_lat = NEG_INFINITY;
+            let mut min_lon = INFINITY;
+            let mut max_lon = NEG_INFINITY;
+            let mut has_airports = false;
+
+            for sector in plan.get_sectors().iter() {
+                let sector_ref = sector.borrow();
+
+                // Check start airport
+                if let Some(Waypoint::Airport { airport, .. }) = sector_ref.get_start() {
+                    let loc = airport.get_loc();
+                    min_lat = min_lat.min(loc.get_latitude());
+                    max_lat = max_lat.max(loc.get_latitude());
+                    min_lon = min_lon.min(loc.get_longitude());
+                    max_lon = max_lon.max(loc.get_longitude());
+                    has_airports = true;
+                }
+
+                // Check end airport
+                if let Some(Waypoint::Airport { airport, .. }) = sector_ref.get_end() {
+                    let loc = airport.get_loc();
+                    min_lat = min_lat.min(loc.get_latitude());
+                    max_lat = max_lat.max(loc.get_latitude());
+                    min_lon = min_lon.min(loc.get_longitude());
+                    max_lon = max_lon.max(loc.get_longitude());
+                    has_airports = true;
+                }
+            }
+
+            if has_airports {
+                let center_lat = (min_lat + max_lat) / 2.0;
+                let center_lon = (min_lon + max_lon) / 2.0;
+                Some(Coordinate::new(center_lat, center_lon))
+            } else {
+                None
+            }
         }
 
         pub fn initialise(&self) {
