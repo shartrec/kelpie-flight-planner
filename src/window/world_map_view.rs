@@ -214,7 +214,7 @@ mod imp {
             self.gl_area.queue_draw();
         }
 
-        fn find_airport_for_point(&self, pos: Coordinate) -> Option<Arc<Airport>> {
+        fn find_airport_for_point(&self, pos: &Coordinate) -> Option<Arc<Airport>> {
             let zoom = self.zoom_level.get();
             let range = 2.0 / zoom;
 
@@ -247,7 +247,7 @@ mod imp {
 
             None
         }
-        fn find_navaid_for_point(&self, pos: Coordinate) -> Option<Arc<Navaid>> {
+        fn find_navaid_for_point(&self, pos: &Coordinate) -> Option<Arc<Navaid>> {
             let zoom = self.zoom_level.get();
             let range = 2.0 / zoom;
 
@@ -425,7 +425,7 @@ mod imp {
                 if let Some(point) = view.map_window.compute_point(&view.gl_area.get(), &Point::new(x as f32, y as f32)) {
                     let airport = match view.unproject(point.x() as f64, point.y() as f64) {
                         Ok(pos) => {
-                            view.find_airport_for_point(pos)
+                            view.find_airport_for_point(&pos)
                         }
                         Err(_) => {
                             None
@@ -433,7 +433,7 @@ mod imp {
                     };
                     let navaid = match view.unproject(point.x() as f64, point.y() as f64) {
                         Ok(pos) => {
-                            view.find_navaid_for_point(pos)
+                            view.find_navaid_for_point(&pos)
                         }
                         Err(_) => {
                             None
@@ -519,10 +519,12 @@ mod imp {
             self.gl_area.connect_query_tooltip(clone!(#[weak(rename_to = view)] self, #[upgrade_or] false, move | _glarea, x, y, _kbm, tooltip | {
                 match view.unproject(x as f64,y as f64) {
                     Ok(pos) => {
-                        if let Some(airport) = view.find_airport_for_point(pos) {
+                        if let Some(airport) = view.find_airport_for_point(&pos) {
                             tooltip.set_text(Some(airport.get_name()));
                             true
-
+                        } else if let Some(navaid) = view.find_navaid_for_point(&pos) {
+                            tooltip.set_text(Some(format!("{} ({})", &navaid.get_name(), &navaid.get_freq()).as_str()));
+                            true
                         } else {
                             tooltip.set_text(None);
                             false
@@ -562,7 +564,7 @@ mod imp {
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
-                    if let Some(airport) = view.find_airport_for_point(loc) {
+                    if let Some(airport) = view.find_airport_for_point(&loc) {
                         if let Some(airport_map_view) = get_airport_map_view(&view.map_window.get()) {
                             show_airport_map_view(&view.map_window.get());
                             airport_map_view.imp().set_airport(airport);
@@ -577,7 +579,7 @@ mod imp {
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
-                    if let Some(airport) = view.find_airport_for_point(loc) {
+                    if let Some(airport) = view.find_airport_for_point(&loc) {
                         if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
                             // get the plan
                             plan_view.imp().add_airport_to_plan(airport);
@@ -592,7 +594,7 @@ mod imp {
             action.connect_activate(clone!(#[weak(rename_to = view)] self, move |_action, _parameter| {
                 let win_pos = view.popover.borrow().as_ref().unwrap().pointing_to();
                 if let Ok(loc) = view.unproject(win_pos.1.x() as f64, win_pos.1.y() as f64) {
-                    if let Some(navaid) = view.find_navaid_for_point(loc) {
+                    if let Some(navaid) = view.find_navaid_for_point(&loc) {
                         if let Some(ref mut plan_view) = get_plan_view(&view.map_window.get()) {
                             // get the plan
                             plan_view.imp().add_waypoint_to_plan(Waypoint::Navaid {navaid: navaid.clone(), elevation: Cell::new(0), locked: true,});
