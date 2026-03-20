@@ -41,6 +41,8 @@ pub struct PlanRenderer {
     plan_vertex_buffer: GLuint,
     plan_index_buffer: GLuint,
     waypoints: Cell<usize>,
+    airport_indices: Cell<usize>,
+    sector_ranges: RefCell<Vec<(i32, i32)>>,
 }
 
 impl PlanRenderer {
@@ -56,8 +58,22 @@ impl PlanRenderer {
             gl::GenBuffers(1, &mut plan_vertex_buffer);
             gl::GenBuffers(1, &mut plan_index_buffer);
         }
-        let vertices = Self::load_buffers(plan.clone(), plan_vertex_buffer, plan_index_buffer);
+
+        let renderer = PlanRenderer {
+            plan: plan.clone(),
+            plan_vertex_array,
+            plan_vertex_buffer,
+            plan_index_buffer,
+            waypoints: Cell::new(0),
+            airport_indices: Cell::new(0),
+            sector_ranges: RefCell::new(Vec::new()),
+        };
+
+        let vertices = renderer.load_buffers(plan, plan_vertex_buffer, plan_index_buffer);
+        renderer.waypoints.replace(vertices.len());
+
         unsafe {
+            gl::BindVertexArray(plan_vertex_array);
             gl::EnableVertexAttribArray(0); // this is "layout (location = 0)" in vertex shader
             gl::VertexAttribPointer(
                 0, // index of the generic vertex attribute ("layout (location = 0)")
@@ -70,17 +86,11 @@ impl PlanRenderer {
             gl::BindVertexArray(0);
         }
 
-        PlanRenderer {
-            plan: plan.clone(),
-            plan_vertex_array,
-            plan_vertex_buffer,
-            plan_index_buffer,
-            waypoints: Cell::new(vertices.len()),
-        }
+        renderer
     }
 
-    fn load_buffers(plan: Rc<RefCell<Plan>>, plan_vertex_buffer: GLuint, plan_index_buffer: GLuint) -> Vec<Vertex> {
-        let (vertices, indices) = Self::build_plan_vertices(plan);
+    fn load_buffers(&self, plan: Rc<RefCell<Plan>>, plan_vertex_buffer: GLuint, plan_index_buffer: GLuint) -> Vec<Vertex> {
+        let (vertices, airport_indices, ranges) = Self::build_plan_vertices(plan);
         unsafe {
             gl::BindBuffer(gl::ARRAY_BUFFER, plan_vertex_buffer);
             gl::BufferData(
@@ -93,11 +103,13 @@ impl PlanRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, plan_index_buffer);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (indices.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
-                indices.as_ptr() as *const gl::types::GLvoid, // pointer to data
+                (airport_indices.len() * size_of::<u32>()) as gl::types::GLsizeiptr,
+                airport_indices.as_ptr() as *const gl::types::GLvoid, // pointer to data
                 gl::DYNAMIC_DRAW, // usage
             );
         }
+        self.airport_indices.replace(airport_indices.len());
+        self.sector_ranges.replace(ranges);
         vertices
     }
 
@@ -105,7 +117,7 @@ impl PlanRenderer {
         unsafe {
             gl::BindVertexArray(self.plan_vertex_array);
         }
-        let vertices = Self::load_buffers(self.plan.clone(), self.plan_vertex_buffer, self.plan_index_buffer);
+        let vertices = self.load_buffers(self.plan.clone(), self.plan_vertex_buffer, self.plan_index_buffer);
         self.waypoints.replace(vertices.len());
         unsafe {
             gl::BindVertexArray(0);
@@ -135,13 +147,14 @@ impl PlanRenderer {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.plan_index_buffer);
             gl::DrawElements(
                 gl::POINTS, // mode
-                self.waypoints.get() as gl::types::GLsizei,
+                self.airport_indices.get() as gl::types::GLsizei,
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
 
-            if self.waypoints.get() > 0 {
-                gl::DrawArrays(gl::LINE_STRIP, 0 as GLint, self.waypoints.get() as GLint);
+            let ranges = self.sector_ranges.borrow();
+            for (start, count) in ranges.iter() {
+                gl::DrawArrays(gl::LINE_STRIP, *start, *count);
             }
 
             let c = gl::GetUniformLocation(shader_program_id, gl_str!("pointSize"));
@@ -162,16 +175,18 @@ impl PlanRenderer {
         }
     }
 
-    fn build_plan_vertices(plan: Rc<RefCell<Plan>>) -> (Vec<Vertex>, Vec<u32>) {
+    fn build_plan_vertices(plan: Rc<RefCell<Plan>>) -> (Vec<Vertex>, Vec<u32>, Vec<(i32, i32)>) {
         let projector = SphericalProjector::new(1.000);
 
         let mut vertices: Vec<Vertex> = Vec::new();
         let mut indices_airports: Vec<u32> = Vec::with_capacity(100);
+        let mut sector_ranges: Vec<(i32, i32)> = Vec::new();
 
         // We create a vertex for each waypoint and treat the whole as a line strip,
         // We also add an index for each airport, which is drawn as a point
         let plan = plan.borrow();
         for s in plan.get_sectors() {
+            let start_vertex_idx = vertices.len() as i32;
             if let Some(airport) = s.borrow().get_start() {
                 let start_pt = projector.project(airport.get_lat(), airport.get_long());
                 vertices.push(Vertex { position: start_pt });
@@ -191,10 +206,12 @@ impl PlanRenderer {
                     vertices.push(Vertex { position: end_pt });
                     indices_airports.push(vertices.len() as u32 - 1);
                 }
+                let end_vertex_idx = vertices.len() as i32;
+                sector_ranges.push((start_vertex_idx, end_vertex_idx - start_vertex_idx));
             }
         }
 
-        (vertices, indices_airports)
+        (vertices, indices_airports, sector_ranges)
     }
 
     fn draw_arc(from: [f32; 3], to: [f32; 3]) -> Vec<Vertex> {

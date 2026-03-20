@@ -53,7 +53,7 @@ mod imp {
     use gtk::gio::{MenuModel, SimpleAction, SimpleActionGroup};
     use gtk::glib::{clone, Propagation};
     use gtk::{prelude::WidgetExt, Builder, Button, CheckButton, ColumnView, ColumnViewColumn, DropDown, Entry, Label, ListScrollFlags, PopoverMenu, ScrolledWindow, SingleSelection, Stack, StringObject, TreeListModel, TreeListRow};
-    use log::{error, info};
+    use log::{error};
     use std::cell::{Ref, RefCell};
     use std::ops::{Deref, DerefMut};
     use std::rc::Rc;
@@ -236,8 +236,6 @@ mod imp {
         }
 
         fn make_plan(&self) {
-            let timer = std::time::Instant::now();
-
             let mut plan = self.plan.borrow_mut();
             if plan.get_sectors().len() < 1 {
                 return;
@@ -298,7 +296,6 @@ mod imp {
             drop(tx);
 
             gtk::glib::MainContext::default().spawn_local(gtk::glib::clone!(#[weak(rename_to = view)] self, async move {
-                let mut completed_count = 0;
                 while let Ok((i, new_sector)) = rx.recv().await {
                     // Check the sector count still matches
                     let mut plan = view.plan.borrow_mut();
@@ -318,14 +315,6 @@ mod imp {
                     }
                     event::manager().notify_listeners(Event::PlanChanged);
                     view.refresh(None);
-
-                    completed_count += 1;
-                    if completed_count >= sector_count {
-                        // All sectors have been processed
-                        info!("All {} sectors have been planned successfully in {}ms", sector_count, timer.elapsed().as_millis());
-                        event::manager().notify_listeners(Event::StatusChange("Plan complete".to_string()));
-                        break;
-                    }
                 }
             }));
 
